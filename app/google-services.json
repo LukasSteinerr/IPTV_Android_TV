@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1049918776423",
+    "project_id": "iptv-android-tv-13999",
+    "storage_bucket": "iptv-android-tv-13999.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1049918776423:android:d381317debc1e9985d60c2",
+        "android_client_info": {
+          "package_name": "com.example.tv_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAWi9n3lzcKtk87sPzToz4kqnHZjAIKc3w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
