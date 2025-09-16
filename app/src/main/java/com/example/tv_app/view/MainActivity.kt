@@ -12,6 +12,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Surface
 import com.example.tv_app.model.ObjectBox
+import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.ui.theme.TV_APPTheme
 import io.objectbox.Box
 import android.util.Log
@@ -33,7 +34,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                    Greeting("Android")
+                    AddPlaylistScreen(playlistService = PlaylistService(), onPlaylistAdded = {
+                        // Handle playlist added event
+                    })
                 }
             }
         }

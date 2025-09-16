@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("kotlin-kapt") // Must be applied before ObjectBox plugin
     id("com.google.gms.google-services")
+    id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
 android {
@@ -60,6 +61,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.tv.foundation)
     implementation(libs.androidx.tv.material)
+    implementation("androidx.compose.material3:material3")
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     androidTestImplementation(platform(libs.androidx.compose.bom))
@@ -68,6 +70,12 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation("io.objectbox:objectbox-android-objectbrowser:4.3.1")
     releaseImplementation("io.objectbox:objectbox-android:4.3.1")
+    implementation("io.objectbox:objectbox-kotlin:4.3.1")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+    implementation("io.ktor:ktor-client-core:2.3.10")
+    implementation("io.ktor:ktor-client-cio:2.3.10")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
 }
 
 apply(plugin = "io.objectbox")
