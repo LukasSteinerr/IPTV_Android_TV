@@ -113,7 +113,7 @@ class XtreamService {
                 rating = movieInfo["rating"]?.jsonPrimitive?.content,
                 streamId = movieObject["stream_id"]!!.jsonPrimitive.content,
                 tmdbId = movieObject["tmdb"]?.jsonPrimitive?.content,
-                trailer = movieInfo["youtube_trailer"]?.jsonPrimitive?.content,
+                trailer = movieInfo["trailer"]?.jsonPrimitive?.content ?: movieObject["trailer"]?.jsonPrimitive?.content,
                 added = movieObject["added"]?.jsonPrimitive?.content,
                 rating_5based = movieInfo["rating_5based"]?.jsonPrimitive?.content?.toDoubleOrNull()
             )
@@ -137,7 +137,8 @@ class XtreamService {
             val series = TvSeries(
                 name = seriesObject["name"]!!.jsonPrimitive.content,
                 coverUrl = seriesObject["cover"]?.jsonPrimitive?.content,
-                seriesId = seriesObject["series_id"]!!.jsonPrimitive.content
+                seriesId = seriesObject["series_id"]!!.jsonPrimitive.content,
+                tmdbId = seriesObject["tmdb"]?.jsonPrimitive?.content
             )
             series.playlist.target = playlist
             val categoryId = seriesObject["category_id"]?.jsonPrimitive?.content
