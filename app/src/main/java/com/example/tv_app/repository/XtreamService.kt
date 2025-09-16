@@ -102,11 +102,20 @@ class XtreamService {
             val movieObject = element.jsonObject
             val containerExtension = movieObject["container_extension"]?.jsonPrimitive?.content ?: "mp4"
             val streamUrl = "$baseUrl/movie/$user/$pass/${movieObject["stream_id"]!!.jsonPrimitive.content}.$containerExtension"
+            val movieInfo = movieObject["info"]?.jsonObject ?: movieObject
             val movie = Movie(
                 name = movieObject["name"]!!.jsonPrimitive.content,
                 streamUrl = streamUrl,
                 coverUrl = movieObject["stream_icon"]?.jsonPrimitive?.content,
-                streamId = movieObject["stream_id"]!!.jsonPrimitive.content
+                description = movieInfo["plot"]?.jsonPrimitive?.content,
+                year = movieInfo["releasedate"]?.jsonPrimitive?.content,
+                duration = movieInfo["duration"]?.jsonPrimitive?.content,
+                rating = movieInfo["rating"]?.jsonPrimitive?.content,
+                streamId = movieObject["stream_id"]!!.jsonPrimitive.content,
+                tmdbId = movieObject["tmdb"]?.jsonPrimitive?.content,
+                trailer = movieInfo["youtube_trailer"]?.jsonPrimitive?.content,
+                added = movieObject["added"]?.jsonPrimitive?.content,
+                rating_5based = movieInfo["rating_5based"]?.jsonPrimitive?.content?.toDoubleOrNull()
             )
             movie.playlist.target = playlist
             val categoryId = movieObject["category_id"]?.jsonPrimitive?.content

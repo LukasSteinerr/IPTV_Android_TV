@@ -50,4 +50,10 @@ class PlaylistService {
             playlistBox.remove(id)
         }
     }
+
+    suspend fun clearDatabase() {
+        withContext(Dispatchers.IO) {
+            ObjectBox.boxStore.removeAllObjects()
+        }
+    }
 }

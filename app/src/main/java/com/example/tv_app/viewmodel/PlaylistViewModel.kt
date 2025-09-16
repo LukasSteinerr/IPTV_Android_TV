@@ -13,4 +13,10 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
             playlistService.addPlaylist(playlist)
         }
     }
+
+    fun clearDatabase() {
+        viewModelScope.launch {
+            playlistService.clearDatabase()
+        }
+    }
 }

@@ -90,5 +90,11 @@ fun AddPlaylistScreen(
         }) {
             Text("Add Playlist")
         }
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(onClick = {
+            playlistViewModel.clearDatabase()
+        }) {
+            Text("Clear Database")
+        }
     }
 }
