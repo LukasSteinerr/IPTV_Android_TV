@@ -1,4 +1,4 @@
-package com.example.tv_app
+package com.example.tv_app.model
 
 import android.content.Context
 import io.objectbox.BoxStore
@@ -9,7 +9,7 @@ object ObjectBox {
         private set
 
     fun init(context: Context) {
-        boxStore = MyObjectBox.builder()
+        boxStore = com.example.tv_app.model.MyObjectBox.builder()
             .androidContext(context.applicationContext)
             .build()
     }

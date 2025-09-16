@@ -1,8 +1,9 @@
-package com.example.tv_app
+package com.example.tv_app.di
 
 import android.app.Application
 import android.util.Log
-import io.objectbox.BoxStore
+import com.example.tv_app.BuildConfig
+import com.example.tv_app.model.ObjectBox
 import io.objectbox.android.Admin
 
 class MyApp : Application() {

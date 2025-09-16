@@ -1,4 +1,4 @@
-package com.example.tv_app
+package com.example.tv_app.view
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -11,6 +11,8 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Surface
+import com.example.tv_app.model.Note
+import com.example.tv_app.model.ObjectBox
 import com.example.tv_app.ui.theme.TV_APPTheme
 import io.objectbox.Box
 import android.util.Log
