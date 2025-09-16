@@ -5,9 +5,14 @@ import androidx.tv.material3.Button
 import androidx.tv.material3.RadioButton
 import androidx.tv.material3.Text
 import androidx.compose.material3.TextField
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Card
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.model.PlaylistTypeConstants
@@ -27,6 +32,11 @@ fun AddPlaylistScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var playlistType by remember { mutableStateOf(PlaylistTypeConstants.m3u) }
+
+    // Observe ViewModel state
+    val isLoading by playlistViewModel.isLoading
+    val loadingMessage by playlistViewModel.loadingMessage
+    val errorMessage by playlistViewModel.errorMessage
 
     Column(
         modifier = Modifier
@@ -75,25 +85,94 @@ fun AddPlaylistScreen(
             )
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = {
-            val newPlaylist = Playlist(
-                name = name,
-                url = url,
-                username = if (playlistType == PlaylistTypeConstants.xtream) username else null,
-                password = if (playlistType == PlaylistTypeConstants.xtream) password else null,
-                typeInt = playlistType
-            )
-            // In a real app, you would use a ViewModel and CoroutineScope to call this
-            // For simplicity, we'll just log it here.
-            playlistViewModel.addPlaylist(newPlaylist)
-            onPlaylistAdded()
-        }) {
+        
+        // Progress and Status Display
+        if (isLoading) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    CircularProgressIndicator()
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = loadingMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = {
+                        playlistViewModel.cancelOperation()
+                    }) {
+                        Text("Cancel")
+                    }
+                }
+            }
+        }
+        
+        // Error Display
+        if (errorMessage.isNotEmpty()) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Error",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.Red,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = errorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.Red
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = {
+                        playlistViewModel.clearError()
+                    }) {
+                        Text("Dismiss")
+                    }
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        Button(
+            onClick = {
+                if (!isLoading && name.isNotBlank() && url.isNotBlank()) {
+                    val newPlaylist = Playlist(
+                        name = name,
+                        url = url,
+                        username = if (playlistType == PlaylistTypeConstants.xtream) username else null,
+                        password = if (playlistType == PlaylistTypeConstants.xtream) password else null,
+                        typeInt = playlistType
+                    )
+                    playlistViewModel.addPlaylist(newPlaylist)
+                    onPlaylistAdded()
+                }
+            },
+            enabled = !isLoading && name.isNotBlank() && url.isNotBlank()
+        ) {
             Text("Add Playlist")
         }
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = {
-            playlistViewModel.clearDatabase()
-        }) {
+        Button(
+            onClick = {
+                playlistViewModel.clearDatabase()
+            },
+            enabled = !isLoading
+        ) {
             Text("Clear Database")
         }
     }

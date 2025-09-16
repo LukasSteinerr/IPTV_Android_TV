@@ -11,6 +11,6 @@ data class TvProgram(
     @Index var channelXmlTvId: String = "",
     var title: String = "",
     var description: String? = null,
-    var startTime: Date = Date(),
-    var stopTime: Date = Date()
+    var startTime: Date? = null,
+    var stopTime: Date? = null
 )

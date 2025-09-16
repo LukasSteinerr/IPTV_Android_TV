@@ -150,8 +150,34 @@ class XtreamService {
         return seriesList
     }
 
-    private fun getBaseUrl(url: String): String {
+    internal fun getBaseUrl(url: String): String {
         val uri = java.net.URI(url)
         return "${uri.scheme}://${uri.host}:${uri.port}"
+    }
+
+    suspend fun fetchAndStoreEpgData(
+        baseUrl: String,
+        user: String,
+        pass: String,
+        onProgress: ((EpgParserService.EpgProgress) -> Unit)? = null,
+        onBatchReady: (List<TvProgram>, List<EpgChannelInfo>) -> Unit
+    ): Boolean {
+        val epgUrl = "$baseUrl/xmltv.php?username=$user&password=$pass"
+        val epgParserService = EpgParserService()
+        return try {
+            epgParserService.parseEpgData(
+                url = epgUrl,
+                batchSize = 50, // Small batch size for TV devices
+                maxPrograms = 25_000, // Limit for TV app performance
+                onProgress = onProgress,
+                onBatchReady = onBatchReady
+            )
+        } catch (e: Exception) {
+            android.util.Log.e("XtreamService", "EPG fetch failed", e)
+            onProgress?.invoke(EpgParserService.EpgProgress(0, null, "Failed: ${e.message}"))
+            false
+        } finally {
+            epgParserService.close()
+        }
     }
 }
