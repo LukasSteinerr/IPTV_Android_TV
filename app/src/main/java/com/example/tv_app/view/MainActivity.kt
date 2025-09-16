@@ -11,7 +11,6 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Surface
-import com.example.tv_app.model.Note
 import com.example.tv_app.model.ObjectBox
 import com.example.tv_app.ui.theme.TV_APPTheme
 import io.objectbox.Box
@@ -21,20 +20,9 @@ import com.google.firebase.ktx.Firebase
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var noteBox: Box<Note>
-
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        noteBox = ObjectBox.boxStore.boxFor(Note::class.java)
-
-        // Example: Add a new note
-        val newNote = Note(text = "Hello, ObjectBox!", date = System.currentTimeMillis())
-        noteBox.put(newNote)
-
-        // Example: Get all notes
-        val allNotes = noteBox.all
 
         // Test Firebase connection
         testFirebaseConnection()
