@@ -32,75 +32,97 @@ class PlaylistService {
         }
     }
 
-    suspend fun addPlaylist(playlist: Playlist) {
+    suspend fun addPlaylist(playlist: Playlist, onProgress: (String) -> Unit) {
         withContext(Dispatchers.IO) {
             if (playlist.isM3u) {
+                onProgress("Parsing M3U playlist...")
                 val data = m3uService.parseM3uPlaylist(playlist)
+                onProgress("Storing M3U data...")
                 playlistBox.put(playlist)
                 @Suppress("UNCHECKED_CAST")
                 categoryBox.put(data["categories"] as List<Category>)
                 @Suppress("UNCHECKED_CAST")
                 channelBox.put(data["channels"] as List<Channel>)
+                onProgress("M3U playlist added successfully.")
             } else {
+                onProgress("Clearing old EPG data...")
                 tvProgramBox.removeAll()
                 epgChannelInfoBox.removeAll()
 
-                val data = xtreamService.fetchXtreamData(playlist)
+                val data = xtreamService.fetchXtreamData(playlist, onProgress)
+                onProgress("Storing playlist data...")
                 playlistBox.put(playlist)
-                @Suppress("UNCHECKED_CAST")
-                categoryBox.put(data["categories"] as List<Category>)
-                @Suppress("UNCHECKED_CAST")
-                channelBox.put(data["channels"] as List<Channel>)
-                if (data.containsKey("movies")) {
-                    @Suppress("UNCHECKED_CAST")
-                    movieBox.put(data["movies"] as List<Movie>)
+
+                val categories = data["categories"] as? List<Category>
+                if (categories != null) {
+                    onProgress("Storing ${categories.size} categories...")
+                    categoryBox.put(categories)
                 }
-                if (data.containsKey("series")) {
-                    @Suppress("UNCHECKED_CAST")
-                    tvSeriesBox.put(data["series"] as List<TvSeries>)
+
+                val channels = data["channels"] as? List<Channel>
+                if (channels != null) {
+                    onProgress("Storing ${channels.size} live channels...")
+                    channelBox.put(channels)
+                }
+
+                val movies = data["movies"] as? List<Movie>
+                if (movies != null) {
+                    onProgress("Storing ${movies.size} movies...")
+                    movieBox.put(movies)
+                }
+
+                val series = data["series"] as? List<TvSeries>
+                if (series != null) {
+                    onProgress("Storing ${series.size} series...")
+                    tvSeriesBox.put(series)
                 }
 
                 val baseUrl = xtreamService.getBaseUrl(playlist.url)
                 val user = playlist.username ?: ""
                 val pass = playlist.password ?: ""
-                
+
+                onProgress("Starting EPG data fetch...")
                 Log.d("PlaylistService", "Starting EPG data fetch for playlist: ${playlist.name}")
-                
+
                 val epgSuccess = xtreamService.fetchAndStoreEpgData(
                     baseUrl = baseUrl,
                     user = user,
                     pass = pass,
                     onProgress = { progress ->
-                        Log.d("PlaylistService", "EPG Progress: ${progress.phase} - ${progress.processed}")
+                        val progressMessage = "EPG: ${progress.phase} - Processed: ${progress.processed}"
+                        onProgress(progressMessage)
+                        Log.d("PlaylistService", progressMessage)
                     }
-                ) { programs, channels ->
-                    // Use database transactions for better performance and atomicity
+                ) { programs, epgChannels ->
                     try {
-                        ensureActive() // Check for cancellation
-                        
-                        // Batch insert programs with transaction
+                        ensureActive()
                         if (programs.isNotEmpty()) {
                             ObjectBox.boxStore.runInTx {
                                 tvProgramBox.put(programs)
                             }
-                            Log.d("PlaylistService", "Stored ${programs.size} EPG programs")
+                            val message = "Stored ${programs.size} EPG programs."
+                            onProgress(message)
+                            Log.d("PlaylistService", message)
                         }
-                        
-                        // Batch insert channels with transaction
-                        if (channels.isNotEmpty()) {
+                        if (epgChannels.isNotEmpty()) {
                             ObjectBox.boxStore.runInTx {
-                                epgChannelInfoBox.put(channels)
+                                epgChannelInfoBox.put(epgChannels)
                             }
-                            Log.d("PlaylistService", "Stored ${channels.size} EPG channels")
+                            val message = "Stored ${epgChannels.size} EPG channels."
+                            onProgress(message)
+                            Log.d("PlaylistService", message)
                         }
                     } catch (e: Exception) {
                         Log.e("PlaylistService", "Error storing EPG batch", e)
+                        onProgress("Error storing EPG batch: ${e.message}")
                     }
                 }
-                
+
                 if (epgSuccess) {
+                    onProgress("EPG data fetch completed successfully.")
                     Log.d("PlaylistService", "EPG data fetch completed successfully")
                 } else {
+                    onProgress("EPG data fetch failed or was incomplete.")
                     Log.w("PlaylistService", "EPG data fetch failed or was incomplete")
                 }
             }

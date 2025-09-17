@@ -15,40 +15,54 @@ class XtreamService {
     private val client = HttpClient(CIO)
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun fetchXtreamData(playlist: Playlist): Map<String, List<Any>> {
+    suspend fun fetchXtreamData(playlist: Playlist, onProgress: (String) -> Unit): Map<String, List<Any>> {
         val baseUrl = getBaseUrl(playlist.url)
         val username = playlist.username ?: ""
         val password = playlist.password ?: ""
 
-        val liveData = fetchLiveData(baseUrl, username, password, playlist)
-        val movieData = fetchMovieData(baseUrl, username, password, playlist)
-        val seriesData = fetchSeriesData(baseUrl, username, password, playlist)
+        onProgress("Fetching live TV data...")
+        val liveData = fetchLiveData(baseUrl, username, password, playlist, onProgress)
+        onProgress("Fetching movie data...")
+        val movieData = fetchMovieData(baseUrl, username, password, playlist, onProgress)
+        onProgress("Fetching series data...")
+        val seriesData = fetchSeriesData(baseUrl, username, password, playlist, onProgress)
+
+        val allCategories = (liveData["categories"] as List<Category>) +
+                (movieData["categories"] as List<Category>) +
+                (seriesData["categories"] as List<Category>)
 
         return mapOf(
             "channels" to liveData["channels"]!!,
-            "categories" to liveData["categories"]!!,
+            "categories" to allCategories,
             "movies" to movieData["movies"]!!,
-            "movieCategories" to movieData["categories"]!!,
-            "series" to seriesData["series"]!!,
-            "seriesCategories" to seriesData["categories"]!!
+            "series" to seriesData["series"]!!
         )
     }
 
-    private suspend fun fetchLiveData(baseUrl: String, user: String, pass: String, playlist: Playlist): Map<String, List<Any>> {
+    private suspend fun fetchLiveData(baseUrl: String, user: String, pass: String, playlist: Playlist, onProgress: (String) -> Unit): Map<String, List<Any>> {
+        onProgress("Fetching live categories...")
         val categories = fetchCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_live_categories", playlist, ContentType.liveTV)
+        onProgress("Found ${categories.size} live categories. Fetching channels...")
         val channels = fetchLiveStreams("$baseUrl/player_api.php?username=$user&password=$pass&action=get_live_streams", baseUrl, user, pass, playlist, categories)
+        onProgress("Found ${channels.size} live channels.")
         return mapOf("channels" to channels, "categories" to categories.values.toList())
     }
 
-    private suspend fun fetchMovieData(baseUrl: String, user: String, pass: String, playlist: Playlist): Map<String, List<Any>> {
+    private suspend fun fetchMovieData(baseUrl: String, user: String, pass: String, playlist: Playlist, onProgress: (String) -> Unit): Map<String, List<Any>> {
+        onProgress("Fetching movie categories...")
         val categories = fetchCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_vod_categories", playlist, ContentType.movie)
+        onProgress("Found ${categories.size} movie categories. Fetching movies...")
         val movies = fetchMovieStreams("$baseUrl/player_api.php?username=$user&password=$pass&action=get_vod_streams", baseUrl, user, pass, playlist, categories)
+        onProgress("Found ${movies.size} movies.")
         return mapOf("movies" to movies, "categories" to categories.values.toList())
     }
 
-    private suspend fun fetchSeriesData(baseUrl: String, user: String, pass: String, playlist: Playlist): Map<String, List<Any>> {
+    private suspend fun fetchSeriesData(baseUrl: String, user: String, pass: String, playlist: Playlist, onProgress: (String) -> Unit): Map<String, List<Any>> {
+        onProgress("Fetching series categories...")
         val categories = fetchCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_series_categories", playlist, ContentType.series)
+        onProgress("Found ${categories.size} series categories. Fetching series...")
         val series = fetchSeriesStreams("$baseUrl/player_api.php?username=$user&password=$pass&action=get_series", playlist, categories)
+        onProgress("Found ${series.size} series.")
         return mapOf("series" to series, "categories" to categories.values.toList())
     }
 

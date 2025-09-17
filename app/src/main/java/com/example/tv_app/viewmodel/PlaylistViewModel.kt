@@ -25,31 +25,30 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
     private var currentJob: Job? = null
 
     fun addPlaylist(playlist: Playlist) {
-        // Cancel any existing job
         currentJob?.cancel()
-        
         currentJob = viewModelScope.launch {
             try {
                 isLoading.value = true
                 errorMessage.value = ""
-                loadingMessage.value = "Adding playlist..."
-                
+                loadingMessage.value = "Initiating..."
+
                 Log.d("PlaylistViewModel", "Starting to add playlist: ${playlist.name}")
-                playlistService.addPlaylist(playlist)
-                
+                playlistService.addPlaylist(playlist) { message ->
+                    loadingMessage.value = message
+                }
+
                 loadingMessage.value = "Playlist added successfully!"
                 Log.d("PlaylistViewModel", "Successfully added playlist: ${playlist.name}")
-                
+
             } catch (e: CancellationException) {
                 Log.d("PlaylistViewModel", "Playlist addition cancelled")
                 loadingMessage.value = "Operation cancelled"
             } catch (e: Exception) {
                 Log.e("PlaylistViewModel", "Error adding playlist", e)
                 errorMessage.value = "Failed to add playlist: ${e.message}"
-                loadingMessage.value = "Error occurred"
+                loadingMessage.value = "Error: ${e.message}"
             } finally {
                 isLoading.value = false
-                // Clear messages after a delay in real implementation
             }
         }
     }
