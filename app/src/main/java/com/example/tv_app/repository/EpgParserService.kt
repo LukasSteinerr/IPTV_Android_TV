@@ -9,11 +9,11 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.utils.io.*
+import io.ktor.utils.io.jvm.javaio.toInputStream
 import kotlinx.coroutines.*
 import org.xmlpull.v1.XmlPullParser
 import org.xmlpull.v1.XmlPullParserFactory
-import java.io.ByteArrayInputStream
-import java.io.InputStreamReader
+import java.io.InputStream
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
@@ -37,7 +37,7 @@ class EpgParserService {
     suspend fun parseEpgData(
         url: String,
         batchSize: Int = 100, // Reduced batch size for better memory management
-        maxPrograms: Int = 50_000, // Limit total programs to prevent memory issues
+        maxPrograms: Int = 25_000, // Limit total programs to prevent memory issues
         onProgress: ((EpgProgress) -> Unit)? = null,
         onBatchReady: (List<TvProgram>, List<EpgChannelInfo>) -> Unit
     ): Boolean {
@@ -46,60 +46,16 @@ class EpgParserService {
                 Log.d("EpgParserService", "Starting EPG download from: $url")
                 onProgress?.invoke(EpgProgress(0, null, "Connecting"))
                 
-                // Download with streaming to avoid loading entire file into memory
                 val response: HttpResponse = client.get(url)
-                val channel: ByteReadChannel = response.bodyAsChannel()
-                
                 Log.d("EpgParserService", "Download started, content length: ${response.headers["content-length"]}")
-                onProgress?.invoke(EpgProgress(0, null, "Downloading"))
-                
-                // Read content in chunks to manage memory better
-                val chunks = ArrayList<ByteArray>()
-                var totalBytes = 0L
-                val chunkSize = 8192 // 8KB chunks
-                
-                while (!channel.isClosedForRead) {
-                    val chunk = ByteArray(chunkSize)
-                    val bytesRead = channel.readAvailable(chunk, 0, chunkSize)
-                    if (bytesRead == -1) break
-                    
-                    if (bytesRead < chunkSize) {
-                        chunks.add(chunk.copyOf(bytesRead))
-                    } else {
-                        chunks.add(chunk)
-                    }
-                    totalBytes += bytesRead
-                    
-                    // Prevent excessive memory usage
-                    if (totalBytes > 100_000_000) { // 100MB limit
-                        Log.w("EpgParserService", "EPG file too large (${totalBytes / 1_000_000}MB), truncating")
-                        break
-                    }
-                    
-                    // Update progress every 1MB
-                    if (totalBytes % 1_000_000 == 0L) {
-                        onProgress?.invoke(EpgProgress((totalBytes / 1_000_000).toInt(), null, "Downloading"))
-                    }
-                }
-                
-                // Combine chunks into single byte array
-                val xmlBytes = ByteArray(totalBytes.toInt())
-                var offset = 0
-                for (chunk in chunks) {
-                    System.arraycopy(chunk, 0, xmlBytes, offset, chunk.size)
-                    offset += chunk.size
-                }
-                chunks.clear() // Free memory
-                
-                Log.d("EpgParserService", "Download complete, parsing XML (${totalBytes / 1_000_000}MB)")
-                onProgress?.invoke(EpgProgress(0, null, "Parsing"))
-                
-                // Parse XML with memory-efficient approach
+                onProgress?.invoke(EpgProgress(0, null, "Downloading & Parsing"))
+
+                // Parse XML directly from the stream
                 return@withContext parseXmlStream(
-                    xmlBytes, 
-                    batchSize, 
-                    maxPrograms, 
-                    onProgress, 
+                    response.bodyAsChannel().toInputStream(),
+                    batchSize,
+                    maxPrograms,
+                    onProgress,
                     onBatchReady
                 )
                 
@@ -112,7 +68,7 @@ class EpgParserService {
     }
 
     private suspend fun parseXmlStream(
-        xmlBytes: ByteArray,
+        inputStream: InputStream,
         batchSize: Int,
         maxPrograms: Int,
         onProgress: ((EpgProgress) -> Unit)?,
@@ -122,11 +78,7 @@ class EpgParserService {
             val factory = XmlPullParserFactory.newInstance()
             factory.isNamespaceAware = true
             val parser = factory.newPullParser()
-            
-            // Use InputStreamReader for better encoding handling
-            val inputStream = ByteArrayInputStream(xmlBytes)
-            val reader = InputStreamReader(inputStream, "UTF-8")
-            parser.setInput(reader)
+            parser.setInput(inputStream, "UTF-8")
 
             var programs = ArrayList<TvProgram>(batchSize)
             var channels = ArrayList<EpgChannelInfo>(batchSize)
