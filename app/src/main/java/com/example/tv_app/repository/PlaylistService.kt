@@ -24,7 +24,7 @@ class PlaylistService {
     private val tvProgramBox: Box<TvProgram> = ObjectBox.boxStore.boxFor(TvProgram::class.java)
     private val epgChannelInfoBox: Box<EpgChannelInfo> = ObjectBox.boxStore.boxFor(EpgChannelInfo::class.java)
     private val m3uService = M3uService()
-    private val xtreamService = XtreamService()
+    private val xtreamService = XtreamService(EpgParserService())
 
     suspend fun getAllPlaylists(): List<Playlist> {
         return withContext(Dispatchers.IO) {

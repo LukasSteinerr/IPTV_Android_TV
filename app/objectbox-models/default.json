@@ -308,7 +308,7 @@
     },
     {
       "id": "7:8101150569562836773",
-      "lastPropertyId": "6:7211082645977655050",
+      "lastPropertyId": "7:8032382372141793989",
       "name": "TvProgram",
       "properties": [
         {
@@ -429,7 +429,7 @@
     },
     {
       "id": "9:4292307316068510900",
-      "lastPropertyId": "4:5894219587816016953",
+      "lastPropertyId": "5:5799299278359550158",
       "name": "EpgChannelInfo",
       "properties": [
         {
@@ -458,7 +458,7 @@
     }
   ],
   "lastEntityId": "9:4292307316068510900",
-  "lastIndexId": "9:8529675291723211021",
+  "lastIndexId": "11:9119486359237475455",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
@@ -466,11 +466,16 @@
   "retiredEntityUids": [
     8564317504542225034
   ],
-  "retiredIndexUids": [],
+  "retiredIndexUids": [
+    9119486359237475455,
+    6851098829748564839
+  ],
   "retiredPropertyUids": [
     1638798638586320320,
     3693367422184598233,
-    5694957561999515411
+    5694957561999515411,
+    8032382372141793989,
+    5799299278359550158
   ],
   "retiredRelationUids": [],
   "version": 1

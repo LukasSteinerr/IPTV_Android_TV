@@ -10,7 +10,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 
-class XtreamService {
+class XtreamService(private val epgParserService: EpgParserService) {
 
     private val client = HttpClient(CIO)
     private val json = Json { ignoreUnknownKeys = true }
@@ -177,12 +177,9 @@ class XtreamService {
         onBatchReady: (List<TvProgram>, List<EpgChannelInfo>) -> Unit
     ): Boolean {
         val epgUrl = "$baseUrl/xmltv.php?username=$user&password=$pass"
-        val epgParserService = EpgParserService()
         return try {
             epgParserService.parseEpgData(
                 url = epgUrl,
-                batchSize = 50, // Small batch size for TV devices
-                maxPrograms = 25_000, // Limit for TV app performance
                 onProgress = onProgress,
                 onBatchReady = onBatchReady
             )
