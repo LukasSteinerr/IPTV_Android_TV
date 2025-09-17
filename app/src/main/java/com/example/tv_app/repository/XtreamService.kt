@@ -1,8 +1,10 @@
 package com.example.tv_app.repository
 
 import com.example.tv_app.model.*
+import com.example.tv_app.model.*
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
+import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.serialization.json.Json
@@ -12,7 +14,13 @@ import kotlinx.serialization.json.jsonPrimitive
 
 class XtreamService(private val epgParserService: EpgParserService) {
 
-    private val client = HttpClient(CIO)
+    private val client = HttpClient(CIO) {
+        install(HttpTimeout) {
+            requestTimeoutMillis = 300_000 // 5 minutes
+            connectTimeoutMillis = 60_000  // 1 minute
+            socketTimeoutMillis = 60_000   // 1 minute
+        }
+    }
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun fetchXtreamData(playlist: Playlist, onProgress: (String) -> Unit): Map<String, List<Any>> {

@@ -154,19 +154,21 @@ open class EpgParserService {
                 // Process urgent batch
                 if (!urgentBatchProcessed && programs.size >= urgentBatchSize) {
                     onBatchReady(ArrayList(programs), ArrayList(channels))
-                    totalProcessed += programs.size + channels.size
-                    onProgress?.invoke(EpgProgress(totalProcessed, null, "Processing urgent batch"))
+                    val batchSize = programs.size + channels.size
+                    totalProcessed += batchSize
+                    onProgress?.invoke(EpgProgress(totalProcessed, null, "Processing urgent batch of $batchSize (Total: $totalProcessed)"))
                     programs.clear()
                     channels.clear()
                     urgentBatchProcessed = true
                 }
 
                 // Process dynamic batches in the background
-                if (urgentBatchProcessed && (programs.size >= 1000 || channels.size >= 1000)) {
+                if (urgentBatchProcessed && (programs.size >= 4000 || channels.size >= 4000)) {
                     if (programs.isNotEmpty() || channels.isNotEmpty()) {
                         onBatchReady(ArrayList(programs), ArrayList(channels))
-                        totalProcessed += programs.size + channels.size
-                        onProgress?.invoke(EpgProgress(totalProcessed, null, "Processing batch"))
+                        val batchSize = programs.size + channels.size
+                        totalProcessed += batchSize
+                        onProgress?.invoke(EpgProgress(totalProcessed, null, "Processing batch of $batchSize (Total: $totalProcessed)"))
                         programs.clear()
                         channels.clear()
                         delay(100) // Allow UI to update

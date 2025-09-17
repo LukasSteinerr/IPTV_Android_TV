@@ -96,19 +96,16 @@ class PlaylistService {
                 ) { programs, epgChannels ->
                     try {
                         ensureActive()
-                        if (programs.isNotEmpty()) {
+                        if (programs.isNotEmpty() || epgChannels.isNotEmpty()) {
                             ObjectBox.boxStore.runInTx {
-                                tvProgramBox.put(programs)
+                                if (programs.isNotEmpty()) {
+                                    tvProgramBox.put(programs)
+                                }
+                                if (epgChannels.isNotEmpty()) {
+                                    epgChannelInfoBox.put(epgChannels)
+                                }
                             }
-                            val message = "Stored ${programs.size} EPG programs."
-                            onProgress(message)
-                            Log.d("PlaylistService", message)
-                        }
-                        if (epgChannels.isNotEmpty()) {
-                            ObjectBox.boxStore.runInTx {
-                                epgChannelInfoBox.put(epgChannels)
-                            }
-                            val message = "Stored ${epgChannels.size} EPG channels."
+                            val message = "Stored ${programs.size} EPG programs and ${epgChannels.size} channels."
                             onProgress(message)
                             Log.d("PlaylistService", message)
                         }
