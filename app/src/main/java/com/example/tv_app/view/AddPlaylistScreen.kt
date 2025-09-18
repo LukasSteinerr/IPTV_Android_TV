@@ -208,7 +208,7 @@ fun AddPlaylistScreen(
 
         WaveWidget(
             modifier = Modifier.align(Alignment.BottomCenter),
-            yOffset = 615f,
+            yOffset = 715f,
             color = Color.Black.copy(alpha = 0.8f)
         )
     }
