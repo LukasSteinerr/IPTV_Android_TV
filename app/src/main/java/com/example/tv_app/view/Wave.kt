@@ -35,21 +35,26 @@ fun WaveWidget(
         )
     }
 
-    val waveSpeed = animationController.value * 1080
-    val fullSphere = animationController.value * Math.PI * 2
-    val normalizer = cos(fullSphere).toFloat()
-    val waveWidth = (Math.PI / 540).toFloat() // Decreased frequency
-    val waveHeight = 20.0f
+    val calculatedWavePoints by remember {
+        derivedStateOf {
+            val waveSpeed = animationController.value * 1080
+            val fullSphere = animationController.value * Math.PI * 2
+            val normalizer = cos(fullSphere).toFloat()
+            val waveWidth = (Math.PI / 540).toFloat() // Decreased frequency
+            val waveHeight = 20.0f
 
-    wavePoints.clear()
-    for (i in 0..size.width) {
-        val calc = sin((waveSpeed - i) * waveWidth)
-        wavePoints.add(
-            Offset(
-                i.toFloat(),
-                calc * waveHeight * normalizer + yOffset
-            )
-        )
+            val points = mutableListOf<Offset>()
+            for (i in 0..size.width) {
+                val calc = sin((waveSpeed - i) * waveWidth)
+                points.add(
+                    Offset(
+                        i.toFloat(),
+                        calc * waveHeight * normalizer + yOffset
+                    )
+                )
+            }
+            points
+        }
     }
 
     Canvas(
@@ -59,10 +64,10 @@ fun WaveWidget(
                 size = it
             }
     ) {
-        if (wavePoints.isNotEmpty()) {
+        if (calculatedWavePoints.isNotEmpty()) {
             val path = Path().apply {
-                moveTo(wavePoints.first().x, wavePoints.first().y)
-                for (point in wavePoints) {
+                moveTo(calculatedWavePoints.first().x, calculatedWavePoints.first().y)
+                for (point in calculatedWavePoints) {
                     lineTo(point.x, point.y)
                 }
                 lineTo(size.width.toFloat(), size.height.toFloat())
