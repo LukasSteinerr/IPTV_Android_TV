@@ -1,5 +1,6 @@
 package com.example.tv_app.repository
 
+import android.content.Context
 import android.util.Log
 import com.example.tv_app.model.ObjectBox
 import com.example.tv_app.model.Playlist
@@ -14,7 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.ensureActive
 
-class PlaylistService {
+class PlaylistService(private val context: Context) {
 
     private val playlistBox: Box<Playlist> = ObjectBox.boxStore.boxFor(Playlist::class.java)
     private val categoryBox: Box<Category> = ObjectBox.boxStore.boxFor(Category::class.java)
@@ -23,8 +24,8 @@ class PlaylistService {
     private val tvSeriesBox: Box<TvSeries> = ObjectBox.boxStore.boxFor(TvSeries::class.java)
     private val tvProgramBox: Box<TvProgram> = ObjectBox.boxStore.boxFor(TvProgram::class.java)
     private val epgChannelInfoBox: Box<EpgChannelInfo> = ObjectBox.boxStore.boxFor(EpgChannelInfo::class.java)
-    private val m3uService = M3uService()
-    private val xtreamService = XtreamService(EpgParserService())
+    private val m3uService = M3uService(context)
+    private val xtreamService = XtreamService(context, EpgParserService())
 
     suspend fun getAllPlaylists(): List<Playlist> {
         return withContext(Dispatchers.IO) {

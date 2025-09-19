@@ -34,7 +34,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                    AddPlaylistScreen(playlistService = PlaylistService(), onPlaylistAdded = {
+                    AddPlaylistScreen(playlistService = PlaylistService(applicationContext), onPlaylistAdded = {
                         // Handle playlist added event
                     })
                 }

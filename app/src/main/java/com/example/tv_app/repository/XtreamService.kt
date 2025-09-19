@@ -11,8 +11,102 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import android.content.Context
+import io.ktor.client.call.body
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+import java.io.File
 
-class XtreamService(private val epgParserService: EpgParserService) {
+@Serializable
+private data class CategoryDto(
+    @SerialName("category_id") val categoryId: String,
+    @SerialName("category_name") val categoryName: String
+)
+
+@Serializable
+private data class LiveStreamDto(
+    @SerialName("stream_id") val streamId: Int,
+    val name: String,
+    @SerialName("stream_icon") val streamIcon: String?,
+    @SerialName("epg_channel_id") val epgChannelId: String?,
+    @SerialName("category_id") val categoryId: String
+)
+
+@Serializable
+private data class MovieStreamDto(
+    @SerialName("stream_id") val streamId: Int,
+    val name: String,
+    @SerialName("stream_icon") val streamIcon: String?,
+    @SerialName("rating_5based") val rating5based: Double?,
+    val added: String?,
+    @SerialName("category_id") val categoryId: String,
+    @SerialName("container_extension") val containerExtension: String = "mp4"
+)
+
+@Serializable
+private data class SeriesStreamDto(
+    @SerialName("series_id") val seriesId: Int,
+    val name: String,
+    val cover: String?,
+    val releaseDate: String?,
+    val rating: String?,
+    @SerialName("category_id") val categoryId: String
+)
+
+@Serializable
+data class MovieInfoDto(
+    val info: MovieInfoDetailsDto?,
+    @SerialName("movie_data") val movieData: MovieDataDto?
+)
+
+@Serializable
+data class MovieInfoDetailsDto(
+    val plot: String?,
+    val releasedate: String?,
+    val duration: String?,
+    val rating: String?,
+    val trailer: String?
+)
+
+@Serializable
+data class MovieDataDto(
+    @SerialName("stream_id") val streamId: Int,
+    val name: String,
+    @SerialName("stream_icon") val streamIcon: String?,
+    @SerialName("container_extension") val containerExtension: String = "mp4"
+)
+
+@Serializable
+data class SeriesInfoDto(
+    val info: SeriesInfoDetailsDto?,
+    val episodes: Map<String, List<EpisodeDto>>? // Seasons are keys "1", "2", etc.
+)
+
+@Serializable
+data class SeriesInfoDetailsDto(
+    val name: String?,
+    @SerialName("cover_big") val coverBig: String?,
+    val plot: String?,
+    val releaseDate: String?,
+    val rating: String?
+)
+
+@Serializable
+data class EpisodeDto(
+    val id: String,
+    val title: String?,
+    @SerialName("container_extension") val containerExtension: String = "mp4",
+    @SerialName("season") val seasonNumber: Int = 1
+)
+
+enum class StreamStatus {
+    ONLINE, OFFLINE, MAYBE
+}
+
+class XtreamService(
+    private val context: Context,
+    private val epgParserService: EpgParserService
+) {
 
     private val client = HttpClient(CIO) {
         install(HttpTimeout) {
@@ -22,6 +116,10 @@ class XtreamService(private val epgParserService: EpgParserService) {
         }
     }
     private val json = Json { ignoreUnknownKeys = true }
+
+    private data class LiveDataResult(val channels: List<Channel>, val categories: List<Category>)
+    private data class MovieDataResult(val movies: List<Movie>, val categories: List<Category>)
+    private data class SeriesDataResult(val series: List<TvSeries>, val categories: List<Category>)
 
     suspend fun fetchXtreamData(playlist: Playlist, onProgress: (String) -> Unit): Map<String, List<Any>> {
         val baseUrl = getBaseUrl(playlist.url)
@@ -35,141 +133,190 @@ class XtreamService(private val epgParserService: EpgParserService) {
         onProgress("Fetching series data...")
         val seriesData = fetchSeriesData(baseUrl, username, password, playlist, onProgress)
 
-        val allCategories = (liveData["categories"] as List<Category>) +
-                (movieData["categories"] as List<Category>) +
-                (seriesData["categories"] as List<Category>)
+        val allCategories = liveData.categories + movieData.categories + seriesData.categories
 
         return mapOf(
-            "channels" to liveData["channels"]!!,
+            "channels" to liveData.channels,
             "categories" to allCategories,
-            "movies" to movieData["movies"]!!,
-            "series" to seriesData["series"]!!
+            "movies" to movieData.movies,
+            "series" to seriesData.series
         )
     }
 
-    private suspend fun fetchLiveData(baseUrl: String, user: String, pass: String, playlist: Playlist, onProgress: (String) -> Unit): Map<String, List<Any>> {
+    private suspend fun fetchLiveData(baseUrl: String, user: String, pass: String, playlist: Playlist, onProgress: (String) -> Unit): LiveDataResult {
         onProgress("Fetching live categories...")
-        val categories = fetchCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_live_categories", playlist, ContentType.liveTV)
+        val categories = fetchAndCache(
+            "live_categories_${playlist.id}.json",
+            "$baseUrl/player_api.php?username=$user&password=$pass&action=get_live_categories"
+        ) { dtos: List<CategoryDto> ->
+            dtos.map { dto ->
+                Category(name = dto.categoryName, contentType = ContentType.liveTV).apply {
+                    this.playlist.target = playlist
+                } to dto.categoryId
+            }
+        }.associate { it.second to it.first }
+
         onProgress("Found ${categories.size} live categories. Fetching channels...")
-        val channels = fetchLiveStreams("$baseUrl/player_api.php?username=$user&password=$pass&action=get_live_streams", baseUrl, user, pass, playlist, categories)
+        val channels = fetchAndCache(
+            "live_streams_${playlist.id}.json",
+            "$baseUrl/player_api.php?username=$user&password=$pass&action=get_live_streams"
+        ) { dtos: List<LiveStreamDto> ->
+            dtos.map { dto ->
+                Channel(
+                    name = dto.name,
+                    streamUrl = "$baseUrl/live/$user/$pass/${dto.streamId}.ts",
+                    logoUrl = dto.streamIcon,
+                    epgId = dto.epgChannelId
+                ).apply {
+                    this.playlist.target = playlist
+                    this.category.target = categories[dto.categoryId]
+                }
+            }
+        }
         onProgress("Found ${channels.size} live channels.")
-        return mapOf("channels" to channels, "categories" to categories.values.toList())
+        return LiveDataResult(channels, categories.values.toList())
     }
 
-    private suspend fun fetchMovieData(baseUrl: String, user: String, pass: String, playlist: Playlist, onProgress: (String) -> Unit): Map<String, List<Any>> {
+    private suspend fun fetchMovieData(baseUrl: String, user: String, pass: String, playlist: Playlist, onProgress: (String) -> Unit): MovieDataResult {
         onProgress("Fetching movie categories...")
-        val categories = fetchCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_vod_categories", playlist, ContentType.movie)
+        val categories = fetchAndCache(
+            "movie_categories_${playlist.id}.json",
+            "$baseUrl/player_api.php?username=$user&password=$pass&action=get_vod_categories"
+        ) { dtos: List<CategoryDto> ->
+            dtos.map { dto ->
+                Category(name = dto.categoryName, contentType = ContentType.movie).apply {
+                    this.playlist.target = playlist
+                } to dto.categoryId
+            }
+        }.associate { it.second to it.first }
+
         onProgress("Found ${categories.size} movie categories. Fetching movies...")
-        val movies = fetchMovieStreams("$baseUrl/player_api.php?username=$user&password=$pass&action=get_vod_streams", baseUrl, user, pass, playlist, categories)
+        val movies = fetchAndCache(
+            "movie_streams_${playlist.id}.json",
+            "$baseUrl/player_api.php?username=$user&password=$pass&action=get_vod_streams"
+        ) { dtos: List<MovieStreamDto> ->
+            dtos.map { dto ->
+                Movie(
+                    name = dto.name,
+                    streamUrl = "$baseUrl/movie/$user/$pass/${dto.streamId}.${dto.containerExtension}",
+                    coverUrl = dto.streamIcon,
+                    streamId = dto.streamId.toString(),
+                    added = dto.added,
+                    rating_5based = dto.rating5based
+                ).apply {
+                    this.playlist.target = playlist
+                    this.category.target = categories[dto.categoryId]
+                }
+            }
+        }
         onProgress("Found ${movies.size} movies.")
-        return mapOf("movies" to movies, "categories" to categories.values.toList())
+        return MovieDataResult(movies, categories.values.toList())
     }
 
-    private suspend fun fetchSeriesData(baseUrl: String, user: String, pass: String, playlist: Playlist, onProgress: (String) -> Unit): Map<String, List<Any>> {
+    private suspend fun fetchSeriesData(baseUrl: String, user: String, pass: String, playlist: Playlist, onProgress: (String) -> Unit): SeriesDataResult {
         onProgress("Fetching series categories...")
-        val categories = fetchCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_series_categories", playlist, ContentType.series)
+        val categories = fetchAndCache(
+            "series_categories_${playlist.id}.json",
+            "$baseUrl/player_api.php?username=$user&password=$pass&action=get_series_categories"
+        ) { dtos: List<CategoryDto> ->
+            dtos.map { dto ->
+                Category(name = dto.categoryName, contentType = ContentType.series).apply {
+                    this.playlist.target = playlist
+                } to dto.categoryId
+            }
+        }.associate { it.second to it.first }
+
         onProgress("Found ${categories.size} series categories. Fetching series...")
-        val series = fetchSeriesStreams("$baseUrl/player_api.php?username=$user&password=$pass&action=get_series", playlist, categories)
+        val series = fetchAndCache(
+            "series_streams_${playlist.id}.json",
+            "$baseUrl/player_api.php?username=$user&password=$pass&action=get_series"
+        ) { dtos: List<SeriesStreamDto> ->
+            dtos.map { dto ->
+                TvSeries(
+                    name = dto.name,
+                    coverUrl = dto.cover,
+                    seriesId = dto.seriesId.toString(),
+                    year = dto.releaseDate,
+                    rating = dto.rating
+                ).apply {
+                    this.playlist.target = playlist
+                    this.category.target = categories[dto.categoryId]
+                }
+            }
+        }
         onProgress("Found ${series.size} series.")
-        return mapOf("series" to series, "categories" to categories.values.toList())
+        return SeriesDataResult(series, categories.values.toList())
     }
 
-    private suspend fun fetchCategories(url: String, playlist: Playlist, contentType: Int): Map<String, Category> {
-        val response: HttpResponse = client.get(url)
-        val content = response.bodyAsText()
-        val jsonArray = Json.parseToJsonElement(content).jsonArray
-        val categories = mutableMapOf<String, Category>()
-        for (element in jsonArray) {
-            val categoryObject = element.jsonObject
-            val category = Category(
-                name = categoryObject["category_name"]!!.jsonPrimitive.content,
-                contentType = contentType
-            )
-            category.playlist.target = playlist
-            categories[categoryObject["category_id"]!!.jsonPrimitive.content] = category
-        }
-        return categories
-    }
-
-    private suspend fun fetchLiveStreams(url: String, baseUrl: String, user: String, pass: String, playlist: Playlist, categories: Map<String, Category>): List<Channel> {
-        val response: HttpResponse = client.get(url)
-        val content = response.bodyAsText()
-        val jsonArray = Json.parseToJsonElement(content).jsonArray
-        val channels = mutableListOf<Channel>()
-        for (element in jsonArray) {
-            val channelObject = element.jsonObject
-            val streamUrl = "$baseUrl/live/$user/$pass/${channelObject["stream_id"]!!.jsonPrimitive.content}.ts"
-            val channel = Channel(
-                name = channelObject["name"]!!.jsonPrimitive.content,
-                streamUrl = streamUrl,
-                logoUrl = channelObject["stream_icon"]?.jsonPrimitive?.content,
-                epgId = channelObject["epg_channel_id"]?.jsonPrimitive?.content
-            )
-            channel.playlist.target = playlist
-            val categoryId = channelObject["category_id"]?.jsonPrimitive?.content
-            if (categoryId != null && categories.containsKey(categoryId)) {
-                channel.category.target = categories[categoryId]
+    private suspend inline fun <reified D, M> fetchAndCache(
+        cacheFileName: String,
+        url: String,
+        crossinline mapper: (List<D>) -> List<M>
+    ): List<M> {
+        val cacheFile = File(context.cacheDir, cacheFileName)
+        try {
+            val response: HttpResponse = client.get(url)
+            val content = response.bodyAsText()
+            cacheFile.writeText(content) // Save fresh data to cache
+            val dtos = json.decodeFromString<List<D>>(content)
+            return mapper(dtos)
+        } catch (e: Exception) {
+            android.util.Log.w("XtreamService", "Failed to fetch from network, trying cache for $cacheFileName", e)
+            if (cacheFile.exists()) {
+                try {
+                    val content = cacheFile.readText()
+                    val dtos = json.decodeFromString<List<D>>(content)
+                    return mapper(dtos)
+                } catch (cacheEx: Exception) {
+                    android.util.Log.e("XtreamService", "Failed to read or parse cache file $cacheFileName", cacheEx)
+                }
             }
-            channels.add(channel)
         }
-        return channels
+        return emptyList()
     }
 
-    private suspend fun fetchMovieStreams(url: String, baseUrl: String, user: String, pass: String, playlist: Playlist, categories: Map<String, Category>): List<Movie> {
-        val response: HttpResponse = client.get(url)
-        val content = response.bodyAsText()
-        val jsonArray = Json.parseToJsonElement(content).jsonArray
-        val movies = mutableListOf<Movie>()
-        for (element in jsonArray) {
-            val movieObject = element.jsonObject
-            val containerExtension = movieObject["container_extension"]?.jsonPrimitive?.content ?: "mp4"
-            val streamUrl = "$baseUrl/movie/$user/$pass/${movieObject["stream_id"]!!.jsonPrimitive.content}.$containerExtension"
-            val movieInfo = movieObject["info"]?.jsonObject ?: movieObject
-            val movie = Movie(
-                name = movieObject["name"]!!.jsonPrimitive.content,
-                streamUrl = streamUrl,
-                coverUrl = movieObject["stream_icon"]?.jsonPrimitive?.content,
-                description = movieInfo["plot"]?.jsonPrimitive?.content,
-                year = movieInfo["releasedate"]?.jsonPrimitive?.content,
-                duration = movieInfo["duration"]?.jsonPrimitive?.content,
-                rating = movieInfo["rating"]?.jsonPrimitive?.content,
-                streamId = movieObject["stream_id"]!!.jsonPrimitive.content,
-                tmdbId = movieObject["tmdb"]?.jsonPrimitive?.content,
-                trailer = movieInfo["trailer"]?.jsonPrimitive?.content ?: movieObject["trailer"]?.jsonPrimitive?.content,
-                added = movieObject["added"]?.jsonPrimitive?.content,
-                rating_5based = movieInfo["rating_5based"]?.jsonPrimitive?.content?.toDoubleOrNull()
-            )
-            movie.playlist.target = playlist
-            val categoryId = movieObject["category_id"]?.jsonPrimitive?.content
-            if (categoryId != null && categories.containsKey(categoryId)) {
-                movie.category.target = categories[categoryId]
-            }
-            movies.add(movie)
+    suspend fun fetchMovieInfo(playlist: Playlist, vodId: String): MovieInfoDto? {
+        return try {
+            val baseUrl = getBaseUrl(playlist.url)
+            val url = "$baseUrl/player_api.php?username=${playlist.username}&password=${playlist.password}&action=get_vod_info&vod_id=$vodId"
+            val response: HttpResponse = client.get(url)
+            response.body<MovieInfoDto>()
+        } catch (e: Exception) {
+            android.util.Log.e("XtreamService", "Failed to fetch movie info for VOD ID $vodId", e)
+            null
         }
-        return movies
     }
 
-    private suspend fun fetchSeriesStreams(url: String, playlist: Playlist, categories: Map<String, Category>): List<TvSeries> {
-        val response: HttpResponse = client.get(url)
-        val content = response.bodyAsText()
-        val jsonArray = Json.parseToJsonElement(content).jsonArray
-        val seriesList = mutableListOf<TvSeries>()
-        for (element in jsonArray) {
-            val seriesObject = element.jsonObject
-            val series = TvSeries(
-                name = seriesObject["name"]!!.jsonPrimitive.content,
-                coverUrl = seriesObject["cover"]?.jsonPrimitive?.content,
-                seriesId = seriesObject["series_id"]!!.jsonPrimitive.content,
-                tmdbId = seriesObject["tmdb"]?.jsonPrimitive?.content
-            )
-            series.playlist.target = playlist
-            val categoryId = seriesObject["category_id"]?.jsonPrimitive?.content
-            if (categoryId != null && categories.containsKey(categoryId)) {
-                series.category.target = categories[categoryId]
-            }
-            seriesList.add(series)
+    suspend fun fetchSeriesInfo(playlist: Playlist, seriesId: String): SeriesInfoDto? {
+        return try {
+            val baseUrl = getBaseUrl(playlist.url)
+            val url = "$baseUrl/player_api.php?username=${playlist.username}&password=${playlist.password}&action=get_series_info&series_id=$seriesId"
+            val response: HttpResponse = client.get(url)
+            response.body<SeriesInfoDto>()
+        } catch (e: Exception) {
+            android.util.Log.e("XtreamService", "Failed to fetch series info for series ID $seriesId", e)
+            null
         }
-        return seriesList
+    }
+
+    suspend fun checkStreamStatus(streamUrl: String): StreamStatus {
+        return try {
+            val response: HttpResponse = client.get(streamUrl) {
+                timeout { requestTimeoutMillis = 7000 } // Use a short timeout
+            }
+            val content = response.bodyAsText()
+
+            when {
+                response.status.value != 200 -> StreamStatus.OFFLINE
+                "offline" in content -> StreamStatus.OFFLINE
+                "EXT-X-ENDLIST" in content -> StreamStatus.OFFLINE
+                "#EXT-X-MEDIA-SEQUENCE:0" in content && "_1.ts" !in content -> StreamStatus.MAYBE
+                else -> StreamStatus.ONLINE
+            }
+        } catch (e: Exception) {
+            android.util.Log.d("XtreamService", "Stream check failed for $streamUrl: ${e.message}")
+            StreamStatus.OFFLINE
+        }
     }
 
     internal fun getBaseUrl(url: String): String {

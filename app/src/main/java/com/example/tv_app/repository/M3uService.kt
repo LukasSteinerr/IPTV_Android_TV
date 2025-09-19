@@ -1,5 +1,6 @@
 package com.example.tv_app.repository
 
+import android.content.Context
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.model.Channel
 import com.example.tv_app.model.Category
@@ -10,7 +11,7 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import java.nio.charset.Charset
 
-class M3uService {
+class M3uService(private val context: Context) {
 
     private val client = HttpClient(CIO)
 
