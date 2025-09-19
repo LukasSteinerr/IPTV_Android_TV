@@ -53,7 +53,15 @@ fun AddPlaylistScreen(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF121212)) // Darker background
+            .background(
+                androidx.compose.ui.graphics.Brush.radialGradient(
+                    colors = listOf(
+                        Color(0xFF1A1F2E),
+                        Color(0xFF0F1419)
+                    ),
+                    radius = 1200f
+                )
+            )
     ) {
         val title = when (currentStep) {
             1 -> "Playlist Type"
@@ -152,33 +160,105 @@ fun SidePanel(
     title: String,
     description: String
 ) {
-    Box(modifier = Modifier
-        .fillMaxHeight()
-        .fillMaxWidth(0.4f)
-        .background(Color(0xFF1E1E1E))
+    Box(
+        modifier = Modifier
+            .fillMaxHeight()
+            .fillMaxWidth(0.4f)
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF0F1419),
+                        Color(0xFF1A1F2E)
+                    )
+                )
+            )
     ) {
-        WaveWidget(yOffset = 300f, color = Color.DarkGray.copy(alpha = 0.3f))
-        WaveWidget(yOffset = 350f, color = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
+        // Subtle accent line
+        Box(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(4.dp)
+                .background(TvMaterialTheme.colorScheme.primary)
+        )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(48.dp),
-            verticalArrangement = Arrangement.Center
+                .padding(horizontal = 48.dp, vertical = 64.dp),
+            verticalArrangement = Arrangement.Top
         ) {
+            // Step progress indicator
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(bottom = 32.dp)
+            ) {
+                repeat(3) { index ->
+                    Box(
+                        modifier = Modifier
+                            .size(12.dp)
+                            .background(
+                                color = if (index < step) TvMaterialTheme.colorScheme.primary 
+                                       else Color.White.copy(alpha = 0.3f),
+                                shape = androidx.compose.foundation.shape.CircleShape
+                            )
+                    )
+                    if (index < 2) {
+                        Box(
+                            modifier = Modifier
+                                .width(24.dp)
+                                .height(2.dp)
+                                .background(
+                                    color = if (index < step - 1) TvMaterialTheme.colorScheme.primary 
+                                           else Color.White.copy(alpha = 0.3f)
+                                )
+                        )
+                    }
+                }
+            }
+
             StepIndicator(currentStep = step, totalSteps = 3)
-            Spacer(modifier = Modifier.height(16.dp))
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
             Text(
                 text = title,
                 color = Color.White,
-                style = TvMaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold)
+                style = TvMaterialTheme.typography.displaySmall.copy(
+                    fontWeight = FontWeight.Bold,
+                    lineHeight = TvMaterialTheme.typography.displaySmall.lineHeight * 1.1
+                )
             )
+            
             Spacer(modifier = Modifier.height(16.dp))
+            
             Text(
                 text = description,
                 color = Color.White.copy(alpha = 0.8f),
-                style = TvMaterialTheme.typography.bodyLarge
+                style = TvMaterialTheme.typography.bodyLarge.copy(
+                    lineHeight = TvMaterialTheme.typography.bodyLarge.lineHeight * 1.4
+                )
             )
+
+            Spacer(modifier = Modifier.weight(1f))
+
+            // Step hints for better UX
+            when (step) {
+                1 -> Text(
+                    text = "💡 Use D-pad to navigate between options",
+                    color = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                    style = TvMaterialTheme.typography.bodySmall
+                )
+                2 -> Text(
+                    text = "💡 Make sure your credentials are correct",
+                    color = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                    style = TvMaterialTheme.typography.bodySmall
+                )
+                3 -> Text(
+                    text = "💡 You can rename your playlist anytime",
+                    color = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                    style = TvMaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
 }
@@ -192,40 +272,146 @@ fun Step1_ChoosePlaylistType(
 ) {
     var selectedType by remember { mutableStateOf<Int?>(null) }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 48.dp, vertical = 64.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 64.dp, vertical = 80.dp)
     ) {
-        TvButton(
-            text = "M3U Playlist",
-            onClick = {
-                selectedType = PlaylistTypeConstants.m3u
-                onTypeSelected(PlaylistTypeConstants.m3u)
-            },
-            modifier = Modifier.focusRequester(focusRequester),
-            isSelected = selectedType == PlaylistTypeConstants.m3u
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        TvButton(
-            text = "Xtream Codes",
-            onClick = {
-                selectedType = PlaylistTypeConstants.xtream
-                onTypeSelected(PlaylistTypeConstants.xtream)
-            },
-            isSelected = selectedType == PlaylistTypeConstants.xtream
-        )
-        Spacer(modifier = Modifier.height(24.dp))
-        TvButton(
-            text = "Stalker Portal",
-            onClick = { /* Handle Stalker Portal */ },
-            enabled = false,
-            isSelected = false
-        )
-        Spacer(modifier = Modifier.height(48.dp))
-        TvButton("Cancel", onClick = onCancel, isSecondary = true)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 0.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            // Title for this step
+            Text(
+                text = "Choose Your Playlist Type",
+                color = Color.White,
+                style = TvMaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Medium),
+                modifier = Modifier.padding(bottom = 48.dp)
+            )
+
+            // Primary options with descriptions
+            PlaylistOptionCard(
+                title = "M3U Playlist",
+                description = "Standard M3U file format",
+                isSelected = selectedType == PlaylistTypeConstants.m3u,
+                onClick = {
+                    selectedType = PlaylistTypeConstants.m3u
+                    onTypeSelected(PlaylistTypeConstants.m3u)
+                },
+                modifier = Modifier.focusRequester(focusRequester)
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            PlaylistOptionCard(
+                title = "Xtream Codes",
+                description = "Server with username & password",
+                isSelected = selectedType == PlaylistTypeConstants.xtream,
+                onClick = {
+                    selectedType = PlaylistTypeConstants.xtream
+                    onTypeSelected(PlaylistTypeConstants.xtream)
+                }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            PlaylistOptionCard(
+                title = "Stalker Portal",
+                description = "Coming soon",
+                isSelected = false,
+                onClick = { /* Handle Stalker Portal */ },
+                enabled = false
+            )
+            Spacer(modifier = Modifier.weight(1f))
+        }
+
+        // Cancel button at the bottom
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp),
+            horizontalArrangement = Arrangement.Center
+        ) {
+            TvButton("Cancel", onClick = onCancel, isSecondary = true)
+        }
+    }
+}
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+fun PlaylistOptionCard(
+    title: String,
+    description: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    androidx.tv.material3.Card(
+        onClick = onClick,
+        modifier = modifier
+            .width(400.dp)
+            .height(80.dp),
+        colors = androidx.tv.material3.CardDefaults.colors(
+            containerColor = if (isSelected) TvMaterialTheme.colorScheme.primary 
+                           else Color.Transparent,
+            contentColor = if (isSelected) Color.Black 
+                          else Color.White,
+            focusedContainerColor = if (isSelected) TvMaterialTheme.colorScheme.primary.copy(alpha = 0.8f)
+                                   else TvMaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+            focusedContentColor = if (isSelected) Color.Black else Color.White
+        ),
+        border = androidx.tv.material3.CardDefaults.border(
+            border = androidx.tv.material3.Border(
+                border = BorderStroke(
+                    width = 2.dp,
+                    color = if (enabled) Color.White.copy(alpha = 0.3f) 
+                           else Color.Gray.copy(alpha = 0.2f)
+                )
+            ),
+            focusedBorder = androidx.tv.material3.Border(
+                border = BorderStroke(
+                    width = 3.dp,
+                    color = TvMaterialTheme.colorScheme.primary
+                )
+            )
+        ),
+        shape = androidx.tv.material3.CardDefaults.shape(RoundedCornerShape(12.dp))
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = title,
+                        style = TvMaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        color = if (isSelected) Color.Black else Color.White
+                    )
+                    Text(
+                        text = description,
+                        style = TvMaterialTheme.typography.bodyMedium,
+                        color = if (isSelected) Color.Black.copy(alpha = 0.8f)
+                               else Color.White.copy(alpha = 0.7f)
+                    )
+                }
+                if (isSelected) {
+                    Text(
+                        text = "✓",
+                        style = TvMaterialTheme.typography.headlineSmall,
+                        color = Color.Black
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -242,29 +428,56 @@ fun Step2_EnterDetails(
     onBack: () -> Unit,
     focusRequester: FocusRequester
 ) {
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 48.dp, vertical = 64.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 64.dp, vertical = 80.dp)
     ) {
-        TvTextField(value = url, onValueChange = onUrlChange, label = "Server Address (URL)", modifier = Modifier.focusRequester(focusRequester))
-        if (playlistType == PlaylistTypeConstants.xtream) {
-            Spacer(modifier = Modifier.height(24.dp))
-            TvTextField(value = username, onValueChange = onUsernameChange, label = "Username")
-            Spacer(modifier = Modifier.height(24.dp))
-            TvTextField(value = password, onValueChange = onPasswordChange, label = "Password")
+        // Main content area
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 0.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = if (playlistType == PlaylistTypeConstants.xtream) "Enter Server Details" else "Enter Playlist URL",
+                color = Color.White,
+                style = TvMaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Medium),
+                modifier = Modifier.padding(bottom = 48.dp)
+            )
+
+            TvTextField(
+                value = url,
+                onValueChange = onUrlChange,
+                label = if (playlistType == PlaylistTypeConstants.xtream) "Server Address" else "Playlist URL",
+                modifier = Modifier.focusRequester(focusRequester)
+            )
+
+            if (playlistType == PlaylistTypeConstants.xtream) {
+                Spacer(modifier = Modifier.height(32.dp))
+                TvTextField(value = username, onValueChange = onUsernameChange, label = "Username")
+                Spacer(modifier = Modifier.height(32.dp))
+                TvTextField(value = password, onValueChange = onPasswordChange, label = "Password")
+            }
+            Spacer(modifier = Modifier.weight(1f))
         }
-        Spacer(modifier = Modifier.height(48.dp))
-        Row {
+
+        // Navigation buttons at the bottom
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = -6.dp, end = -6.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             TvButton("Back", onClick = onBack, isSecondary = true)
             Spacer(modifier = Modifier.width(24.dp))
-            TvButton("Next", onClick = onNext)
+            TvButton("Next", onClick = onNext, enabled = url.isNotBlank())
         }
     }
 }
-
 @Composable
 fun Step3_Processing(
     playlistName: String,
@@ -283,50 +496,102 @@ fun Step3_Processing(
         onAddPlaylist()
     }
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 48.dp, vertical = 64.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+            .padding(horizontal = 64.dp, vertical = 80.dp)
     ) {
-        TvTextField(
-            value = playlistName,
-            onValueChange = onPlaylistNameChange,
-            label = "Playlist Name (Optional)",
-            modifier = Modifier.focusRequester(focusRequester)
-        )
-        Spacer(modifier = Modifier.height(32.dp))
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(bottom = 0.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Final Setup",
+                color = Color.White,
+                style = TvMaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Medium),
+                modifier = Modifier.padding(bottom = 48.dp)
+            )
 
-        Box(modifier = Modifier.height(120.dp), contentAlignment = Alignment.Center) {
-            if (isLoading) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = TvMaterialTheme.colorScheme.primary)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(loadingMessage, color = Color.White)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    TvButton("Cancel", onClick = onCancelOperation, isSecondary = true)
+            TvTextField(
+                value = playlistName,
+                onValueChange = onPlaylistNameChange,
+                label = "Playlist Name (Optional)",
+                modifier = Modifier.focusRequester(focusRequester)
+            )
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            Box(modifier = Modifier.height(160.dp), contentAlignment = Alignment.Center) {
+                if (isLoading) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(
+                            color = TvMaterialTheme.colorScheme.primary,
+                            strokeWidth = 4.dp,
+                            modifier = Modifier.size(48.dp)
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            text = loadingMessage,
+                            color = Color.White,
+                            style = TvMaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        TvButton("Cancel", onClick = onCancelOperation, isSecondary = true)
+                    }
+                } else if (errorMessage.isNotEmpty()) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "❌ Error",
+                            color = TvMaterialTheme.colorScheme.error,
+                            style = TvMaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        Text(
+                            text = errorMessage,
+                            color = TvMaterialTheme.colorScheme.error,
+                            textAlign = TextAlign.Center,
+                            style = TvMaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        TvButton("Try Again", onClick = onClearError)
+                    }
+                } else {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "✅ Success!",
+                            color = Color(0xFF4CAF50),
+                            style = TvMaterialTheme.typography.headlineSmall,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        Text(
+                            text = "Your playlist has been added successfully",
+                            color = Color.White.copy(alpha = 0.8f),
+                            style = TvMaterialTheme.typography.bodyLarge,
+                            textAlign = TextAlign.Center
+                        )
+                    }
                 }
-            } else if (errorMessage.isNotEmpty()) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("Error: $errorMessage", color = TvMaterialTheme.colorScheme.error, textAlign = TextAlign.Center)
-                    Spacer(modifier = Modifier.height(16.dp))
-                    TvButton("Dismiss", onClick = onClearError)
-                }
-            } else {
-                Text("Processing Complete!", color = Color.Green, style = TvMaterialTheme.typography.titleLarge)
             }
+            Spacer(modifier = Modifier.weight(1f))
         }
 
-        Spacer(modifier = Modifier.height(32.dp))
-        Row {
+        Row(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(bottom = 16.dp, end = 16.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             TvButton("Back", onClick = onBack, enabled = !isLoading, isSecondary = true)
             Spacer(modifier = Modifier.width(24.dp))
-            TvButton("Done", onClick = onDone, enabled = !isLoading)
+            TvButton("Done", onClick = onDone, enabled = !isLoading && errorMessage.isEmpty())
         }
     }
 }
-
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvButton(
@@ -337,51 +602,40 @@ fun TvButton(
     isSecondary: Boolean = false,
     isSelected: Boolean = false
 ) {
-    val buttonColors = when {
-        isSelected -> ButtonDefaults.colors(
-            containerColor = Color.White,
+    val buttonColors = if (isSecondary) {
+        ButtonDefaults.colors(
+            containerColor = Color.Transparent,
+            contentColor = Color.White.copy(alpha = 0.7f),
+            focusedContainerColor = Color.White.copy(alpha = 0.1f),
+            focusedContentColor = Color.White
+        )
+    } else {
+        ButtonDefaults.colors(
+            containerColor = TvMaterialTheme.colorScheme.primary,
             contentColor = Color.Black,
-            focusedContainerColor = Color.White.copy(alpha = 0.8f),
+            focusedContainerColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
             focusedContentColor = Color.Black
-        )
-        isSecondary -> ButtonDefaults.colors(
-            containerColor = Color.Transparent,
-            contentColor = TvMaterialTheme.colorScheme.onSurface,
-            focusedContainerColor = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-            focusedContentColor = TvMaterialTheme.colorScheme.onSurface
-        )
-        else -> ButtonDefaults.colors(
-            containerColor = Color.Transparent,
-            contentColor = TvMaterialTheme.colorScheme.onSurface,
-            focusedContainerColor = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-            focusedContentColor = TvMaterialTheme.colorScheme.onSurface
         )
     }
 
     Button(
         onClick = onClick,
         modifier = modifier
-            .width(280.dp)
-            .height(56.dp),
+            .width(180.dp)
+            .height(50.dp),
         enabled = enabled,
-        shape = ButtonDefaults.shape(shape = RoundedCornerShape(8.dp)),
+        shape = ButtonDefaults.shape(shape = RoundedCornerShape(12.dp)),
         colors = buttonColors,
-        border = if (isSecondary) ButtonDefaults.border(
-            border = Border(
-                border = BorderStroke(
-                    width = 1.dp,
-                    color = TvMaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
-                )
-            ),
-            focusedBorder = Border(
-                border = BorderStroke(
-                    width = 1.dp,
-                    color = TvMaterialTheme.colorScheme.onSurface
-                )
-            )
-        ) else ButtonDefaults.border()
+        border = ButtonDefaults.border(
+            border = Border(BorderStroke(0.dp, Color.Transparent)),
+            focusedBorder = Border(BorderStroke(0.dp, Color.Transparent))
+        ),
+        scale = ButtonDefaults.scale(focusedScale = 1.05f)
     ) {
-        Text(text = text, style = TvMaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold))
+        Text(
+            text = text,
+            style = TvMaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
+        )
     }
 }
 
@@ -396,17 +650,25 @@ fun TvTextField(
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = modifier.width(400.dp),
-        shape = RoundedCornerShape(8.dp),
+        label = { 
+            Text(
+                text = label,
+                style = TvMaterialTheme.typography.bodyLarge
+            ) 
+        },
+        modifier = modifier.width(480.dp),
+        shape = RoundedCornerShape(12.dp),
+        textStyle = TvMaterialTheme.typography.bodyLarge,
         colors = TextFieldDefaults.colors(
             focusedTextColor = Color.White,
             unfocusedTextColor = Color.White,
             cursorColor = TvMaterialTheme.colorScheme.primary,
             focusedIndicatorColor = TvMaterialTheme.colorScheme.primary,
-            unfocusedIndicatorColor = Color.Gray,
+            unfocusedIndicatorColor = Color.White.copy(alpha = 0.5f),
             focusedLabelColor = TvMaterialTheme.colorScheme.primary,
-            unfocusedLabelColor = Color.Gray
+            unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
+            focusedContainerColor = Color.Black.copy(alpha = 0.3f),
+            unfocusedContainerColor = Color.Black.copy(alpha = 0.2f)
         ),
         singleLine = true
     )
