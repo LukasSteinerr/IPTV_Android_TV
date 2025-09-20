@@ -74,15 +74,22 @@ fun AddPlaylistScreen(
             else -> "We are checking your playlist details. This may take a moment."
         }
 
-        SidePanel(
-            step = currentStep,
-            title = title,
-            description = description
-        )
+        AnimatedVisibility(
+            visible = true,
+            modifier = Modifier.weight(0.8f),
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            SidePanel(
+                step = currentStep,
+                title = title,
+                description = description
+            )
+        }
 
         AnimatedContent(
             targetState = currentStep,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1.2f),
             transitionSpec = {
                 if (targetState > initialState) {
                     slideInHorizontally(initialOffsetX = { it }) + fadeIn() togetherWith
@@ -138,10 +145,6 @@ fun AddPlaylistScreen(
                 )
             }
         }
-
-        LaunchedEffect(currentStep) {
-            initialFocusRequester.requestFocus()
-        }
     }
 }
 
@@ -160,7 +163,7 @@ fun SidePanel(
     title: String,
     description: String
 ) {
-    Box(
+    Row(
         modifier = Modifier
             .fillMaxHeight()
             .fillMaxWidth(0.4f)
@@ -183,7 +186,7 @@ fun SidePanel(
 
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
                 .padding(horizontal = 48.dp, vertical = 64.dp),
             verticalArrangement = Arrangement.Top
         ) {
@@ -248,11 +251,9 @@ fun SidePanel(
                     color = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
                     style = TvMaterialTheme.typography.bodySmall
                 )
-                2 -> Text(
-                    text = "💡 Make sure your credentials are correct",
-                    color = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
-                    style = TvMaterialTheme.typography.bodySmall
-                )
+                2 -> {
+                    // This previously showed a hint about credentials.
+                }
                 3 -> Text(
                     text = "💡 You can rename your playlist anytime",
                     color = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
@@ -263,7 +264,6 @@ fun SidePanel(
     }
 }
 
-
 @Composable
 fun Step1_ChoosePlaylistType(
     onTypeSelected: (Int) -> Unit,
@@ -272,15 +272,16 @@ fun Step1_ChoosePlaylistType(
 ) {
     var selectedType by remember { mutableStateOf<Int?>(null) }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 64.dp, vertical = 80.dp)
+            .padding(horizontal = 64.dp, vertical = 40.dp)
     ) {
+        // Content area that takes most of the space
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 0.dp),
+                .weight(1f)
+                .fillMaxWidth(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -325,20 +326,20 @@ fun Step1_ChoosePlaylistType(
                 onClick = { /* Handle Stalker Portal */ },
                 enabled = false
             )
-            Spacer(modifier = Modifier.weight(1f))
         }
 
-        // Cancel button at the bottom
+        // Buttons fixed at bottom
         Row(
             modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 16.dp),
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.Center
         ) {
             TvButton("Cancel", onClick = onCancel, isSecondary = true)
         }
     }
 }
+
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun PlaylistOptionCard(
@@ -428,16 +429,20 @@ fun Step2_EnterDetails(
     onBack: () -> Unit,
     focusRequester: FocusRequester
 ) {
-    Box(
+    LaunchedEffect(Unit) {
+        focusRequester.requestFocus()
+    }
+
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 64.dp, vertical = 80.dp)
+            .padding(horizontal = 64.dp, vertical = 40.dp)
     ) {
-        // Main content area
+        // Content area that takes most of the space
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 0.dp),
+                .weight(1f)
+                .fillMaxWidth(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -461,14 +466,13 @@ fun Step2_EnterDetails(
                 Spacer(modifier = Modifier.height(32.dp))
                 TvTextField(value = password, onValueChange = onPasswordChange, label = "Password")
             }
-            Spacer(modifier = Modifier.weight(1f))
         }
 
-        // Navigation buttons at the bottom
+        // Buttons fixed at bottom with proper spacing
         Row(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(bottom = -6.dp, end = -6.dp),
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -478,6 +482,7 @@ fun Step2_EnterDetails(
         }
     }
 }
+
 @Composable
 fun Step3_Processing(
     playlistName: String,
@@ -496,15 +501,16 @@ fun Step3_Processing(
         onAddPlaylist()
     }
 
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 64.dp, vertical = 80.dp)
+            .padding(horizontal = 64.dp, vertical = 40.dp)
     ) {
+        // Content area that takes most of the space
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 0.dp),
+                .weight(1f)
+                .fillMaxWidth(),
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -576,13 +582,13 @@ fun Step3_Processing(
                     }
                 }
             }
-            Spacer(modifier = Modifier.weight(1f))
         }
 
+        // Buttons fixed at bottom
         Row(
             modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(bottom = 16.dp, end = 16.dp),
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -592,6 +598,7 @@ fun Step3_Processing(
         }
     }
 }
+
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvButton(
@@ -599,8 +606,7 @@ fun TvButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    isSecondary: Boolean = false,
-    isSelected: Boolean = false
+    isSecondary: Boolean = false
 ) {
     val buttonColors = if (isSecondary) {
         ButtonDefaults.colors(
