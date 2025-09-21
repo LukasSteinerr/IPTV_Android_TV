@@ -73,7 +73,7 @@ fun AddPlaylistScreen(
             1 -> "Select the type of playlist you want to add."
             2 -> "Give your playlist a memorable name."
             3 -> if (playlistType == PlaylistTypeConstants.xtream) "Enter your server address, username, and password." else "Enter the URL for your M3U playlist."
-            else -> "We are checking your playlist details. This may take a moment."
+            else -> "Do not turn off your device during processing."
         }
 
         AnimatedVisibility(
@@ -147,7 +147,6 @@ fun AddPlaylistScreen(
                     },
                     onDone = onPlaylistAdded,
                     onBack = { currentStep = 3 },
-                    onCancelOperation = { playlistViewModel.cancelOperation() },
                     onClearError = { playlistViewModel.clearError() },
                     focusRequester = initialFocusRequester
                 )
@@ -558,7 +557,6 @@ fun Step4_Processing(
     onAddPlaylist: () -> Unit,
     onDone: () -> Unit,
     onBack: () -> Unit,
-    onCancelOperation: () -> Unit,
     onClearError: () -> Unit,
     focusRequester: FocusRequester
 ) {
@@ -595,7 +593,6 @@ fun Step4_Processing(
                             textAlign = TextAlign.Center
                         )
                         Spacer(modifier = Modifier.height(24.dp))
-                        TvButton("Cancel", onClick = onCancelOperation, isSecondary = true)
                     }
                 } else if (errorMessage.isNotEmpty()) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {

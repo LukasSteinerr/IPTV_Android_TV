@@ -8,7 +8,6 @@ import com.example.tv_app.model.Playlist
 import com.example.tv_app.repository.PlaylistService
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.CancellationException
 
 class PlaylistViewModel(private val playlistService: PlaylistService) : ViewModel() {
 
@@ -25,7 +24,6 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
     private var currentJob: Job? = null
 
     fun addPlaylist(playlist: Playlist) {
-        currentJob?.cancel()
         currentJob = viewModelScope.launch {
             try {
                 isLoading.value = true
@@ -40,9 +38,6 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
                 loadingMessage.value = "Playlist added successfully!"
                 Log.d("PlaylistViewModel", "Successfully added playlist: ${playlist.name}")
 
-            } catch (e: CancellationException) {
-                Log.d("PlaylistViewModel", "Playlist addition cancelled")
-                loadingMessage.value = "Operation cancelled"
             } catch (e: Exception) {
                 Log.e("PlaylistViewModel", "Error adding playlist", e)
                 errorMessage.value = "Failed to add playlist: ${e.message}"
@@ -54,7 +49,6 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
     }
 
     fun clearDatabase() {
-        currentJob?.cancel()
         
         currentJob = viewModelScope.launch {
             try {
@@ -68,9 +62,6 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
                 loadingMessage.value = "Database cleared successfully!"
                 Log.d("PlaylistViewModel", "Successfully cleared database")
                 
-            } catch (e: CancellationException) {
-                Log.d("PlaylistViewModel", "Database clear cancelled")
-                loadingMessage.value = "Operation cancelled"
             } catch (e: Exception) {
                 Log.e("PlaylistViewModel", "Error clearing database", e)
                 errorMessage.value = "Failed to clear database: ${e.message}"
@@ -81,12 +72,6 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
         }
     }
     
-    fun cancelOperation() {
-        currentJob?.cancel()
-        isLoading.value = false
-        loadingMessage.value = "Operation cancelled"
-        Log.d("PlaylistViewModel", "Operation cancelled by user")
-    }
     
     fun clearError() {
         errorMessage.value = ""
