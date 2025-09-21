@@ -457,7 +457,11 @@ fun Step2_EnterDetails(
                 value = url,
                 onValueChange = onUrlChange,
                 label = if (playlistType == PlaylistTypeConstants.xtream) "Server Address" else "Playlist URL",
-                modifier = Modifier.focusRequester(focusRequester)
+                modifier = Modifier.focusRequester(focusRequester),
+                isError = url.isNotBlank() && !isValidUrl(url, playlistType),
+                errorMessage = if (url.isNotBlank() && !isValidUrl(url, playlistType)) {
+                    if (playlistType == PlaylistTypeConstants.xtream) "Invalid server address format" else "Invalid URL format"
+                } else null
             )
 
             if (playlistType == PlaylistTypeConstants.xtream) {
@@ -478,7 +482,7 @@ fun Step2_EnterDetails(
         ) {
             TvButton("Back", onClick = onBack, isSecondary = true)
             Spacer(modifier = Modifier.width(24.dp))
-            TvButton("Next", onClick = onNext, enabled = url.isNotBlank())
+            TvButton("Next", onClick = onNext, enabled = url.isNotBlank() && isValidUrl(url, playlistType))
         }
     }
 }
@@ -645,39 +649,81 @@ fun TvButton(
     }
 }
 
+// URL validation function
+private fun isValidUrl(url: String, playlistType: Int): Boolean {
+    if (url.isBlank()) return false
+    
+    return try {
+        val uri = java.net.URI(url)
+        when (playlistType) {
+            PlaylistTypeConstants.m3u -> {
+                // For M3U, accept http/https URLs ending with .m3u or .m3u8
+                (uri.scheme == "http" || uri.scheme == "https") &&
+                uri.host != null &&
+                (url.endsWith(".m3u", ignoreCase = true) || url.endsWith(".m3u8", ignoreCase = true) || 
+                 url.contains("m3u", ignoreCase = true))
+            }
+            PlaylistTypeConstants.xtream -> {
+                // For Xtream, accept http/https URLs with valid host
+                (uri.scheme == "http" || uri.scheme == "https") && uri.host != null
+            }
+            else -> false
+        }
+    } catch (e: Exception) {
+        false
+    }
+}
+
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TvTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+    errorMessage: String? = null
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { 
+    Column {
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            label = { 
+                Text(
+                    text = label,
+                    style = TvMaterialTheme.typography.bodyLarge
+                ) 
+            },
+            modifier = modifier.width(480.dp),
+            shape = RoundedCornerShape(12.dp),
+            textStyle = TvMaterialTheme.typography.bodyLarge,
+            isError = isError,
+            colors = TextFieldDefaults.colors(
+                focusedTextColor = Color.White,
+                unfocusedTextColor = Color.White,
+                cursorColor = TvMaterialTheme.colorScheme.primary,
+                focusedIndicatorColor = if (isError) TvMaterialTheme.colorScheme.error else TvMaterialTheme.colorScheme.primary,
+                unfocusedIndicatorColor = if (isError) TvMaterialTheme.colorScheme.error else Color.White.copy(alpha = 0.5f),
+                focusedLabelColor = if (isError) TvMaterialTheme.colorScheme.error else TvMaterialTheme.colorScheme.primary,
+                unfocusedLabelColor = if (isError) TvMaterialTheme.colorScheme.error else Color.White.copy(alpha = 0.7f),
+                focusedContainerColor = Color.Black.copy(alpha = 0.3f),
+                unfocusedContainerColor = Color.Black.copy(alpha = 0.2f),
+                errorIndicatorColor = TvMaterialTheme.colorScheme.error,
+                errorLabelColor = TvMaterialTheme.colorScheme.error,
+                errorTextColor = Color.White
+            ),
+            singleLine = true
+        )
+        
+        if (isError && errorMessage != null) {
             Text(
-                text = label,
-                style = TvMaterialTheme.typography.bodyLarge
-            ) 
-        },
-        modifier = modifier.width(480.dp),
-        shape = RoundedCornerShape(12.dp),
-        textStyle = TvMaterialTheme.typography.bodyLarge,
-        colors = TextFieldDefaults.colors(
-            focusedTextColor = Color.White,
-            unfocusedTextColor = Color.White,
-            cursorColor = TvMaterialTheme.colorScheme.primary,
-            focusedIndicatorColor = TvMaterialTheme.colorScheme.primary,
-            unfocusedIndicatorColor = Color.White.copy(alpha = 0.5f),
-            focusedLabelColor = TvMaterialTheme.colorScheme.primary,
-            unfocusedLabelColor = Color.White.copy(alpha = 0.7f),
-            focusedContainerColor = Color.Black.copy(alpha = 0.3f),
-            unfocusedContainerColor = Color.Black.copy(alpha = 0.2f)
-        ),
-        singleLine = true
-    )
+                text = errorMessage,
+                color = TvMaterialTheme.colorScheme.error,
+                style = TvMaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+            )
+        }
+    }
 }
 
 @Preview(device = "id:tv_1080p")

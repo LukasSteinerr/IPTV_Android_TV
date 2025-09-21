@@ -44,9 +44,9 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
                 Log.d("PlaylistViewModel", "Playlist addition cancelled")
                 loadingMessage.value = "Operation cancelled"
             } catch (e: Exception) {
-                Log.e("PlaylistViewModel", "Error adding playlist", e)
-                errorMessage.value = "Failed to add playlist: ${e.message}"
-                loadingMessage.value = "Error: ${e.message}"
+                Log.e("PlaylistViewModel", "Error adding playlist: ${playlist.name}, Type: ${playlist.typeName}, URL: ${playlist.url}", e)
+                errorMessage.value = e.message ?: "Unknown error occurred"
+                loadingMessage.value = "Failed to add playlist"
             } finally {
                 isLoading.value = false
             }
