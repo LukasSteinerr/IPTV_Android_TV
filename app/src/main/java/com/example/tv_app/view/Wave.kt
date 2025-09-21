@@ -15,21 +15,19 @@ import kotlin.math.cos
 import kotlin.math.sin
 
 @Composable
-fun WaveWidget(
+fun ProcessingWave(
     modifier: Modifier = Modifier,
     yOffset: Float,
     color: Color
 ) {
     var size by remember { mutableStateOf(IntSize.Zero) }
-    val wavePoints = remember { mutableStateListOf<Offset>() }
-
     val animationController = remember { Animatable(0f) }
 
     LaunchedEffect(Unit) {
         animationController.animateTo(
             targetValue = 1f,
             animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 3000, easing = LinearEasing),
+                animation = tween(durationMillis = 5000, easing = LinearEasing),
                 repeatMode = RepeatMode.Restart
             )
         )
@@ -37,11 +35,11 @@ fun WaveWidget(
 
     val calculatedWavePoints by remember {
         derivedStateOf {
-            val waveSpeed = animationController.value * 1080
+            val waveSpeed = animationController.value * size.width
             val fullSphere = animationController.value * Math.PI * 2
             val normalizer = cos(fullSphere).toFloat()
-            val waveWidth = (Math.PI / 540).toFloat() // Decreased frequency
-            val waveHeight = 20.0f
+            val waveWidth = (Math.PI / size.width).toFloat()
+            val waveHeight = 40.0f
 
             val points = mutableListOf<Offset>()
             for (i in 0..size.width) {

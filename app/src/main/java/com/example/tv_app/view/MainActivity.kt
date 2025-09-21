@@ -5,7 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.tv.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,9 +34,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                    AddPlaylistScreen(playlistService = PlaylistService(), onPlaylistAdded = {
-                        // Handle playlist added event
-                    })
+                    AppNavigation()
                 }
             }
         }
@@ -63,6 +61,40 @@ class MainActivity : ComponentActivity() {
                 // Connection failed. Handle the error (e.g., check for network issues, rules)
             }
     }
+}
+
+@Composable
+fun AppNavigation() {
+    var currentScreen by remember { mutableStateOf<Screen>(Screen.MyPlaylists) }
+    val playlistService = remember { PlaylistService() }
+
+    when (currentScreen) {
+        Screen.MyPlaylists -> {
+            MyPlaylistsScreen(
+                playlistService = playlistService,
+                onNavigateToAddPlaylist = {
+                    currentScreen = Screen.AddPlaylist
+                },
+                onPlaylistSelected = { playlist ->
+                    // Handle playlist selection - could navigate to channels screen
+                    Log.d("MainActivity", "Selected playlist: ${playlist.name}")
+                }
+            )
+        }
+        Screen.AddPlaylist -> {
+            AddPlaylistScreen(
+                playlistService = playlistService,
+                onPlaylistAdded = {
+                    currentScreen = Screen.MyPlaylists
+                }
+            )
+        }
+    }
+}
+
+sealed class Screen {
+    object MyPlaylists : Screen()
+    object AddPlaylist : Screen()
 }
 
 @Composable

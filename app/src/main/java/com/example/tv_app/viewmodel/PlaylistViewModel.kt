@@ -21,7 +21,14 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
     var errorMessage = mutableStateOf("")
         private set
     
+    var playlists = mutableStateOf<List<Playlist>>(emptyList())
+        private set
+    
     private var currentJob: Job? = null
+
+    init {
+        loadPlaylists()
+    }
 
     fun addPlaylist(playlist: Playlist) {
         currentJob = viewModelScope.launch {
@@ -37,6 +44,9 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
 
                 loadingMessage.value = "Playlist added successfully!"
                 Log.d("PlaylistViewModel", "Successfully added playlist: ${playlist.name}")
+                
+                // Reload playlists after successful addition
+                loadPlaylists()
 
             } catch (e: Exception) {
                 Log.e("PlaylistViewModel", "Error adding playlist", e)
@@ -75,5 +85,30 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
     
     fun clearError() {
         errorMessage.value = ""
+    }
+
+    fun loadPlaylists() {
+        viewModelScope.launch {
+            try {
+                playlists.value = playlistService.getAllPlaylists()
+                Log.d("PlaylistViewModel", "Loaded ${playlists.value.size} playlists")
+            } catch (e: Exception) {
+                Log.e("PlaylistViewModel", "Error loading playlists", e)
+                errorMessage.value = "Failed to load playlists: ${e.message}"
+            }
+        }
+    }
+
+    fun deletePlaylist(playlistId: Long) {
+        viewModelScope.launch {
+            try {
+                playlistService.deletePlaylist(playlistId)
+                loadPlaylists() // Reload the list after deletion
+                Log.d("PlaylistViewModel", "Deleted playlist with ID: $playlistId")
+            } catch (e: Exception) {
+                Log.e("PlaylistViewModel", "Error deleting playlist", e)
+                errorMessage.value = "Failed to delete playlist: ${e.message}"
+            }
+        }
     }
 }

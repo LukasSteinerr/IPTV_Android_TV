@@ -77,7 +77,7 @@ fun AddPlaylistScreen(
         }
 
         AnimatedVisibility(
-            visible = true,
+            visible = currentStep < 4,
             modifier = Modifier.weight(0.8f),
             enter = fadeIn(),
             exit = fadeOut()
@@ -147,7 +147,6 @@ fun AddPlaylistScreen(
                     },
                     onDone = onPlaylistAdded,
                     onBack = { currentStep = 3 },
-                    onClearError = { playlistViewModel.clearError() },
                     focusRequester = initialFocusRequester
                 )
             }
@@ -557,88 +556,74 @@ fun Step4_Processing(
     onAddPlaylist: () -> Unit,
     onDone: () -> Unit,
     onBack: () -> Unit,
-    onClearError: () -> Unit,
     focusRequester: FocusRequester
 ) {
     LaunchedEffect(Unit) {
         onAddPlaylist()
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 64.dp, vertical = 40.dp)
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
     ) {
-        // Content area that takes most of the space
+        ProcessingWave(
+            yOffset = 500f,
+            color = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+        )
+        ProcessingWave(
+            yOffset = 520f,
+            color = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+        )
+
         Column(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxWidth(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            Box(modifier = Modifier.height(160.dp), contentAlignment = Alignment.Center) {
-                if (isLoading) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(
-                            color = TvMaterialTheme.colorScheme.primary,
-                            strokeWidth = 4.dp,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            text = loadingMessage,
-                            color = Color.White,
-                            style = TvMaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
-                        )
-                        Spacer(modifier = Modifier.height(24.dp))
-                    }
-                } else if (errorMessage.isNotEmpty()) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "❌ Error",
-                            color = TvMaterialTheme.colorScheme.error,
-                            style = TvMaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-                        Text(
-                            text = errorMessage,
-                            color = TvMaterialTheme.colorScheme.error,
-                            textAlign = TextAlign.Center,
-                            style = TvMaterialTheme.typography.bodyMedium
-                        )
-                    }
-                } else {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "✅ Success!",
-                            color = Color(0xFF4CAF50),
-                            style = TvMaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
-                        Text(
-                            text = "Your playlist has been added successfully",
-                            color = Color.White.copy(alpha = 0.8f),
-                            style = TvMaterialTheme.typography.bodyLarge,
-                            textAlign = TextAlign.Center
-                        )
-                    }
+            if (isLoading) {
+                CircularProgressIndicator(
+                    color = Color.White,
+                    strokeWidth = 4.dp,
+                    modifier = Modifier.size(64.dp)
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+                Text(
+                    text = loadingMessage,
+                    color = Color.White,
+                    style = TvMaterialTheme.typography.headlineSmall,
+                    textAlign = TextAlign.Center
+                )
+            } else if (errorMessage.isNotEmpty()) {
+                Text(
+                    text = "❌",
+                    style = TvMaterialTheme.typography.displayMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Text(
+                    text = errorMessage,
+                    color = TvMaterialTheme.colorScheme.error,
+                    textAlign = TextAlign.Center,
+                    style = TvMaterialTheme.typography.headlineSmall
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+                TvButton("Back", onClick = onBack)
+            } else {
+                Text(
+                    text = "✅",
+                    style = TvMaterialTheme.typography.displayMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+                Text(
+                    text = "Success!",
+                    color = Color.White,
+                    style = TvMaterialTheme.typography.headlineSmall
+                )
+                Spacer(modifier = Modifier.height(32.dp))
+                TvButton("Done", onClick = onDone, modifier = Modifier.focusRequester(focusRequester))
+
+                LaunchedEffect(Unit) {
+                    focusRequester.requestFocus()
                 }
             }
-        }
-
-        // Buttons fixed at bottom
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 16.dp),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TvButton("Back", onClick = onBack, enabled = !isLoading, isSecondary = true)
-            Spacer(modifier = Modifier.width(24.dp))
-            TvButton("Done", onClick = onDone, enabled = !isLoading && errorMessage.isEmpty())
         }
     }
 }
