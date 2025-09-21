@@ -84,6 +84,9 @@ class PlaylistService {
                 onProgress("Starting EPG data fetch...")
                 Log.d("PlaylistService", "Starting EPG data fetch for playlist: ${playlist.name}")
 
+                val remainingPrograms = mutableListOf<TvProgram>()
+                val remainingEpgChannels = mutableListOf<EpgChannelInfo>()
+
                 val epgSuccess = xtreamService.fetchAndStoreEpgData(
                     baseUrl = baseUrl,
                     user = user,
@@ -92,36 +95,44 @@ class PlaylistService {
                         val progressMessage = "EPG: ${progress.phase} - Processed: ${progress.processed}"
                         onProgress(progressMessage)
                         Log.d("PlaylistService", progressMessage)
-                    }
-                ) { programs, epgChannels ->
-                    try {
-                        ensureActive()
-                        if (programs.isNotEmpty() || epgChannels.isNotEmpty()) {
-                            ObjectBox.boxStore.runInTx {
-                                if (programs.isNotEmpty()) {
-                                    tvProgramBox.put(programs)
+                    },
+                    onBatchReady = { programs, epgChannels ->
+                        try {
+                            ensureActive()
+                            if (programs.isNotEmpty() || epgChannels.isNotEmpty()) {
+                                ObjectBox.boxStore.runInTx {
+                                    if (programs.isNotEmpty()) {
+                                        tvProgramBox.put(programs)
+                                    }
+                                    if (epgChannels.isNotEmpty()) {
+                                        epgChannelInfoBox.put(epgChannels)
+                                    }
                                 }
-                                if (epgChannels.isNotEmpty()) {
-                                    epgChannelInfoBox.put(epgChannels)
+                                val message = "Stored ${programs.size} EPG programs and ${epgChannels.size} channels."
+                                onProgress(message)
+                                Log.d("PlaylistService", message)
+                            }
+                        } catch (e: Exception) {
+                            Log.e("PlaylistService", "Error storing EPG batch", e)
+                            onProgress("Error storing EPG batch: ${e.message}")
+                        }
+                    },
+                    onComplete = {
+                        if (remainingPrograms.isNotEmpty() || remainingEpgChannels.isNotEmpty()) {
+                            ObjectBox.boxStore.runInTx {
+                                if (remainingPrograms.isNotEmpty()) {
+                                    tvProgramBox.put(remainingPrograms)
+                                }
+                                if (remainingEpgChannels.isNotEmpty()) {
+                                    epgChannelInfoBox.put(remainingEpgChannels)
                                 }
                             }
-                            val message = "Stored ${programs.size} EPG programs and ${epgChannels.size} channels."
+                            val message = "Stored final batch of ${remainingPrograms.size} EPG programs and ${remainingEpgChannels.size} channels."
                             onProgress(message)
                             Log.d("PlaylistService", message)
                         }
-                    } catch (e: Exception) {
-                        Log.e("PlaylistService", "Error storing EPG batch", e)
-                        onProgress("Error storing EPG batch: ${e.message}")
                     }
-                }
-
-                if (epgSuccess) {
-                    onProgress("EPG data fetch completed successfully.")
-                    Log.d("PlaylistService", "EPG data fetch completed successfully")
-                } else {
-                    onProgress("EPG data fetch failed or was incomplete.")
-                    Log.w("PlaylistService", "EPG data fetch failed or was incomplete")
-                }
+                )
             }
         }
     }

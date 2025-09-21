@@ -36,7 +36,8 @@ open class EpgParserService {
     open suspend fun parseEpgData(
         url: String,
         onProgress: ((EpgProgress) -> Unit)? = null,
-        onBatchReady: (List<TvProgram>, List<EpgChannelInfo>) -> Unit
+        onBatchReady: (List<TvProgram>, List<EpgChannelInfo>) -> Unit,
+        onComplete: () -> Unit
     ): Boolean {
         return withContext(Dispatchers.IO) {
             try {
@@ -48,11 +49,15 @@ open class EpgParserService {
                 onProgress?.invoke(EpgProgress(0, null, "Downloading & Parsing"))
 
                 // Parse XML directly from the stream
-                return@withContext parseXmlStream(
+                val success = parseXmlStream(
                     response.bodyAsChannel().toInputStream(),
                     onProgress,
                     onBatchReady
                 )
+                if (success) {
+                    onComplete()
+                }
+                return@withContext success
 
             } catch (e: Exception) {
                 Log.e("EpgParserService", "Error downloading/parsing EPG", e)
