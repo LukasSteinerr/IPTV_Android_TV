@@ -21,37 +21,39 @@ fun ProcessingWave(
     color: Color
 ) {
     var size by remember { mutableStateOf(IntSize.Zero) }
-    val animationController = remember { Animatable(0f) }
+    val infiniteTransition = rememberInfiniteTransition(label = "infinite transition")
+    val animationProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 5000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ), label = "animation progress"
+    )
 
-    LaunchedEffect(Unit) {
-        animationController.animateTo(
-            targetValue = 1f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = 5000, easing = LinearEasing),
-                repeatMode = RepeatMode.Restart
-            )
-        )
-    }
-
-    val calculatedWavePoints by remember {
+    val calculatedWavePoints by remember(size, animationProgress) {
         derivedStateOf {
-            val waveSpeed = animationController.value * size.width
-            val fullSphere = animationController.value * Math.PI * 2
-            val normalizer = cos(fullSphere).toFloat()
-            val waveWidth = (Math.PI / size.width).toFloat()
-            val waveHeight = 40.0f
+            if (size.width > 0) {
+                val waveSpeed = animationProgress * size.width
+                val fullSphere = animationProgress * Math.PI * 2
+                val normalizer = cos(fullSphere).toFloat()
+                val waveWidth = (Math.PI / (size.width / 2)).toFloat() // Adjusted for a wider wave
+                val waveHeight = 40.0f
 
-            val points = mutableListOf<Offset>()
-            for (i in 0..size.width) {
-                val calc = sin((waveSpeed - i) * waveWidth)
-                points.add(
-                    Offset(
-                        i.toFloat(),
-                        calc * waveHeight * normalizer + yOffset
+                val points = mutableListOf<Offset>()
+                for (i in 0..size.width) {
+                    val calc = sin((waveSpeed + i) * waveWidth)
+                    points.add(
+                        Offset(
+                            i.toFloat(),
+                            calc * waveHeight * normalizer + yOffset
+                        )
                     )
-                )
+                }
+                points
+            } else {
+                emptyList()
             }
-            points
         }
     }
 
