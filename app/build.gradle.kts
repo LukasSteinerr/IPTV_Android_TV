@@ -42,6 +42,28 @@ android {
     }
 }
 
+fun getLocalProperty(propertyName: String): String {
+    val properties = java.util.Properties()
+    val localPropertiesFile = rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localPropertiesFile.inputStream().use { input ->
+            properties.load(input)
+        }
+    }
+    return properties.getProperty(propertyName) ?: ""
+}
+
+android {
+    buildTypes {
+        debug {
+            buildConfigField("String", "TMDB_API_KEY", "\"${getLocalProperty("tmdbApiKey")}\"")
+        }
+        release {
+            buildConfigField("String", "TMDB_API_KEY", "\"${getLocalProperty("tmdbApiKey")}\"")
+        }
+    }
+}
+
 dependencies {
     // Import the Firebase BoM
     implementation(platform("com.google.firebase:firebase-bom:32.2.3"))
