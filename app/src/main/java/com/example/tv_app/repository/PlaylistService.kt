@@ -9,6 +9,10 @@ import com.example.tv_app.model.Movie
 import com.example.tv_app.model.TvSeries
 import com.example.tv_app.model.TvProgram
 import com.example.tv_app.model.EpgChannelInfo
+import com.example.tv_app.model.Category_
+import com.example.tv_app.model.Movie_
+import com.example.tv_app.model.Channel_
+import com.example.tv_app.model.TvSeries_
 import io.objectbox.Box
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -146,6 +150,42 @@ class PlaylistService {
     suspend fun clearDatabase() {
         withContext(Dispatchers.IO) {
             ObjectBox.boxStore.removeAllObjects()
+        }
+    }
+
+    suspend fun getCategoriesForPlaylist(playlistId: Long): List<Category> {
+        return withContext(Dispatchers.IO) {
+            categoryBox.query()
+                .equal(Category_.playlistId, playlistId)
+                .build()
+                .find()
+        }
+    }
+
+    suspend fun getMoviesForCategory(categoryId: Long): List<Movie> {
+        return withContext(Dispatchers.IO) {
+            movieBox.query()
+                .equal(Movie_.categoryId, categoryId)
+                .build()
+                .find()
+        }
+    }
+
+    suspend fun getChannelsForCategory(categoryId: Long): List<Channel> {
+        return withContext(Dispatchers.IO) {
+            channelBox.query()
+                .equal(Channel_.categoryId, categoryId)
+                .build()
+                .find()
+        }
+    }
+
+    suspend fun getTvSeriesForCategory(categoryId: Long): List<TvSeries> {
+        return withContext(Dispatchers.IO) {
+            tvSeriesBox.query()
+                .equal(TvSeries_.categoryId, categoryId)
+                .build()
+                .find()
         }
     }
 }

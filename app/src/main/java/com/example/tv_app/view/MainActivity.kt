@@ -12,6 +12,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Surface
 import com.example.tv_app.model.ObjectBox
+import com.example.tv_app.model.Playlist
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.ui.theme.TV_APPTheme
 import io.objectbox.Box
@@ -66,6 +67,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigation() {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.MyPlaylists) }
+    var selectedPlaylist by remember { mutableStateOf<Playlist?>(null) }
     val playlistService = remember { PlaylistService() }
 
     when (currentScreen) {
@@ -76,7 +78,8 @@ fun AppNavigation() {
                     currentScreen = Screen.AddPlaylist
                 },
                 onPlaylistSelected = { playlist ->
-                    // Handle playlist selection - could navigate to channels screen
+                    selectedPlaylist = playlist
+                    currentScreen = Screen.MoviePage
                     Log.d("MainActivity", "Selected playlist: ${playlist.name}")
                 }
             )
@@ -89,12 +92,28 @@ fun AppNavigation() {
                 }
             )
         }
+        Screen.MoviePage -> {
+            selectedPlaylist?.let { playlist ->
+                MoviePageScreen(
+                    playlist = playlist,
+                    playlistService = playlistService,
+                    onBackPressed = {
+                        currentScreen = Screen.MyPlaylists
+                    },
+                    onMovieSelected = { movie ->
+                        Log.d("MainActivity", "Selected movie: ${movie.name}")
+                        // TODO: Navigate to movie details or player
+                    }
+                )
+            }
+        }
     }
 }
 
 sealed class Screen {
     object MyPlaylists : Screen()
     object AddPlaylist : Screen()
+    object MoviePage : Screen()
 }
 
 @Composable

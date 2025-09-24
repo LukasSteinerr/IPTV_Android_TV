@@ -43,14 +43,7 @@ android {
 }
 
 fun getLocalProperty(propertyName: String): String {
-    val properties = java.util.Properties()
-    val localPropertiesFile = rootProject.file("local.properties")
-    if (localPropertiesFile.exists()) {
-        localPropertiesFile.inputStream().use { input ->
-            properties.load(input)
-        }
-    }
-    return properties.getProperty(propertyName) ?: ""
+    return project.findProperty(propertyName)?.toString() ?: ""
 }
 
 android {
@@ -100,6 +93,7 @@ dependencies {
     implementation("io.ktor:ktor-client-encoding:2.3.10")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0")
+    implementation("io.coil-kt:coil-compose:2.6.0")
 }
 
 apply(plugin = "io.objectbox")
