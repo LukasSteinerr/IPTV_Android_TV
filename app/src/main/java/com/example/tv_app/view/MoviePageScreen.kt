@@ -131,10 +131,10 @@ fun MoviePageScreen(
                 // Featured Section
                 if (featuredMovies.isNotEmpty()) {
                     item {
-                        FeaturedSection(
+                        FeaturedContent(
                             movies = featuredMovies,
-                            tmdbImageProvider = tmdbImageProvider,
-                            onMovieSelected = onMovieSelected
+                            onPlayTapped = onMovieSelected,
+                            onDetailsTapped = onMovieSelected
                         )
                     }
                 }
@@ -158,143 +158,6 @@ fun MoviePageScreen(
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-fun FeaturedSection(
-    movies: List<Movie>,
-    tmdbImageProvider: TMDBImageProvider,
-    onMovieSelected: (Movie) -> Unit
-) {
-    Column {
-        Text(
-            text = "Featured",
-            color = Color.White,
-            style = TvMaterialTheme.typography.headlineMedium.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(end = 48.dp)
-        ) {
-            items(movies) { movie ->
-                FeaturedMovieCard(
-                    movie = movie,
-                    tmdbImageProvider = tmdbImageProvider,
-                    onClick = { onMovieSelected(movie) }
-                )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-fun FeaturedMovieCard(
-    movie: Movie,
-    tmdbImageProvider: TMDBImageProvider,
-    onClick: () -> Unit
-) {
-    var posterUrl by remember { mutableStateOf<String?>(null) }
-    
-    LaunchedEffect(movie.tmdbId) {
-        posterUrl = tmdbImageProvider.getPosterUrl(movie.tmdbId, movie.posterUrl)
-    }
-
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .width(280.dp)
-            .height(420.dp),
-        colors = CardDefaults.colors(
-            containerColor = Color.Black.copy(alpha = 0.4f),
-            contentColor = Color.White,
-            focusedContainerColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-            focusedContentColor = Color.White
-        ),
-        border = CardDefaults.border(
-            border = androidx.tv.material3.Border(
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
-            ),
-            focusedBorder = androidx.tv.material3.Border(
-                border = BorderStroke(3.dp, TvMaterialTheme.colorScheme.primary)
-            )
-        ),
-        shape = CardDefaults.shape(RoundedCornerShape(16.dp))
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Movie Poster
-            AsyncImage(
-                model = posterUrl ?: movie.posterUrl,
-                contentDescription = movie.name,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp)),
-                contentScale = ContentScale.Crop
-            )
-            
-            // Gradient overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.8f)
-                            ),
-                            startY = 0f,
-                            endY = Float.POSITIVE_INFINITY
-                        )
-                    )
-            )
-            
-            // Movie Info
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomStart)
-                    .padding(16.dp)
-            ) {
-                Text(
-                    text = movie.name,
-                    color = Color.White,
-                    style = TvMaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                
-                Row(
-                    modifier = Modifier.padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (!movie.year.isNullOrEmpty()) {
-                        Text(
-                            text = movie.year!!,
-                            color = Color.White.copy(alpha = 0.8f),
-                            style = TvMaterialTheme.typography.bodySmall
-                        )
-                    }
-                    
-                    if (!movie.rating.isNullOrEmpty()) {
-                        Text(
-                            text = "★ ${movie.rating}",
-                            color = TvMaterialTheme.colorScheme.primary,
-                            style = TvMaterialTheme.typography.bodySmall.copy(
-                                fontWeight = FontWeight.Medium
-                            )
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun CategoryRow(
