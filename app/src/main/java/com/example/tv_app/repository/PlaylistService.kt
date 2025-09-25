@@ -29,9 +29,10 @@ class PlaylistService {
     private val epgChannelInfoBox: Box<EpgChannelInfo> = ObjectBox.boxStore.boxFor(EpgChannelInfo::class.java)
     private val m3uService = M3uService()
     private val xtreamService = XtreamService(EpgParserService())
-
-    suspend fun getAllPlaylists(): List<Playlist> {
-        return withContext(Dispatchers.IO) {
+    private val tmdbService = TMDBService()
+ 
+     suspend fun getAllPlaylists(): List<Playlist> {
+         return withContext(Dispatchers.IO) {
             playlistBox.all
         }
     }
@@ -73,15 +74,19 @@ class PlaylistService {
                 if (movies != null) {
                     onProgress("Storing ${movies.size} movies...")
                     movieBox.put(movies)
+                    onProgress("Matching popular movies with your library...")
+                    matchTmdbPopularMovies(playlist.id)
                 }
-
-                val series = data["series"] as? List<TvSeries>
-                if (series != null) {
+ 
+                 val series = data["series"] as? List<TvSeries>
+                 if (series != null) {
                     onProgress("Storing ${series.size} series...")
                     tvSeriesBox.put(series)
+                    onProgress("Matching popular TV series with your library...")
+                    matchTmdbPopularTvSeries(playlist.id)
                 }
-
-                val baseUrl = xtreamService.getBaseUrl(playlist.url)
+ 
+                 val baseUrl = xtreamService.getBaseUrl(playlist.url)
                 val user = playlist.username ?: ""
                 val pass = playlist.password ?: ""
 
@@ -186,6 +191,64 @@ class PlaylistService {
                 .equal(TvSeries_.categoryId, categoryId)
                 .build()
                 .find()
+        }
+    }
+
+    private suspend fun getMoviesForPlaylist(playlistId: Long): List<Movie> {
+        return withContext(Dispatchers.IO) {
+            movieBox.query().equal(Movie_.playlistId, playlistId).build().find()
+        }
+    }
+
+    private suspend fun getTvSeriesForPlaylist(playlistId: Long): List<TvSeries> {
+        return withContext(Dispatchers.IO) {
+            tvSeriesBox.query().equal(TvSeries_.playlistId, playlistId).build().find()
+        }
+    }
+
+    private suspend fun matchTmdbPopularMovies(playlistId: Long) {
+        try {
+            val popularTmdbMovies = tmdbService.getPopularMovies()
+            val localMovies = getMoviesForPlaylist(playlistId)
+            val localMoviesByTmdbId = localMovies.filter { it.tmdbId != null && it.tmdbId!!.isNotEmpty() }
+                .associateBy { it.tmdbId }
+
+            val featuredMovies = mutableListOf<Movie>()
+            for (tmdbMovie in popularTmdbMovies) {
+                localMoviesByTmdbId[tmdbMovie.tmdbId]?.let { localMovie ->
+                    localMovie.isFeatured = true
+                    featuredMovies.add(localMovie)
+                }
+            }
+
+            if (featuredMovies.isNotEmpty()) {
+                movieBox.put(featuredMovies)
+            }
+        } catch (e: Exception) {
+            Log.e("PlaylistService", "Error matching TMDB popular movies", e)
+        }
+    }
+
+    private suspend fun matchTmdbPopularTvSeries(playlistId: Long) {
+        try {
+            val popularTmdbTvSeries = tmdbService.getPopularTvSeries()
+            val localTvSeries = getTvSeriesForPlaylist(playlistId)
+            val localTvSeriesByTmdbId = localTvSeries.filter { it.tmdbId != null && it.tmdbId!!.isNotEmpty() }
+                .associateBy { it.tmdbId }
+
+            val featuredTvSeries = mutableListOf<TvSeries>()
+            for (tmdbSeries in popularTmdbTvSeries) {
+                localTvSeriesByTmdbId[tmdbSeries.tmdbId]?.let { localSeries ->
+                    localSeries.isFeatured = true
+                    featuredTvSeries.add(localSeries)
+                }
+            }
+
+            if (featuredTvSeries.isNotEmpty()) {
+                tvSeriesBox.put(featuredTvSeries)
+            }
+        } catch (e: Exception) {
+            Log.e("PlaylistService", "Error matching TMDB popular TV series", e)
         }
     }
 }
