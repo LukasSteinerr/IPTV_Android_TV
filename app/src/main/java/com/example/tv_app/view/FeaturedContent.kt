@@ -1,154 +1,263 @@
 package com.example.tv_app.view
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.Button
-import androidx.tv.material3.ButtonDefaults
-import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.Icon
-import androidx.tv.material3.Text
+import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import com.example.tv_app.model.Movie
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.rememberPagerState
-import kotlinx.coroutines.launch
 import com.example.tv_app.repository.TMDBImageProvider
+import kotlinx.coroutines.launch
 
-@OptIn(ExperimentalPagerApi::class, ExperimentalTvMaterial3Api::class)
+@OptIn(ExperimentalTvMaterial3Api::class)
+val CarouselSaver = Saver<CarouselState, Int>(
+    save = { it.activeItemIndex },
+    restore = { CarouselState(it) }
+)
+
+@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun FeaturedContent(
     movies: List<Movie>,
     onPlayTapped: (Movie) -> Unit,
-    onDetailsTapped: (Movie) -> Unit
+    onDetailsTapped: (Movie) -> Unit,
+    modifier: Modifier = Modifier
 ) {
     if (movies.isEmpty()) {
         return
     }
 
-    val pagerState = rememberPagerState()
-    val coroutineScope = rememberCoroutineScope()
-    val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
-
-    // State to hold the resolved image URL for the current page
-    var currentImageUrl by remember { mutableStateOf<String?>(null) }
-
-    // Update the image URL when the current page changes
-    LaunchedEffect(pagerState.currentPage) {
-        val currentMovie = movies.getOrNull(pagerState.currentPage) ?: return@LaunchedEffect
-        currentImageUrl = tmdbImageProvider.getBackdropUrl(currentMovie.tmdbId)
-            ?: tmdbImageProvider.getPosterUrl(currentMovie.tmdbId, currentMovie.posterUrl)
+    val carouselState = rememberSaveable(saver = CarouselSaver) { CarouselState(0) }
+    var isCarouselFocused by remember { mutableStateOf(false) }
+    val alpha = if (isCarouselFocused) {
+        1f
+    } else {
+        0f
     }
 
-    Box(
-        modifier = Modifier
+    val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
+
+    Carousel(
+        modifier = modifier
             .fillMaxWidth()
-            .height(450.dp)
-            .background(Color.Black)
-    ) {
-        HorizontalPager(
-            count = movies.size,
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { page ->
-            val movie = movies[page]
-            var imageUrl by remember { mutableStateOf<String?>(null) }
-
-            // Fetch the best available image URL for this page
-            LaunchedEffect(movie.tmdbId) {
-                imageUrl = tmdbImageProvider.getBackdropUrl(movie.tmdbId)
-                    ?: tmdbImageProvider.getPosterUrl(movie.tmdbId, movie.posterUrl)
-            }
-
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
+            .height(324.dp)
+            .padding(horizontal = 48.dp)
+            .border(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
+                shape = RoundedCornerShape(16.dp),
+            )
+            .clip(RoundedCornerShape(16.dp))
+            .onFocusChanged {
+                // Because the carousel itself never gets the focus
+                isCarouselFocused = it.hasFocus
+            },
+        itemCount = movies.size,
+        carouselState = carouselState,
+        carouselIndicator = {
+            CarouselIndicator(
+                itemCount = movies.size,
+                activeItemIndex = carouselState.activeItemIndex
+            )
+        },
+        contentTransformStartToEnd = fadeIn(tween(durationMillis = 1000))
+            .togetherWith(fadeOut(tween(durationMillis = 1000))),
+        contentTransformEndToStart = fadeIn(tween(durationMillis = 1000))
+            .togetherWith(fadeOut(tween(durationMillis = 1000))),
+        content = { index ->
+            val movie = movies[index]
+            // background
+            CarouselItemBackground(
+                movie = movie,
+                tmdbImageProvider = tmdbImageProvider,
+                modifier = Modifier.fillMaxSize()
+            )
+            // foreground
+            CarouselItemForeground(
+                movie = movie,
+                isCarouselFocused = isCarouselFocused,
+                onPlayTapped = { onPlayTapped(movie) },
+                onDetailsTapped = { onDetailsTapped(movie) },
                 modifier = Modifier.fillMaxSize()
             )
         }
+    )
+}
 
-        Box(
+@OptIn(ExperimentalTvMaterial3Api::class)
+@Composable
+private fun BoxScope.CarouselIndicator(
+    itemCount: Int,
+    activeItemIndex: Int,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .padding(32.dp)
+            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
+            .graphicsLayer {
+                clip = true
+                shape = RoundedCornerShape(8.dp)
+            }
+            .align(Alignment.BottomEnd)
+    ) {
+        CarouselDefaults.IndicatorRow(
             modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Black.copy(alpha = 0.8f),
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.8f)
-                        ),
-                        startY = 0f,
-                        endY = Float.POSITIVE_INFINITY
-                    )
-                )
+                .align(Alignment.BottomEnd)
+                .padding(8.dp),
+            itemCount = itemCount,
+            activeItemIndex = activeItemIndex,
         )
+    }
+}
 
+@Composable
+private fun CarouselItemForeground(
+    movie: Movie,
+    isCarouselFocused: Boolean,
+    onPlayTapped: () -> Unit,
+    onDetailsTapped: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier,
+        contentAlignment = Alignment.BottomStart
+    ) {
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 48.dp, bottom = 32.dp)
+                .fillMaxSize()
+                .padding(32.dp),
+            verticalArrangement = Arrangement.Bottom
         ) {
-            val movie = movies[pagerState.currentPage]
             Text(
                 text = movie.name,
-                style = androidx.tv.material3.MaterialTheme.typography.headlineLarge,
+                style = MaterialTheme.typography.displayMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    shadow = Shadow(
+                        color = Color.Black.copy(alpha = 0.5f),
+                        offset = Offset(x = 2f, y = 4f),
+                        blurRadius = 2f
+                    )
+                ),
                 color = Color.White,
-                modifier = Modifier.padding(bottom = 8.dp)
+                maxLines = 1
             )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Button(
-                    onClick = { onPlayTapped(movie) },
-                    colors = ButtonDefaults.colors(
-                        containerColor = Color.White.copy(alpha = 0.9f),
-                        contentColor = Color.Black
-                    )
-                ) {
-                    Icon(
-                        painter = androidx.compose.ui.res.painterResource(id = android.R.drawable.ic_media_play),
-                        contentDescription = "Play"
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Play")
-                }
-                Button(
-                    onClick = { onDetailsTapped(movie) },
-                    colors = ButtonDefaults.colors(
-                        containerColor = Color.White.copy(alpha = 0.2f),
-                        contentColor = Color.White
-                    )
-                ) {
-                    Text(text = "Details")
-                }
+            
+            val description = movie.description
+            if (!description.isNullOrEmpty()) {
+                Text(
+                    text = description,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        color = MaterialTheme.colorScheme.onSurface.copy(
+                            alpha = 0.65f
+                        ),
+                        shadow = Shadow(
+                            color = Color.Black.copy(alpha = 0.5f),
+                            offset = Offset(x = 2f, y = 4f),
+                            blurRadius = 2f
+                        )
+                    ),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
             }
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                for (i in movies.indices) {
-                    val color = if (pagerState.currentPage == i) Color.White else Color.Gray
-                    Box(
-                        modifier = Modifier
-                            .size(8.dp)
-                            .clip(CircleShape)
-                            .background(color)
-                    )
+            
+            AnimatedVisibility(
+                visible = isCarouselFocused,
+                content = {
+                    WatchNowButton(onPlayTapped = onPlayTapped)
                 }
-            }
+            )
         }
+    }
+}
+
+@Composable
+private fun CarouselItemBackground(
+    movie: Movie,
+    tmdbImageProvider: TMDBImageProvider,
+    modifier: Modifier = Modifier
+) {
+    var imageUrl by remember { mutableStateOf<String?>(null) }
+    
+    // Fetch the best available image URL for this movie
+    LaunchedEffect(movie.tmdbId) {
+        imageUrl = tmdbImageProvider.getBackdropUrl(movie.tmdbId)
+            ?: tmdbImageProvider.getPosterUrl(movie.tmdbId, movie.posterUrl)
+    }
+
+    AsyncImage(
+        model = imageUrl,
+        contentDescription = movie.name,
+        modifier = modifier
+            .drawWithContent {
+                drawContent()
+                drawRect(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.5f)
+                        )
+                    )
+                )
+            },
+        contentScale = ContentScale.Crop
+    )
+}
+
+@Composable
+private fun WatchNowButton(
+    onPlayTapped: () -> Unit
+) {
+    Button(
+        onClick = onPlayTapped,
+        modifier = Modifier.padding(top = 16.dp),
+        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+        shape = ButtonDefaults.shape(shape = RoundedCornerShape(8.dp)),
+        colors = ButtonDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.onSurface,
+            contentColor = MaterialTheme.colorScheme.surface,
+            focusedContentColor = MaterialTheme.colorScheme.surface,
+        ),
+        scale = ButtonDefaults.scale(scale = 1f)
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.PlayArrow,
+            contentDescription = "Play",
+            modifier = Modifier.size(20.dp)
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = "Watch Now",
+            style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = FontWeight.Medium
+            )
+        )
     }
 }

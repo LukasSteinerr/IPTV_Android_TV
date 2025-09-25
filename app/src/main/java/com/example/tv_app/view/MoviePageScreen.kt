@@ -37,12 +37,17 @@ fun MoviePageScreen(
     playlist: Playlist,
     playlistService: PlaylistService,
     onBackPressed: () -> Unit,
-    onMovieSelected: (Movie) -> Unit = {}
+    onMovieSelected: (Movie) -> Unit = {},
+    onNavigateToShows: () -> Unit = {},
+    onNavigateToLiveTV: () -> Unit = {},
+    onNavigateToFavorites: () -> Unit = {},
+    onNavigateToSearch: () -> Unit = {}
 ) {
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var featuredMovies by remember { mutableStateOf<List<Movie>>(emptyList()) }
     var moviesByCategory by remember { mutableStateOf<Map<Long, List<Movie>>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(true) }
+    var selectedTab by remember { mutableStateOf(0) }
     
     val coroutineScope = rememberCoroutineScope()
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
@@ -93,63 +98,64 @@ fun MoviePageScreen(
                 )
             )
     ) {
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = TvMaterialTheme.colorScheme.primary,
-                    strokeWidth = 4.dp,
-                    modifier = Modifier.size(64.dp)
-                )
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 48.dp, vertical = 32.dp),
-                verticalArrangement = Arrangement.spacedBy(32.dp)
-            ) {
-                // Header
-                item {
-                    Column {
-                        Text(
-                            text = playlist.name,
-                            color = Color.White,
-                            style = TvMaterialTheme.typography.displaySmall.copy(
-                                fontWeight = FontWeight.Bold
-                            )
-                        )
-                        Text(
-                            text = "${categories.size} categories • Movies",
-                            color = Color.White.copy(alpha = 0.7f),
-                            style = TvMaterialTheme.typography.bodyLarge
-                        )
+        Column {
+            // Appbar with matching background
+            Appbar(
+                selectedTab = selectedTab,
+                onTabSelected = { newTab ->
+                    selectedTab = newTab
+                    // Handle tab navigation here
+                    when (newTab) {
+                        0 -> { /* Movies - current screen */ }
+                        1 -> { /* Shows - TODO: Navigate to shows */ }
+                        2 -> { /* Live TV - TODO: Navigate to live TV */ }
+                        3 -> { /* Favorites - TODO: Navigate to favorites */ }
+                        4 -> { /* Search - TODO: Implement search */ }
                     }
-                }
+                },
+                backgroundColor = Color.Transparent // Make appbar blend with background
+            )
 
-                // Featured Section
-                if (featuredMovies.isNotEmpty()) {
-                    item {
-                        FeaturedContent(
-                            movies = featuredMovies,
-                            onPlayTapped = onMovieSelected,
-                            onDetailsTapped = onMovieSelected
-                        )
-                    }
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = TvMaterialTheme.colorScheme.primary,
+                        strokeWidth = 4.dp,
+                        modifier = Modifier.size(64.dp)
+                    )
                 }
-
-                // Category Rows
-                categories.forEach { category ->
-                    val movies = moviesByCategory[category.id] ?: emptyList()
-                    if (movies.isNotEmpty()) {
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 48.dp),
+                    verticalArrangement = Arrangement.spacedBy(32.dp)
+                ) {
+                    // Featured Section
+                    if (featuredMovies.isNotEmpty()) {
                         item {
-                            CategoryRow(
-                                category = category,
-                                movies = movies,
-                                tmdbImageProvider = tmdbImageProvider,
-                                onMovieSelected = onMovieSelected
+                            FeaturedContent(
+                                movies = featuredMovies,
+                                onPlayTapped = onMovieSelected,
+                                onDetailsTapped = onMovieSelected
                             )
+                        }
+                    }
+
+                    // Category Rows
+                    categories.forEach { category ->
+                        val movies = moviesByCategory[category.id] ?: emptyList()
+                        if (movies.isNotEmpty()) {
+                            item {
+                                CategoryRow(
+                                    category = category,
+                                    movies = movies,
+                                    tmdbImageProvider = tmdbImageProvider,
+                                    onMovieSelected = onMovieSelected
+                                )
+                            }
                         }
                     }
                 }

@@ -13,6 +13,8 @@ import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.Surface
 import com.example.tv_app.model.ObjectBox
 import com.example.tv_app.model.Playlist
+import com.example.tv_app.model.TvSeries
+import com.example.tv_app.model.Channel
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.ui.theme.TV_APPTheme
 import io.objectbox.Box
@@ -103,6 +105,68 @@ fun AppNavigation() {
                     onMovieSelected = { movie ->
                         Log.d("MainActivity", "Selected movie: ${movie.name}")
                         // TODO: Navigate to movie details or player
+                    },
+                    onNavigateToShows = {
+                        currentScreen = Screen.ShowsPage
+                    },
+                    onNavigateToLiveTV = {
+                        currentScreen = Screen.LiveTVPage
+                    },
+                    onNavigateToFavorites = {
+                        currentScreen = Screen.FavoritesPage
+                    },
+                    onNavigateToSearch = {
+                        currentScreen = Screen.SearchPage
+                    }
+                )
+            }
+        }
+        is Screen.ShowsPage -> {
+            selectedPlaylist?.let { playlist ->
+                ShowsScreen(
+                    playlist = playlist,
+                    playlistService = playlistService,
+                    onBackPressed = {
+                        currentScreen = Screen.MoviePage
+                    },
+                    onShowSelected = { show ->
+                        Log.d("MainActivity", "Selected show: ${show.name}")
+                        // TODO: Navigate to show details or player
+                    }
+                )
+            }
+        }
+        is Screen.LiveTVPage -> {
+            selectedPlaylist?.let { playlist ->
+                LiveTVScreen(
+                    playlist = playlist,
+                    playlistService = playlistService,
+                    onBackPressed = {
+                        currentScreen = Screen.MoviePage
+                    },
+                    onChannelSelected = { channel ->
+                        Log.d("MainActivity", "Selected channel: ${channel.name}")
+                        // TODO: Navigate to channel player
+                    }
+                )
+            }
+        }
+        is Screen.FavoritesPage -> {
+            selectedPlaylist?.let { playlist ->
+                FavoritesScreen(
+                    playlist = playlist,
+                    onBackPressed = {
+                        currentScreen = Screen.MoviePage
+                    }
+                )
+            }
+        }
+        is Screen.SearchPage -> {
+            selectedPlaylist?.let { playlist ->
+                SearchScreen(
+                    playlist = playlist,
+                    onBackPressed = {
+                        currentScreen = Screen.MoviePage
                     }
                 )
             }
@@ -114,6 +178,10 @@ sealed class Screen {
     object MyPlaylists : Screen()
     object AddPlaylist : Screen()
     object MoviePage : Screen()
+    object ShowsPage : Screen()
+    object LiveTVPage : Screen()
+    object FavoritesPage : Screen()
+    object SearchPage : Screen()
 }
 
 @Composable
