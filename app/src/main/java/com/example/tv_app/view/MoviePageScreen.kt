@@ -107,12 +107,12 @@ fun MoviePageScreen(
                     // Handle tab navigation here
                     when (newTab) {
                         0 -> { /* Movies - current screen */ }
-                        1 -> { /* Shows - TODO: Navigate to shows */ }
-                        2 -> { /* Live TV - TODO: Navigate to live TV */ }
-                        3 -> { /* Favorites - TODO: Navigate to favorites */ }
-                        4 -> { /* Search - TODO: Implement search */ }
+                        1 -> onNavigateToShows()
+                        2 -> onNavigateToLiveTV()
+                        3 -> onNavigateToFavorites()
                     }
                 },
+                onSearchClicked = onNavigateToSearch,
                 backgroundColor = Color.Transparent // Make appbar blend with background
             )
 

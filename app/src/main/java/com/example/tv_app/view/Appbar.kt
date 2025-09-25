@@ -22,6 +22,7 @@ import androidx.tv.material3.Text
 fun Appbar(
     selectedTab: Int = 0,
     onTabSelected: (Int) -> Unit = {},
+    onSearchClicked: () -> Unit = {},
     backgroundColor: Color = Color.Black.copy(alpha = 0.8f)
 ) {
     val tabs = listOf("Movies", "Shows", "Live TV", "Favorites")
@@ -60,15 +61,18 @@ fun Appbar(
             }
             
             // Search Icon
-            IconButton(
-                onClick = { /* TODO: Implement search functionality */ },
+            androidx.tv.material3.IconButton(
+                onClick = onSearchClicked,
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        color = if (selectedTab == 4) TvMaterialTheme.colorScheme.primary
-                        else Color.Transparent
-                    )
+                    .clip(RoundedCornerShape(8.dp)),
+                colors = androidx.tv.material3.IconButtonDefaults.colors(
+                    containerColor = if (selectedTab == 4) TvMaterialTheme.colorScheme.primary
+                    else Color.Transparent,
+                    contentColor = Color.White,
+                    focusedContainerColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+                    focusedContentColor = TvMaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Icon(
                     imageVector = Icons.Default.Search,
@@ -88,20 +92,23 @@ private fun AppbarTab(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    Box(
+    androidx.tv.material3.Button(
+        onClick = onClick,
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(
-                color = if (isSelected) TvMaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                else Color.Transparent
-            )
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        contentAlignment = Alignment.Center
+            .clip(RoundedCornerShape(8.dp)),
+        colors = androidx.tv.material3.ButtonDefaults.colors(
+            containerColor = if (isSelected) TvMaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+            else Color.Transparent,
+            contentColor = if (isSelected) TvMaterialTheme.colorScheme.primary
+            else Color.White.copy(alpha = 0.8f),
+            focusedContainerColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
+            focusedContentColor = TvMaterialTheme.colorScheme.onPrimary
+        ),
+        shape = androidx.tv.material3.ButtonDefaults.shape(RoundedCornerShape(8.dp)),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Text(
             text = text,
-            color = if (isSelected) TvMaterialTheme.colorScheme.primary
-            else Color.White.copy(alpha = 0.8f),
             style = TvMaterialTheme.typography.bodyLarge.copy(
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
             )
