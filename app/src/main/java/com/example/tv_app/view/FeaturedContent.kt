@@ -24,6 +24,7 @@ import com.google.accompanist.pager.ExperimentalPagerApi
 import com.google.accompanist.pager.HorizontalPager
 import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
+import com.example.tv_app.repository.TMDBImageProvider
 
 @OptIn(ExperimentalPagerApi::class, ExperimentalTvMaterial3Api::class)
 @Composable
@@ -38,6 +39,17 @@ fun FeaturedContent(
 
     val pagerState = rememberPagerState()
     val coroutineScope = rememberCoroutineScope()
+    val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
+
+    // State to hold the resolved image URL for the current page
+    var currentImageUrl by remember { mutableStateOf<String?>(null) }
+
+    // Update the image URL when the current page changes
+    LaunchedEffect(pagerState.currentPage) {
+        val currentMovie = movies.getOrNull(pagerState.currentPage) ?: return@LaunchedEffect
+        currentImageUrl = tmdbImageProvider.getBackdropUrl(currentMovie.tmdbId)
+            ?: tmdbImageProvider.getPosterUrl(currentMovie.tmdbId, currentMovie.posterUrl)
+    }
 
     Box(
         modifier = Modifier
@@ -51,8 +63,16 @@ fun FeaturedContent(
             modifier = Modifier.fillMaxSize()
         ) { page ->
             val movie = movies[page]
+            var imageUrl by remember { mutableStateOf<String?>(null) }
+
+            // Fetch the best available image URL for this page
+            LaunchedEffect(movie.tmdbId) {
+                imageUrl = tmdbImageProvider.getBackdropUrl(movie.tmdbId)
+                    ?: tmdbImageProvider.getPosterUrl(movie.tmdbId, movie.posterUrl)
+            }
+
             AsyncImage(
-                model = movie.backdropUrl ?: movie.posterUrl,
+                model = imageUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize()
