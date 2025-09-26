@@ -65,7 +65,6 @@ fun MovieCard(
                     model = posterUrl ?: movie.posterUrl,
                     contentDescription = movie.name,
                     modifier = Modifier
-                        .fillMaxSize()
                         .aspectRatio(10.5f / 16f)
                         .clip(JetStreamCardShape),
                     contentScale = ContentScale.Crop

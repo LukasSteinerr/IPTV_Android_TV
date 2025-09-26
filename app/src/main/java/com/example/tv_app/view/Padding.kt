@@ -1,13 +1,25 @@
 package com.example.tv_app.view
 
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import com.example.tv_app.presentation.utils.Padding
+
+val ParentPadding = PaddingValues(vertical = 16.dp, horizontal = 58.dp)
 
 @Composable
-fun rememberChildPadding(): PaddingValues {
-    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
-    val childPadding = (screenWidth - 180.dp * 5) / 5
-    return PaddingValues(horizontal = childPadding / 2)
+fun rememberChildPadding(direction: LayoutDirection = LocalLayoutDirection.current): Padding {
+    return remember {
+        Padding(
+            start = ParentPadding.calculateStartPadding(direction) + 8.dp,
+            top = ParentPadding.calculateTopPadding(),
+            end = ParentPadding.calculateEndPadding(direction) + 8.dp,
+            bottom = ParentPadding.calculateBottomPadding()
+        )
+    }
 }

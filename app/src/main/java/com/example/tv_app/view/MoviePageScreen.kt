@@ -129,7 +129,7 @@ fun MoviePageScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = rememberChildPadding(),
+                    contentPadding = PaddingValues(bottom = 108.dp),
                     verticalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
                     // Featured Section
@@ -183,14 +183,17 @@ fun CategoryRow(
         
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(20.dp),
-            contentPadding = PaddingValues(end = rememberChildPadding().calculateRightPadding(LayoutDirection.Ltr))
+            contentPadding = PaddingValues(
+                start = rememberChildPadding().start,
+                end = rememberChildPadding().end,
+            )
         ) {
             items(movies) { movie ->
                 MovieCard(
                     movie = movie,
                     tmdbImageProvider = tmdbImageProvider,
                     onClick = { onMovieSelected(movie) },
-                    modifier = Modifier.width(180.dp)
+                    modifier = Modifier.width(150.dp)
                 )
             }
         }
