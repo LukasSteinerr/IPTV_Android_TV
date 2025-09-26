@@ -56,6 +56,7 @@ fun MoviePageScreen(
     
     val coroutineScope = rememberCoroutineScope()
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
+    val lazyColumnFocusRequester = remember { FocusRequester() }
 
     // Load data when screen is displayed
     LaunchedEffect(playlist.id) {
@@ -87,6 +88,12 @@ fun MoviePageScreen(
                 isLoading = false
                 // Handle error
             }
+        }
+    }
+
+    LaunchedEffect(isLoading) {
+        if (!isLoading) {
+            lazyColumnFocusRequester.requestFocus()
         }
     }
 
@@ -134,7 +141,9 @@ fun MoviePageScreen(
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .focusRequester(lazyColumnFocusRequester),
                     contentPadding = PaddingValues(bottom = 108.dp),
                     verticalArrangement = Arrangement.spacedBy(32.dp)
                 ) {

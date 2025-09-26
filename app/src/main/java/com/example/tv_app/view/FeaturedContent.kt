@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
 import com.example.tv_app.model.Movie
+import com.example.tv_app.ui.theme.JetStreamButtonShape
 import com.example.tv_app.repository.TMDBImageProvider
 import kotlinx.coroutines.launch
 
@@ -239,7 +240,7 @@ private fun WatchNowButton(
         onClick = onPlayTapped,
         modifier = Modifier.padding(top = 16.dp),
         contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-        shape = ButtonDefaults.shape(shape = RoundedCornerShape(8.dp)),
+        shape = ButtonDefaults.shape(shape = JetStreamButtonShape),
         colors = ButtonDefaults.colors(
             containerColor = MaterialTheme.colorScheme.onSurface,
             contentColor = MaterialTheme.colorScheme.surface,

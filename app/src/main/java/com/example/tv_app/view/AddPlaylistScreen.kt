@@ -29,6 +29,7 @@ import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.viewmodel.PlaylistViewModel
 import com.example.tv_app.viewmodel.PlaylistViewModelFactory
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+import com.example.tv_app.ui.theme.JetStreamButtonShape
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -659,7 +660,7 @@ fun TvButton(
             .width(180.dp)
             .height(50.dp),
         enabled = enabled,
-        shape = ButtonDefaults.shape(shape = RoundedCornerShape(12.dp)),
+        shape = ButtonDefaults.shape(shape = JetStreamButtonShape),
         colors = buttonColors,
         border = ButtonDefaults.border(
             border = Border(BorderStroke(0.dp, Color.Transparent)),

@@ -10,12 +10,21 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text
+import androidx.tv.material3.Tab
+import androidx.tv.material3.TabRow
+import androidx.tv.material3.LocalContentColor
+import com.example.tv_app.ui.components.AppBarTabIndicator
+import com.example.tv_app.ui.theme.JetStreamCardShape
+import com.example.tv_app.ui.theme.JetStreamButtonShape
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -26,6 +35,13 @@ fun Appbar(
     backgroundColor: Color = Color.Black.copy(alpha = 0.8f)
 ) {
     val tabs = listOf("Movies", "Shows", "Live TV", "Favorites")
+    val focusRequesters = remember { List(tabs.size) { FocusRequester() } }
+
+    LaunchedEffect(selectedTab) {
+        if (selectedTab >= 0 && selectedTab < focusRequesters.size) {
+            focusRequesters[selectedTab].requestFocus()
+        }
+    }
     
     Row(
         modifier = Modifier
@@ -47,28 +63,63 @@ fun Appbar(
             )
         )
         
-        // Navigation Tabs
+        // Navigation Tabs with Jetstream-style TabRow
         Row(
             horizontalArrangement = Arrangement.spacedBy(24.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            tabs.forEachIndexed { index, tabName ->
-                AppbarTab(
-                    text = tabName,
-                    isSelected = selectedTab == index,
-                    onClick = { onTabSelected(index) }
-                )
+            var isTabRowFocused by remember { mutableStateOf(false) }
+            
+            TabRow(
+                modifier = Modifier
+                    .onFocusChanged {
+                        isTabRowFocused = it.isFocused || it.hasFocus
+                    },
+                selectedTabIndex = selectedTab,
+                indicator = { tabPositions, _ ->
+                    if (selectedTab >= 0 && selectedTab < tabPositions.size) {
+                        AppBarTabIndicator(
+                            currentTabPosition = tabPositions[selectedTab],
+                            anyTabFocused = isTabRowFocused,
+                            shape = JetStreamCardShape
+                        )
+                    }
+                },
+                separator = { Spacer(modifier = Modifier) }
+            ) {
+                tabs.forEachIndexed { index, tabName ->
+                    Tab(
+                        modifier = Modifier
+                            .height(32.dp)
+                            .focusRequester(focusRequesters[index]),
+                        selected = index == selectedTab,
+                        onFocus = { onTabSelected(index) },
+                        onClick = { onTabSelected(index) },
+                    ) {
+                        Text(
+                            modifier = Modifier
+                                .padding(horizontal = 16.dp),
+                            text = tabName,
+                            style = TvMaterialTheme.typography.bodyLarge.copy(
+                                color = Color.White,
+                                fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
+                            )
+                        )
+                    }
+                }
             }
+            
+            Spacer(modifier = Modifier.width(24.dp))
             
             // Search Icon
             androidx.tv.material3.IconButton(
                 onClick = onSearchClicked,
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .size(40.dp),
+                shape = androidx.tv.material3.IconButtonDefaults.shape(JetStreamButtonShape),
                 colors = androidx.tv.material3.IconButtonDefaults.colors(
                     containerColor = if (selectedTab == 4) TvMaterialTheme.colorScheme.primary
-                    else Color.Transparent,
+                    else Color.White.copy(alpha = 0.1f),
                     contentColor = Color.White,
                     focusedContainerColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
                     focusedContentColor = TvMaterialTheme.colorScheme.onPrimary
@@ -85,6 +136,9 @@ fun Appbar(
     }
 }
 
+// This function is now replaced by the TabRow implementation above
+// Keeping it commented for reference, but it's no longer used
+/*
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 private fun AppbarTab(
@@ -94,8 +148,7 @@ private fun AppbarTab(
 ) {
     androidx.tv.material3.Button(
         onClick = onClick,
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp)),
+        modifier = Modifier,
         colors = androidx.tv.material3.ButtonDefaults.colors(
             containerColor = if (isSelected) TvMaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
             else Color.Transparent,
@@ -104,7 +157,7 @@ private fun AppbarTab(
             focusedContainerColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.3f),
             focusedContentColor = TvMaterialTheme.colorScheme.onPrimary
         ),
-        shape = androidx.tv.material3.ButtonDefaults.shape(RoundedCornerShape(8.dp)),
+        shape = androidx.tv.material3.ButtonDefaults.shape(JetStreamButtonShape), // Using Jetstream shape
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
     ) {
         Text(
@@ -115,3 +168,4 @@ private fun AppbarTab(
         )
     }
 }
+*/

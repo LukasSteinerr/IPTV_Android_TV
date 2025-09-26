@@ -34,6 +34,7 @@ import com.example.tv_app.repository.PlaylistService
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
+import com.example.tv_app.ui.theme.JetStreamButtonShape
 
 @Composable
 fun MyPlaylistsScreen(
@@ -346,7 +347,7 @@ fun TvIconButton(
         onClick = onClick,
         modifier = modifier
             .height(56.dp),
-        shape = ButtonDefaults.shape(shape = RoundedCornerShape(16.dp)),
+        shape = ButtonDefaults.shape(shape = JetStreamButtonShape),
         colors = ButtonDefaults.colors(
             containerColor = TvMaterialTheme.colorScheme.primary,
             contentColor = Color.Black,
