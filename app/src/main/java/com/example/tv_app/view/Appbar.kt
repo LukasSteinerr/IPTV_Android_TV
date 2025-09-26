@@ -91,7 +91,15 @@ fun Appbar(
                     Tab(
                         modifier = Modifier
                             .height(32.dp)
-                            .focusRequester(focusRequesters[index]),
+                            .focusRequester(focusRequesters[index])
+                            .background(
+                                color = when {
+                                    isTabRowFocused && selectedTab == index -> TvMaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                                    selectedTab == index -> Color.White.copy(alpha = 0.1f)
+                                    else -> Color.Transparent
+                                },
+                                shape = JetStreamButtonShape
+                            ),
                         selected = index == selectedTab,
                         onFocus = { onTabSelected(index) },
                         onClick = { onTabSelected(index) },
@@ -101,7 +109,7 @@ fun Appbar(
                                 .padding(horizontal = 16.dp),
                             text = tabName,
                             style = TvMaterialTheme.typography.bodyLarge.copy(
-                                color = Color.White,
+                                color = if (isTabRowFocused && selectedTab == index) TvMaterialTheme.colorScheme.onPrimary else Color.White,
                                 fontWeight = if (selectedTab == index) FontWeight.Bold else FontWeight.Normal
                             )
                         )
