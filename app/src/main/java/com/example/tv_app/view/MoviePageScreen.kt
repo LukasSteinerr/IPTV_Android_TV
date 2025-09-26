@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
@@ -18,6 +19,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusRestorer
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text
@@ -29,6 +34,7 @@ import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.focusGroup
 import com.example.tv_app.presentation.common.MovieCard
 
 @Composable
@@ -164,6 +170,7 @@ fun MoviePageScreen(
 }
 
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun CategoryRow(
     category: Category,
@@ -171,7 +178,11 @@ fun CategoryRow(
     tmdbImageProvider: TMDBImageProvider,
     onMovieSelected: (Movie) -> Unit
 ) {
-    Column {
+    val (lazyRow, firstItem) = remember { FocusRequester.createRefs() }
+
+    Column(
+        modifier = Modifier.focusGroup()
+    ) {
         Text(
             text = category.name,
             color = Color.White,
@@ -189,14 +200,27 @@ fun CategoryRow(
             contentPadding = PaddingValues(
                 start = rememberChildPadding().start,
                 end = rememberChildPadding().end,
-            )
+            ),
+            modifier = Modifier
+                .focusRequester(lazyRow)
+                .focusRestorer {
+                    firstItem
+                }
         ) {
-            items(movies) { movie ->
+            itemsIndexed(movies) { index, movie ->
+                val itemModifier = if (index == 0) {
+                    Modifier
+                        .focusRequester(firstItem)
+                        .width(150.dp)
+                } else {
+                    Modifier.width(150.dp)
+                }
+                
                 MovieCard(
                     movie = movie,
                     tmdbImageProvider = tmdbImageProvider,
                     onClick = { onMovieSelected(movie) },
-                    modifier = Modifier.width(150.dp)
+                    modifier = itemModifier
                 )
             }
         }
