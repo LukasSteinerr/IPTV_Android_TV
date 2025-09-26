@@ -17,6 +17,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text
@@ -128,7 +129,7 @@ fun MoviePageScreen(
             } else {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 48.dp),
+                    contentPadding = rememberChildPadding(),
                     verticalArrangement = Arrangement.spacedBy(32.dp)
                 ) {
                     // Featured Section
@@ -182,7 +183,7 @@ fun CategoryRow(
         
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(20.dp),
-            contentPadding = PaddingValues(end = 48.dp)
+            contentPadding = PaddingValues(end = rememberChildPadding().calculateRightPadding(LayoutDirection.Ltr))
         ) {
             items(movies) { movie ->
                 MovieCard(
