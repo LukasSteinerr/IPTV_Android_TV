@@ -30,7 +30,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import coil.compose.AsyncImage
-import com.example.tv_app.model.Movie
+import com.example.tv_app.model.TvSeries
 import com.example.tv_app.repository.TMDBImageProvider
 import kotlinx.coroutines.launch
 
@@ -42,13 +42,13 @@ private val CarouselSaver = Saver<CarouselState, Int>(
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
-fun FeaturedContent(
-    movies: List<Movie>,
-    onPlayTapped: (Movie) -> Unit,
-    onDetailsTapped: (Movie) -> Unit,
+fun FeaturedTvSeriesContent(
+    tvSeries: List<TvSeries>,
+    onPlayTapped: (TvSeries) -> Unit,
+    onDetailsTapped: (TvSeries) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (movies.isEmpty()) {
+    if (tvSeries.isEmpty()) {
         return
     }
 
@@ -77,11 +77,11 @@ fun FeaturedContent(
                 // Because the carousel itself never gets the focus
                 isCarouselFocused = it.hasFocus
             },
-        itemCount = movies.size,
+        itemCount = tvSeries.size,
         carouselState = carouselState,
         carouselIndicator = {
             CarouselIndicator(
-                itemCount = movies.size,
+                itemCount = tvSeries.size,
                 activeItemIndex = carouselState.activeItemIndex
             )
         },
@@ -90,19 +90,19 @@ fun FeaturedContent(
         contentTransformEndToStart = fadeIn(tween(durationMillis = 1000))
             .togetherWith(fadeOut(tween(durationMillis = 1000))),
         content = { index ->
-            val movie = movies[index]
+            val series = tvSeries[index]
             // background
             CarouselItemBackground(
-                movie = movie,
+                tvSeries = series,
                 tmdbImageProvider = tmdbImageProvider,
                 modifier = Modifier.fillMaxSize()
             )
             // foreground
             CarouselItemForeground(
-                movie = movie,
+                tvSeries = series,
                 isCarouselFocused = isCarouselFocused,
-                onPlayTapped = { onPlayTapped(movie) },
-                onDetailsTapped = { onDetailsTapped(movie) },
+                onPlayTapped = { onPlayTapped(series) },
+                onDetailsTapped = { onDetailsTapped(series) },
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -138,7 +138,7 @@ private fun BoxScope.CarouselIndicator(
 
 @Composable
 private fun CarouselItemForeground(
-    movie: Movie,
+    tvSeries: TvSeries,
     isCarouselFocused: Boolean,
     onPlayTapped: () -> Unit,
     onDetailsTapped: () -> Unit,
@@ -155,7 +155,7 @@ private fun CarouselItemForeground(
             verticalArrangement = Arrangement.Bottom
         ) {
             Text(
-                text = movie.name,
+                text = tvSeries.name,
                 style = MaterialTheme.typography.displayMedium.copy(
                     fontWeight = FontWeight.Bold,
                     shadow = Shadow(
@@ -168,7 +168,7 @@ private fun CarouselItemForeground(
                 maxLines = 1
             )
             
-            val description = movie.description
+            val description = tvSeries.description
             if (!description.isNullOrEmpty()) {
                 Text(
                     text = description,
@@ -200,21 +200,21 @@ private fun CarouselItemForeground(
 
 @Composable
 private fun CarouselItemBackground(
-    movie: Movie,
+    tvSeries: TvSeries,
     tmdbImageProvider: TMDBImageProvider,
     modifier: Modifier = Modifier
 ) {
     var imageUrl by remember { mutableStateOf<String?>(null) }
     
-    // Fetch the best available image URL for this movie
-    LaunchedEffect(movie.tmdbId) {
-        imageUrl = tmdbImageProvider.getBackdropUrl(movie.tmdbId)
-            ?: tmdbImageProvider.getPosterUrl(movie.tmdbId, movie.posterUrl)
+    // Fetch the best available image URL for this TV series
+    LaunchedEffect(tvSeries.tmdbId) {
+        imageUrl = tmdbImageProvider.getBackdropUrl(tvSeries.tmdbId)
+            ?: tmdbImageProvider.getPosterUrl(tvSeries.tmdbId, tvSeries.coverUrl)
     }
 
     AsyncImage(
         model = imageUrl,
-        contentDescription = movie.name,
+        contentDescription = tvSeries.name,
         modifier = modifier
             .drawWithContent {
                 drawContent()

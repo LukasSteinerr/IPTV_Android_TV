@@ -132,6 +132,18 @@ fun AppNavigation() {
                     onShowSelected = { show ->
                         Log.d("MainActivity", "Selected show: ${show.name}")
                         // TODO: Navigate to show details or player
+                    },
+                    onNavigateToMovies = {
+                        currentScreen = Screen.MoviePage
+                    },
+                    onNavigateToLiveTV = {
+                        currentScreen = Screen.LiveTVPage
+                    },
+                    onNavigateToFavorites = {
+                        currentScreen = Screen.FavoritesPage
+                    },
+                    onNavigateToSearch = {
+                        currentScreen = Screen.SearchPage
                     }
                 )
             }
