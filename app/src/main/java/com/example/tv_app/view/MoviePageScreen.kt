@@ -178,7 +178,10 @@ fun CategoryRow(
             style = TvMaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold
             ),
-            modifier = Modifier.padding(bottom = 16.dp)
+            modifier = Modifier.padding(
+                start = rememberChildPadding().start,
+                bottom = 16.dp
+            )
         )
         
         LazyRow(
