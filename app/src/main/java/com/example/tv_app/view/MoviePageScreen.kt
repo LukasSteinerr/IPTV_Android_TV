@@ -20,17 +20,15 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme as TvMaterialTheme
 import androidx.tv.material3.Text
-import androidx.tv.material3.Card
-import androidx.tv.material3.CardDefaults
 import coil.compose.AsyncImage
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.Category
 import com.example.tv_app.model.Playlist
-import com.example.tv_app.model.ContentType
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
 import kotlinx.coroutines.launch
 import androidx.compose.foundation.BorderStroke
+import com.example.tv_app.presentation.common.MovieCard
 
 @Composable
 fun MoviePageScreen(
@@ -183,116 +181,16 @@ fun CategoryRow(
         )
         
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp),
             contentPadding = PaddingValues(end = 48.dp)
         ) {
             items(movies) { movie ->
                 MovieCard(
                     movie = movie,
                     tmdbImageProvider = tmdbImageProvider,
-                    onClick = { onMovieSelected(movie) }
+                    onClick = { onMovieSelected(movie) },
+                    modifier = Modifier.width(180.dp)
                 )
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-fun MovieCard(
-    movie: Movie,
-    tmdbImageProvider: TMDBImageProvider,
-    onClick: () -> Unit
-) {
-    var posterUrl by remember { mutableStateOf<String?>(null) }
-    
-    LaunchedEffect(movie.tmdbId) {
-        posterUrl = tmdbImageProvider.getPosterUrl(movie.tmdbId, movie.posterUrl)
-    }
-
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .width(180.dp)
-            .height(270.dp),
-        colors = CardDefaults.colors(
-            containerColor = Color.Black.copy(alpha = 0.4f),
-            contentColor = Color.White,
-            focusedContainerColor = TvMaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
-            focusedContentColor = Color.White
-        ),
-        border = CardDefaults.border(
-            border = androidx.tv.material3.Border(
-                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
-            ),
-            focusedBorder = androidx.tv.material3.Border(
-                border = BorderStroke(2.dp, TvMaterialTheme.colorScheme.primary)
-            )
-        ),
-        shape = CardDefaults.shape(RoundedCornerShape(12.dp))
-    ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            // Movie Poster
-            AsyncImage(
-                model = posterUrl ?: movie.posterUrl,
-                contentDescription = movie.name,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Crop
-            )
-            
-            // Gradient overlay for text readability
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.7f)
-                            ),
-                            startY = 180f,
-                            endY = Float.POSITIVE_INFINITY
-                        )
-                    )
-            )
-            
-            // Movie Title
-            Text(
-                text = movie.name,
-                color = Color.White,
-                style = TvMaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.Medium
-                ),
-                modifier = Modifier
-                    .align(Alignment.BottomStart)
-                    .padding(12.dp),
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            
-            // Rating badge
-            if (!movie.rating.isNullOrEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(
-                            Color.Black.copy(alpha = 0.7f),
-                            RoundedCornerShape(4.dp)
-                        )
-                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                ) {
-                    Text(
-                        text = "★ ${movie.rating}",
-                        color = TvMaterialTheme.colorScheme.primary,
-                        style = TvMaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Medium
-                        )
-                    )
-                }
             }
         }
     }
