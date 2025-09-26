@@ -68,8 +68,8 @@ fun FeaturedContent(
             .height(324.dp)
             .padding(horizontal = 48.dp)
             .border(
-                width = 2.dp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = alpha),
+                width = if (isCarouselFocused) 3.dp else 2.dp,
+                color = if (isCarouselFocused) Color(0xFFE3E2E6) else Color.Transparent,
                 shape = RoundedCornerShape(16.dp),
             )
             .clip(RoundedCornerShape(16.dp))
