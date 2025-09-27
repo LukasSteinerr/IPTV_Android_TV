@@ -15,6 +15,8 @@ import com.example.tv_app.model.ObjectBox
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.model.TvSeries
 import com.example.tv_app.model.Channel
+import com.example.tv_app.model.Movie
+import com.example.tv_app.model.TvEpisode
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.ui.theme.TV_APPTheme
 import io.objectbox.Box
@@ -70,6 +72,8 @@ class MainActivity : ComponentActivity() {
 fun AppNavigation() {
     var currentScreen by remember { mutableStateOf<Screen>(Screen.MyPlaylists) }
     var selectedPlaylist by remember { mutableStateOf<Playlist?>(null) }
+    var selectedMovie by remember { mutableStateOf<Movie?>(null) }
+    var selectedTvSeries by remember { mutableStateOf<TvSeries?>(null) }
     val playlistService = remember { PlaylistService() }
 
     when (currentScreen) {
@@ -103,8 +107,9 @@ fun AppNavigation() {
                         currentScreen = Screen.MyPlaylists
                     },
                     onMovieSelected = { movie ->
+                        selectedMovie = movie
+                        currentScreen = Screen.MovieDetails
                         Log.d("MainActivity", "Selected movie: ${movie.name}")
-                        // TODO: Navigate to movie details or player
                     },
                     onNavigateToShows = {
                         currentScreen = Screen.ShowsPage
@@ -130,8 +135,9 @@ fun AppNavigation() {
                         currentScreen = Screen.MoviePage
                     },
                     onShowSelected = { show ->
+                        selectedTvSeries = show
+                        currentScreen = Screen.TvSeriesDetails
                         Log.d("MainActivity", "Selected show: ${show.name}")
-                        // TODO: Navigate to show details or player
                     },
                     onNavigateToMovies = {
                         currentScreen = Screen.MoviePage
@@ -183,6 +189,44 @@ fun AppNavigation() {
                 )
             }
         }
+        is Screen.MovieDetails -> {
+            selectedMovie?.let { movie ->
+                MovieDetailsScreen(
+                    movie = movie,
+                    playlistService = playlistService,
+                    onBackPressed = {
+                        currentScreen = Screen.MoviePage
+                    },
+                    onMovieSelected = { movie ->
+                        selectedMovie = movie
+                        currentScreen = Screen.MovieDetails
+                    },
+                    onPlayMovie = { movie ->
+                        Log.d("MainActivity", "Playing movie: ${movie.name}")
+                        // TODO: Navigate to player
+                    }
+                )
+            }
+        }
+        is Screen.TvSeriesDetails -> {
+            selectedTvSeries?.let { tvSeries ->
+                TvSeriesDetailsScreen(
+                    tvSeries = tvSeries,
+                    playlistService = playlistService,
+                    onBackPressed = {
+                        currentScreen = Screen.ShowsPage
+                    },
+                    onTvSeriesSelected = { series ->
+                        selectedTvSeries = series
+                        currentScreen = Screen.TvSeriesDetails
+                    },
+                    onEpisodeSelected = { episode ->
+                        Log.d("MainActivity", "Playing episode: ${episode.name}")
+                        // TODO: Navigate to player
+                    }
+                )
+            }
+        }
     }
 }
 
@@ -194,6 +238,8 @@ sealed class Screen {
     object LiveTVPage : Screen()
     object FavoritesPage : Screen()
     object SearchPage : Screen()
+    object MovieDetails : Screen()
+    object TvSeriesDetails : Screen()
 }
 
 @Composable

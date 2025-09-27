@@ -7,12 +7,14 @@ import com.example.tv_app.model.Category
 import com.example.tv_app.model.Channel
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.TvSeries
+import com.example.tv_app.model.TvEpisode
 import com.example.tv_app.model.TvProgram
 import com.example.tv_app.model.EpgChannelInfo
 import com.example.tv_app.model.Category_
 import com.example.tv_app.model.Movie_
 import com.example.tv_app.model.Channel_
 import com.example.tv_app.model.TvSeries_
+import com.example.tv_app.model.TvEpisode_
 import io.objectbox.Box
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -25,6 +27,7 @@ class PlaylistService {
     private val channelBox: Box<Channel> = ObjectBox.boxStore.boxFor(Channel::class.java)
     private val movieBox: Box<Movie> = ObjectBox.boxStore.boxFor(Movie::class.java)
     private val tvSeriesBox: Box<TvSeries> = ObjectBox.boxStore.boxFor(TvSeries::class.java)
+    private val tvEpisodeBox: Box<TvEpisode> = ObjectBox.boxStore.boxFor(TvEpisode::class.java)
     private val tvProgramBox: Box<TvProgram> = ObjectBox.boxStore.boxFor(TvProgram::class.java)
     private val epgChannelInfoBox: Box<EpgChannelInfo> = ObjectBox.boxStore.boxFor(EpgChannelInfo::class.java)
     private val m3uService = M3uService()
@@ -191,6 +194,13 @@ class PlaylistService {
                 .equal(TvSeries_.categoryId, categoryId)
                 .build()
                 .find()
+        }
+    }
+
+    suspend fun getTvSeriesEpisodes(tvSeries: TvSeries): List<TvEpisode> {
+        return withContext(Dispatchers.IO) {
+            // Get episodes related to this TV series
+            tvSeries.episodes
         }
     }
 

@@ -8,6 +8,7 @@ import io.objectbox.relation.ToOne
 data class TvEpisode(
     @Id var id: Long = 0,
     var title: String = "",
+    var name: String = "",
     var streamUrl: String = "",
     var seasonNumber: Int = 0,
     var episodeNumber: Int = 0,

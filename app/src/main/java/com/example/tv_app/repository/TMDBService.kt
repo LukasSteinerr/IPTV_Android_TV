@@ -181,4 +181,54 @@ class TMDBService {
             }
         } ?: emptyList()
     } ?: emptyList()
+
+    suspend fun getTvSeriesCredits(tmdbId: String): List<Cast> = safeApiCall {
+        val url = "$API_BASE_URL/tv/$tmdbId/credits?api_key=$API_KEY"
+        val response = fetchData(url)
+        response?.let {
+            val data = JSONObject(it)
+            val castData = data.getJSONArray("cast")
+            (0 until castData.length()).map { i ->
+                val castObject = castData.getJSONObject(i)
+                Cast(
+                    name = castObject.optString("name", ""),
+                    profilePath = castObject.optString("profile_path", null),
+                    character = castObject.optString("character", "")
+                )
+            }
+        } ?: emptyList()
+    } ?: emptyList()
+
+    suspend fun getSimilarTvSeries(tmdbId: String): List<TvSeries> = safeApiCall {
+        val url = "$API_BASE_URL/tv/$tmdbId/similar?api_key=$API_KEY"
+        val response = fetchData(url)
+        response?.let {
+            val data = JSONObject(it)
+            val results = data.getJSONArray("results")
+            (0 until results.length()).map { i ->
+                val tvSeriesData = results.getJSONObject(i)
+                TvSeries(
+                    name = tvSeriesData.optString("name", "No Title"),
+                    description = tvSeriesData.optString("overview", ""),
+                    year = tvSeriesData.optString("first_air_date", "").take(4),
+                    rating = tvSeriesData.optDouble("vote_average", 0.0).toString(),
+                    tmdbId = tvSeriesData.optString("id"),
+                    coverUrl = tvSeriesData.optString("poster_path")?.let { getPosterUrl(it) },
+                    featuredPosterUrl = tvSeriesData.optString("poster_path")?.let { getFeaturedPosterUrl(it) }
+                )
+            }
+        } ?: emptyList()
+    } ?: emptyList()
+
+    // Helper function to parse genres from TMDB response
+    fun parseGenres(details: JSONObject): List<String> {
+        return try {
+            val genresArray = details.getJSONArray("genres")
+            (0 until genresArray.length()).map { i ->
+                genresArray.getJSONObject(i).getString("name")
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
 }
