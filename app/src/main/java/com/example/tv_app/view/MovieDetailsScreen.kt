@@ -6,8 +6,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -49,6 +51,8 @@ import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
@@ -59,12 +63,17 @@ import coil.request.ImageRequest
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun MovieDetailsScreen(
+    key: Int = 0, // Key to force recomposition
     movie: Movie,
     @Suppress("UNUSED_PARAMETER") playlistService: PlaylistService,
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit = {},
     onPlayMovie: (Movie) -> Unit = {}
 ) {
+    // Force recomposition when key changes
+    LaunchedEffect(key) {
+        // This will trigger when key changes, ensuring fresh state
+    }
     var movieDetails by remember { mutableStateOf<Movie?>(null) }
     var cast by remember { mutableStateOf<List<Cast>>(emptyList()) }
     var similarMovies by remember { mutableStateOf<List<Movie>>(emptyList()) }
@@ -78,6 +87,14 @@ fun MovieDetailsScreen(
     val coroutineScope = rememberCoroutineScope()
     val tmdbService = remember { TMDBService() }
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
+    val lazyListState = rememberLazyListState()
+
+    // Scroll to top when movie changes (similar movie selected)
+    LaunchedEffect(key) {
+        if (key > 0) { // Only scroll if key was changed (new movie selected)
+            lazyListState.scrollToItem(0)
+        }
+    }
 
     LaunchedEffect(movie.tmdbId) {
         coroutineScope.launch {
@@ -147,6 +164,7 @@ fun MovieDetailsScreen(
                 onPlayMovie = { onPlayMovie(displayMovie) },
                 onBackPressed = onBackPressed,
                 onMovieSelected = onMovieSelected,
+                lazyListState = lazyListState,
                 modifier = Modifier
                     .fillMaxSize()
                     .animateContentSize()
@@ -166,12 +184,14 @@ private fun Details(
     onPlayMovie: () -> Unit,
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit,
+    lazyListState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
     val childPadding = rememberChildPadding()
 
     BackHandler(onBack = onBackPressed)
     LazyColumn(
+        state = lazyListState,
         contentPadding = PaddingValues(bottom = 135.dp),
         modifier = modifier,
     ) {
@@ -265,7 +285,13 @@ private fun MovieDetailsHeader(
 ) {
     val childPadding = rememberChildPadding()
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val playButtonFocusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
+
+    // Request focus for the play button when the screen first appears
+    LaunchedEffect(Unit) {
+        playButtonFocusRequester.requestFocus()
+    }
 
     Box(
         modifier = Modifier
@@ -305,11 +331,13 @@ private fun MovieDetailsHeader(
                     )
                 }
                 WatchTrailerButton(
-                    modifier = Modifier.onFocusChanged {
-                        if (it.isFocused) {
-                            coroutineScope.launch { bringIntoViewRequester.bringIntoView() }
-                        }
-                    },
+                    modifier = Modifier
+                        .focusRequester(playButtonFocusRequester)
+                        .onFocusChanged {
+                            if (it.isFocused) {
+                                coroutineScope.launch { bringIntoViewRequester.bringIntoView() }
+                            }
+                        },
                     goToMoviePlayer = onPlayMovie
                 )
             }

@@ -74,6 +74,8 @@ fun AppNavigation() {
     var selectedPlaylist by remember { mutableStateOf<Playlist?>(null) }
     var selectedMovie by remember { mutableStateOf<Movie?>(null) }
     var selectedTvSeries by remember { mutableStateOf<TvSeries?>(null) }
+    var movieDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
+    var tvSeriesDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     val playlistService = remember { PlaylistService() }
 
     when (currentScreen) {
@@ -192,14 +194,15 @@ fun AppNavigation() {
         is Screen.MovieDetails -> {
             selectedMovie?.let { movie ->
                 MovieDetailsScreen(
+                    key = movieDetailsKey, // Force recomposition when key changes
                     movie = movie,
                     playlistService = playlistService,
                     onBackPressed = {
                         currentScreen = Screen.MoviePage
                     },
-                    onMovieSelected = { movie ->
-                        selectedMovie = movie
-                        currentScreen = Screen.MovieDetails
+                    onMovieSelected = { newMovie ->
+                        selectedMovie = newMovie
+                        movieDetailsKey++ // Increment key to force screen refresh
                     },
                     onPlayMovie = { movie ->
                         Log.d("MainActivity", "Playing movie: ${movie.name}")
@@ -211,14 +214,15 @@ fun AppNavigation() {
         is Screen.TvSeriesDetails -> {
             selectedTvSeries?.let { tvSeries ->
                 TvSeriesDetailsScreen(
+                    key = tvSeriesDetailsKey, // Force recomposition when key changes
                     tvSeries = tvSeries,
                     playlistService = playlistService,
                     onBackPressed = {
                         currentScreen = Screen.ShowsPage
                     },
-                    onTvSeriesSelected = { series ->
-                        selectedTvSeries = series
-                        currentScreen = Screen.TvSeriesDetails
+                    onTvSeriesSelected = { newSeries ->
+                        selectedTvSeries = newSeries
+                        tvSeriesDetailsKey++ // Increment key to force screen refresh
                     },
                     onEpisodeSelected = { episode ->
                         Log.d("MainActivity", "Playing episode: ${episode.name}")
