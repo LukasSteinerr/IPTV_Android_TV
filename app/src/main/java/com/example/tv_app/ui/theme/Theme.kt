@@ -1,31 +1,40 @@
 package com.example.tv_app.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.tv.material3.ExperimentalTvMaterial3Api
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.darkColorScheme
-import androidx.tv.material3.lightColorScheme
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun TV_APPTheme(
-    isInDarkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
-    val colorScheme = if (isInDarkTheme) {
-        darkColorScheme(
-            primary = Purple80,
-            secondary = PurpleGrey80,
-            tertiary = Pink80
-        )
-    } else {
-        lightColorScheme(
-            primary = Purple40,
-            secondary = PurpleGrey40,
-            tertiary = Pink40
-        )
-    }
+    val colorScheme = darkColorScheme(
+        primary = JetStreamPrimary,
+        onPrimary = JetStreamOnPrimary,
+        primaryContainer = JetStreamPrimaryContainer,
+        onPrimaryContainer = JetStreamOnPrimaryContainer,
+        secondary = JetStreamSecondary,
+        onSecondary = JetStreamOnSecondary,
+        secondaryContainer = JetStreamSecondaryContainer,
+        onSecondaryContainer = JetStreamOnSecondaryContainer,
+        tertiary = JetStreamTertiary,
+        onTertiary = JetStreamOnTertiary,
+        tertiaryContainer = JetStreamTertiaryContainer,
+        onTertiaryContainer = JetStreamOnTertiaryContainer,
+        background = JetStreamBackground,
+        onBackground = JetStreamOnBackground,
+        surface = JetStreamSurface,
+        onSurface = JetStreamOnSurface,
+        surfaceVariant = JetStreamSurfaceVariant,
+        onSurfaceVariant = JetStreamOnSurfaceVariant,
+        error = JetStreamError,
+        onError = JetStreamOnError,
+        errorContainer = JetStreamErrorContainer,
+        onErrorContainer = JetStreamOnErrorContainer,
+        border = JetStreamBorder
+    )
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
