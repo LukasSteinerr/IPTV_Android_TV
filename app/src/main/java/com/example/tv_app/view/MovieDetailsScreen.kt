@@ -33,6 +33,7 @@ import androidx.tv.material3.Border
 import coil.compose.AsyncImage
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.Cast
+import com.example.tv_app.model.MovieReviewsAndRatings
 import com.example.tv_app.repository.TMDBService
 import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.repository.PlaylistService
@@ -68,6 +69,7 @@ fun MovieDetailsScreen(
     var cast by remember { mutableStateOf<List<Cast>>(emptyList()) }
     var similarMovies by remember { mutableStateOf<List<Movie>>(emptyList()) }
     var genres by remember { mutableStateOf<List<String>>(emptyList()) }
+    var reviewsAndRatings by remember { mutableStateOf<List<MovieReviewsAndRatings>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var posterUrl by remember { mutableStateOf<String?>(null) }
     var backdropUrl by remember { mutableStateOf<String?>(null) }
@@ -95,6 +97,21 @@ fun MovieDetailsScreen(
                     val images = tmdbService.getMovieImages(tmdbId)
                     posterUrl = images["poster"]
                     backdropUrl = images["backdrop"]
+                    // Add mock reviews data similar to JetStreamCompose
+                    reviewsAndRatings = listOf(
+                        MovieReviewsAndRatings(
+                            reviewerName = "FreshTomatoes",
+                            reviewerIconUri = "",
+                            reviewCount = "250",
+                            reviewRating = "92%"
+                        ),
+                        MovieReviewsAndRatings(
+                            reviewerName = "IMDb",
+                            reviewerIconUri = "",
+                            reviewCount = "1.2k",
+                            reviewRating = "8.5"
+                        )
+                    )
                 }
                 isLoading = false
             } catch (e: Exception) {
@@ -125,6 +142,7 @@ fun MovieDetailsScreen(
                 cast = cast,
                 similarMovies = similarMovies,
                 genres = genres,
+                reviewsAndRatings = reviewsAndRatings,
                 backdropUrl = backdropUrl,
                 onPlayMovie = { onPlayMovie(displayMovie) },
                 onBackPressed = onBackPressed,
@@ -143,6 +161,7 @@ private fun Details(
     cast: List<Cast>,
     similarMovies: List<Movie>,
     genres: List<String>,
+    reviewsAndRatings: List<MovieReviewsAndRatings>,
     backdropUrl: String?,
     onPlayMovie: () -> Unit,
     onBackPressed: () -> Unit,
@@ -177,6 +196,15 @@ private fun Details(
                     title = "Similar to ${movieDetails.name}",
                     movies = similarMovies,
                     onMovieSelected = onMovieSelected
+                )
+            }
+        }
+
+        if (reviewsAndRatings.isNotEmpty()) {
+            item {
+                MovieReviews(
+                    modifier = Modifier.padding(top = childPadding.top),
+                    reviewsAndRatings = reviewsAndRatings
                 )
             }
         }
