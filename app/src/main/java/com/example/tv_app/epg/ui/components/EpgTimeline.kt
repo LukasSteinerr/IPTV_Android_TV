@@ -109,8 +109,12 @@ private fun CurrentTimeIndicator(
     val pixelOffset = (minutesFromStart.toFloat() * 4f).dp // 4dp per minute
     val adjustedOffset = pixelOffset + channelWidth - scrollOffset.toFloat().dp
     
-    // Only show if current time is visible in the viewport
-    if (adjustedOffset.value > channelWidth.value && adjustedOffset.value < 1000) { // Rough viewport width check
+    // Improved visibility check with better bounds
+    val isVisible = adjustedOffset.value > channelWidth.value &&
+                   adjustedOffset.value < (channelWidth.value + 800) // More reasonable viewport width
+    
+    // Only show if current time is visible in the viewport and within reasonable bounds
+    if (isVisible && minutesFromStart >= 0 && minutesFromStart < 360) { // Within 6 hours
         Canvas(
             modifier = modifier
                 .fillMaxHeight()

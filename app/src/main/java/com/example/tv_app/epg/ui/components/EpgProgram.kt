@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,11 +43,25 @@ fun EpgProgramItem(
         maxOf(program.durationMinutes.toFloat() * 4f, 120f).dp // 4dp per minute, min 120dp
     }
     
+    val isFocused = remember { mutableStateOf(false) }
+    val isFocusedValue = isFocused.value
+    
     val backgroundColor = EpgColors.programBackgroundColor(
         isSelected = isSelected,
         isCurrent = program.isCurrentProgram,
         isGap = !program.isClickable
     )
+    
+    val borderColor = when {
+        isSelected -> EpgTheme.Primary
+        isFocusedValue -> EpgTheme.Secondary
+        else -> EpgTheme.ProgramBorder
+    }
+    
+    val borderWidth = when {
+        isSelected || isFocusedValue -> 3.dp
+        else -> 1.dp
+    }
     
     val timeFormatter = remember { DateTimeFormatter.ofPattern("HH:mm") }
     
@@ -57,8 +72,8 @@ fun EpgProgramItem(
             .clip(EpgTheme.ProgramShape)
             .background(backgroundColor)
             .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) EpgTheme.OnPrimary else EpgTheme.ProgramBorder,
+                width = borderWidth,
+                color = borderColor,
                 shape = EpgTheme.ProgramShape
             )
             .clickable(enabled = program.isClickable) {
@@ -66,6 +81,7 @@ fun EpgProgramItem(
             }
             .focusable(enabled = program.isClickable)
             .onFocusChanged { focusState ->
+                isFocused.value = focusState.isFocused
                 onFocusChanged(focusState.isFocused)
             }
     ) {

@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
@@ -44,7 +46,21 @@ fun EpgChannelItem(
     onChannelClicked: (EpgChannel) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isFocused = remember { mutableStateOf(false) }
+    val isFocusedValue = isFocused.value
+    
     val backgroundColor = EpgColors.channelBackgroundColor(isSelected)
+    
+    val borderColor = when {
+        isSelected -> EpgTheme.Primary
+        isFocusedValue -> EpgTheme.Secondary
+        else -> EpgTheme.ProgramBorder
+    }
+    
+    val borderWidth = when {
+        isSelected || isFocusedValue -> 3.dp
+        else -> 1.dp
+    }
     
     Box(
         modifier = modifier
@@ -53,8 +69,8 @@ fun EpgChannelItem(
             .clip(EpgTheme.ChannelShape)
             .background(backgroundColor)
             .border(
-                width = if (isSelected) 2.dp else 1.dp,
-                color = if (isSelected) EpgTheme.OnPrimary else EpgTheme.ProgramBorder,
+                width = borderWidth,
+                color = borderColor,
                 shape = EpgTheme.ChannelShape
             )
             .clickable {
@@ -62,6 +78,7 @@ fun EpgChannelItem(
             }
             .focusable()
             .onFocusChanged { focusState ->
+                isFocused.value = focusState.isFocused
                 onFocusChanged(focusState.isFocused)
             }
     ) {

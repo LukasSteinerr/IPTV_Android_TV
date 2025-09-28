@@ -51,13 +51,17 @@ fun EpgGrid(
     
     val timelineScrollState = rememberLazyListState()
     
-    // Sync timeline scroll with horizontal scroll
+    // Improved timeline sync - only sync when main grid scrolls, not vice versa
     LaunchedEffect(horizontalScrollState.firstVisibleItemIndex, horizontalScrollState.firstVisibleItemScrollOffset) {
-        if (!timelineScrollState.isScrollInProgress) {
-            timelineScrollState.scrollToItem(
-                horizontalScrollState.firstVisibleItemIndex,
-                horizontalScrollState.firstVisibleItemScrollOffset
-            )
+        try {
+            if (!timelineScrollState.isScrollInProgress) {
+                timelineScrollState.scrollToItem(
+                    horizontalScrollState.firstVisibleItemIndex,
+                    horizontalScrollState.firstVisibleItemScrollOffset
+                )
+            }
+        } catch (e: Exception) {
+            // Handle scroll sync errors gracefully
         }
     }
     
@@ -126,7 +130,7 @@ private fun EpgChannelRow(
         // Channel column
         EpgChannelItem(
             channel = channel,
-            isSelected = isChannelFocused,
+            isSelected = isChannelSelected || isChannelFocused,
             onFocusChanged = { focused ->
                 isChannelFocused = focused
                 if (focused) {
@@ -137,9 +141,11 @@ private fun EpgChannelRow(
             modifier = Modifier.height(EpgTheme.ProgramHeight)
         )
         
-        // Programs row
+        // Programs row - create separate scroll state for each row to prevent interference
+        val rowScrollState = rememberLazyListState()
+        
         LazyRow(
-            state = horizontalScrollState,
+            state = rowScrollState,
             modifier = Modifier.fillMaxWidth(),
             userScrollEnabled = true // Allow horizontal scrolling
         ) {
@@ -149,7 +155,7 @@ private fun EpgChannelRow(
                 
                 EpgProgramItem(
                     program = program,
-                    isSelected = isProgramFocused,
+                    isSelected = isSelected || isProgramFocused,
                     onFocusChanged = { focused ->
                         isProgramFocused = focused
                         if (focused) {

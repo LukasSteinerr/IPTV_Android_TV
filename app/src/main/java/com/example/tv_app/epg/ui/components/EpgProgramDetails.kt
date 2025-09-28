@@ -222,12 +222,6 @@ private fun ChannelDetailsContent(
                 color = EpgTheme.OnSurface
             )
         }
-        
-        Text(
-            text = "Select a program to see details",
-            style = EpgTheme.DetailsDescriptionStyle,
-            color = EpgTheme.OnSurfaceVariant
-        )
     }
 }
 

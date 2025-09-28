@@ -37,12 +37,6 @@ import com.example.tv_app.epg.ui.EpgTheme
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
-data class DateOption(
-    val date: LocalDate,
-    val displayText: String,
-    val isToday: Boolean = false
-)
-
 data class TimeOfDayOption(
     val label: String,
     val hour: Int
@@ -59,17 +53,7 @@ fun EpgControls(
     canJumpToLive: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val dateOptions = remember {
-        generateDateOptions()
-    }
-    
-    val timeOfDayOptions = remember {
-        listOf(
-            TimeOfDayOption("Morning", 6),
-            TimeOfDayOption("Afternoon", 12),
-            TimeOfDayOption("Evening", 19)
-        )
-    }
+    // Parameters kept for compatibility but not used in UI
     
     Column(
         modifier = modifier
@@ -78,55 +62,12 @@ fun EpgControls(
             .padding(EpgTheme.ContentPadding),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Date selector
+        // Jump to live button only
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.End
         ) {
-            Text(
-                text = "Date:",
-                style = EpgTheme.ChannelNameStyle,
-                color = EpgTheme.OnSurface
-            )
-            
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(dateOptions) { dateOption ->
-                    DateOptionButton(
-                        dateOption = dateOption,
-                        isSelected = dateOption.date == selectedDate,
-                        onDateSelected = onDateSelected
-                    )
-                }
-            }
-        }
-        
-        // Time of day selector
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Text(
-                text = "Time:",
-                style = EpgTheme.ChannelNameStyle,
-                color = EpgTheme.OnSurface
-            )
-            
-            timeOfDayOptions.forEach { timeOption ->
-                TimeOfDayButton(
-                    timeOption = timeOption,
-                    isSelected = timeOption.hour == selectedTimeOfDay.hour,
-                    onTimeSelected = onTimeOfDaySelected
-                )
-                
-                Spacer(modifier = Modifier.width(8.dp))
-            }
-            
-            Spacer(modifier = Modifier.weight(1f))
-            
             // Jump to live button
             if (canJumpToLive) {
                 Button(
@@ -143,139 +84,8 @@ fun EpgControls(
     }
 }
 
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun DateOptionButton(
-    dateOption: DateOption,
-    isSelected: Boolean,
-    onDateSelected: (LocalDate) -> Unit
-) {
-    var isFocused by remember { mutableStateOf(false) }
-    
-    val backgroundColor = when {
-        isFocused -> EpgTheme.PrimaryVariant
-        isSelected -> EpgTheme.Primary
-        else -> EpgTheme.ChannelBackground
-    }
-    
-    val textColor = when {
-        isFocused || isSelected -> EpgTheme.OnPrimary
-        else -> EpgTheme.OnSurface
-    }
-    
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(backgroundColor)
-            .border(
-                width = if (isFocused) 2.dp else 0.dp,
-                color = EpgTheme.OnPrimary,
-                shape = RoundedCornerShape(8.dp)
-            )
-            .clickable { onDateSelected(dateOption.date) }
-            .focusable()
-            .onFocusChanged { isFocused = it.isFocused }
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = dateOption.displayText,
-            style = EpgTheme.ProgramTitleStyle,
-            color = textColor,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-@OptIn(ExperimentalTvMaterial3Api::class)
-@Composable
-private fun TimeOfDayButton(
-    timeOption: TimeOfDayOption,
-    isSelected: Boolean,
-    onTimeSelected: (TimeOfDayOption) -> Unit
-) {
-    var isFocused by remember { mutableStateOf(false) }
-    
-    val backgroundColor = when {
-        isFocused -> EpgTheme.PrimaryVariant
-        isSelected -> EpgTheme.Primary
-        else -> EpgTheme.ChannelBackground
-    }
-    
-    val textColor = when {
-        isFocused || isSelected -> EpgTheme.OnPrimary
-        else -> EpgTheme.OnSurface
-    }
-    
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(backgroundColor)
-            .border(
-                width = if (isFocused) 2.dp else 0.dp,
-                color = EpgTheme.OnPrimary,
-                shape = RoundedCornerShape(8.dp)
-            )
-            .clickable { onTimeSelected(timeOption) }
-            .focusable()
-            .onFocusChanged { isFocused = it.isFocused }
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-    ) {
-        Text(
-            text = timeOption.label,
-            style = EpgTheme.ProgramTitleStyle,
-            color = textColor,
-            textAlign = TextAlign.Center
-        )
-    }
-}
-
-private fun generateDateOptions(): List<DateOption> {
-    val today = LocalDate.now()
-    val dateOptions = mutableListOf<DateOption>()
-    
-    // Add past days
-    for (i in 7 downTo 1) {
-        val date = today.minusDays(i.toLong())
-        val formatter = if (i == 1) {
-            DateTimeFormatter.ofPattern("'Yesterday'")
-        } else {
-            DateTimeFormatter.ofPattern("EEE, MMM d")
-        }
-        dateOptions.add(
-            DateOption(
-                date = date,
-                displayText = date.format(formatter)
-            )
-        )
-    }
-    
-    // Add today
-    dateOptions.add(
-        DateOption(
-            date = today,
-            displayText = "Today",
-            isToday = true
-        )
-    )
-    
-    // Add future days
-    for (i in 1..7) {
-        val date = today.plusDays(i.toLong())
-        val formatter = if (i == 1) {
-            DateTimeFormatter.ofPattern("'Tomorrow'")
-        } else {
-            DateTimeFormatter.ofPattern("EEE, MMM d")
-        }
-        dateOptions.add(
-            DateOption(
-                date = date,
-                displayText = date.format(formatter)
-            )
-        )
-    }
-    
-    return dateOptions
-}
+// Removed DateOptionButton, TimeOfDayButton, and generateDateOptions functions
+// as they are no longer needed after removing date and time selectors
 
 @Preview
 @Composable

@@ -33,7 +33,6 @@ import com.example.tv_app.epg.model.EpgData
 import com.example.tv_app.epg.model.EpgProgram
 import com.example.tv_app.epg.ui.components.EpgControls
 import com.example.tv_app.epg.ui.components.EpgGrid
-import com.example.tv_app.epg.ui.components.EpgProgramDetails
 import com.example.tv_app.epg.ui.components.TimeOfDayOption
 import com.example.tv_app.model.Channel
 import com.example.tv_app.model.Playlist
@@ -141,45 +140,31 @@ fun EpgScreen(
                     LoadingContent()
                 }
                 is EpgUiState.Success -> {
-                    Row(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
-                        // Main EPG Grid
-                        EpgGrid(
-                            epgData = currentState.epgData,
-                            selectedChannel = selectedChannel,
-                            selectedProgram = selectedProgram,
-                            onChannelSelected = { channel ->
-                                selectedChannel = channel
-                                selectedProgram = null
-                            },
-                            onProgramSelected = { program ->
-                                selectedProgram = program
-                            },
-                            onChannelClicked = { channel ->
-                                onChannelSelected(channel.originalChannel)
-                            },
-                            onProgramClicked = { program ->
-                                if (program.isCurrentProgram && program.originalProgram != null) {
-                                    // Play current program
-                                    selectedChannel?.let { channel ->
-                                        onChannelSelected(channel.originalChannel)
-                                    }
+                    // Main EPG Grid - full width without details panel
+                    EpgGrid(
+                        epgData = currentState.epgData,
+                        selectedChannel = selectedChannel,
+                        selectedProgram = selectedProgram,
+                        onChannelSelected = { channel ->
+                            selectedChannel = channel
+                            selectedProgram = null
+                        },
+                        onProgramSelected = { program ->
+                            selectedProgram = program
+                        },
+                        onChannelClicked = { channel ->
+                            onChannelSelected(channel.originalChannel)
+                        },
+                        onProgramClicked = { program ->
+                            if (program.isCurrentProgram && program.originalProgram != null) {
+                                // Play current program
+                                selectedChannel?.let { channel ->
+                                    onChannelSelected(channel.originalChannel)
                                 }
-                            },
-                            modifier = Modifier.weight(1f)
-                        )
-                        
-                        // Program Details Panel
-                        EpgProgramDetails(
-                            selectedChannel = selectedChannel,
-                            selectedProgram = selectedProgram,
-                            modifier = Modifier
-                                .width(300.dp)
-                                .fillMaxSize()
-                                .padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
-                        )
-                    }
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
                 is EpgUiState.Error -> {
                     ErrorContent(
