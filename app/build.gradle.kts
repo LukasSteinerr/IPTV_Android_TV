@@ -7,6 +7,11 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
+repositories {
+    google()
+    mavenCentral()
+}
+
 android {
     namespace = "com.example.tv_app"
     compileSdk = 36
