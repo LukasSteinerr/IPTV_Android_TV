@@ -21,4 +21,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "TV_APP"
 include(":app")
+include(":android-tv-program-guide:library")
  

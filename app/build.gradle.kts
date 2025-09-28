@@ -98,6 +98,15 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.google.accompanist:accompanist-pager:0.23.1")
     implementation("com.google.accompanist:accompanist-pager-indicators:0.23.1")
+    
+    // Android TV Program Guide
+    implementation(project(":android-tv-program-guide:library"))
+    implementation("io.reactivex.rxjava3:rxjava:3.1.5")
+    implementation("io.reactivex.rxjava3:rxandroid:3.0.0")
+    implementation("com.jakewharton.threetenabp:threetenabp:1.4.4")
+    implementation("com.github.bumptech.glide:glide:4.14.2")
+    implementation("androidx.leanback:leanback:1.0.0")
+    implementation("androidx.fragment:fragment-ktx:1.8.5")
 }
 
 apply(plugin = "io.objectbox")

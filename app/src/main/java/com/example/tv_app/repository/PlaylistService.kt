@@ -15,6 +15,8 @@ import com.example.tv_app.model.Movie_
 import com.example.tv_app.model.Channel_
 import com.example.tv_app.model.TvSeries_
 import com.example.tv_app.model.TvEpisode_
+import com.example.tv_app.model.TvProgram_
+import com.example.tv_app.model.ContentType
 import io.objectbox.Box
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -201,6 +203,36 @@ class PlaylistService {
         return withContext(Dispatchers.IO) {
             // Get episodes related to this TV series
             tvSeries.episodes
+        }
+    }
+
+    suspend fun getLiveTVChannelsForPlaylist(playlist: Playlist): List<Channel> {
+        return withContext(Dispatchers.IO) {
+            // Get live TV categories for this playlist
+            val liveTVCategories = categoryBox.query()
+                .equal(Category_.playlistId, playlist.id)
+                .equal(Category_.contentType, ContentType.liveTV.toLong())
+                .build()
+                .find()
+
+            val allChannels = mutableListOf<Channel>()
+            for (category in liveTVCategories) {
+                allChannels.addAll(category.channels)
+            }
+            allChannels
+        }
+    }
+
+    suspend fun getEpgProgramsForChannel(channel: Channel): List<TvProgram> {
+        return withContext(Dispatchers.IO) {
+            if (channel.epgId.isNullOrEmpty()) {
+                emptyList()
+            } else {
+                val programs = tvProgramBox.query(TvProgram_.channelXmlTvId.equal(channel.epgId!!))
+                    .build()
+                    .find()
+                programs.sortedBy { it.startTime }
+            }
         }
     }
 

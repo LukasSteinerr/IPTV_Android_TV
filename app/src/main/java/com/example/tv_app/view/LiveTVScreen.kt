@@ -1,10 +1,16 @@
 package com.example.tv_app.view
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -57,17 +63,13 @@ fun LiveTVScreen(
                 backgroundColor = Color.Transparent
             )
 
-            // Live TV content
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "Live TV coming soon!",
-                    color = Color.White.copy(alpha = 0.6f),
-                    style = TvMaterialTheme.typography.headlineSmall
-                )
-            }
+            // Live TV content - EPG Guide
+            EpgGuide(
+                playlist = playlist,
+                playlistService = playlistService,
+                onChannelSelected = onChannelSelected,
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }

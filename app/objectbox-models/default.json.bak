@@ -246,7 +246,7 @@
     },
     {
       "id": "6:1693898263088373339",
-      "lastPropertyId": "10:101919637756946482",
+      "lastPropertyId": "11:2549794661133605297",
       "name": "TvEpisode",
       "properties": [
         {
@@ -302,6 +302,11 @@
           "type": 11,
           "flags": 520,
           "relationTarget": "TvSeries"
+        },
+        {
+          "id": "11:2549794661133605297",
+          "name": "name",
+          "type": 9
         }
       ],
       "relations": []
