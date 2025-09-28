@@ -99,14 +99,11 @@ dependencies {
     implementation("com.google.accompanist:accompanist-pager:0.23.1")
     implementation("com.google.accompanist:accompanist-pager-indicators:0.23.1")
     
-    // Android TV Program Guide
-    implementation(project(":android-tv-program-guide:library"))
-    implementation("io.reactivex.rxjava3:rxjava:3.1.5")
-    implementation("io.reactivex.rxjava3:rxandroid:3.0.0")
-    implementation("com.jakewharton.threetenabp:threetenabp:1.4.4")
-    implementation("com.github.bumptech.glide:glide:4.14.2")
-    implementation("androidx.leanback:leanback:1.0.0")
+    // Note: Removed android-tv-program-guide dependency - now using custom Compose EPG
+    // Keep fragment dependency for backward compatibility if needed
     implementation("androidx.fragment:fragment-ktx:1.8.5")
+    // Keep ThreeTen for date/time handling in other parts of the app
+    implementation("com.jakewharton.threetenabp:threetenabp:1.4.4")
 }
 
 apply(plugin = "io.objectbox")

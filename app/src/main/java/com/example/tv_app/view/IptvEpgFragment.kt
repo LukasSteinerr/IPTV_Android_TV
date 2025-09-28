@@ -1,5 +1,10 @@
 package com.example.tv_app.view
 
+// DEPRECATED: This fragment is replaced by the new Compose EPG implementation
+// Keep for reference but not used in production
+// See: com.example.tv_app.epg.ui.EpgScreen
+
+/*
 import android.annotation.SuppressLint
 import android.text.Spanned
 import android.text.SpannedString
@@ -293,3 +298,4 @@ class IptvEpgFragment(
         requestingProgramGuideFor(currentDate)
     }
 }
+*/
