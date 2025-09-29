@@ -98,7 +98,13 @@ fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPresse
         exoPlayer.prepare()
     }
 
-    BackHandler(onBack = onBackPressed)
+    // Handle back navigation with proper cleanup
+    BackHandler(onBack = {
+        // Stop and release the player before navigating away
+        exoPlayer.stop()
+        exoPlayer.release()
+        onBackPressed()
+    })
 
     val pulseState = rememberVideoPlayerPulseState()
 

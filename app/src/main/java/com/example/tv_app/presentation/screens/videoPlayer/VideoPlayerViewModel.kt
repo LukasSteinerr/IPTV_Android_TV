@@ -30,6 +30,12 @@ class VideoPlayerViewModel : ViewModel() {
             _uiState.value = VideoPlayerUiState.Ready(channelMovie)
         }
     }
+
+    fun reset() {
+        viewModelScope.launch {
+            _uiState.value = VideoPlayerUiState.Loading
+        }
+    }
 }
 
 @Immutable

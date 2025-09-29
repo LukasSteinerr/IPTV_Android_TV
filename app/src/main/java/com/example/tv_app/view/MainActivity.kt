@@ -241,6 +241,8 @@ fun AppNavigation() {
         is Screen.VideoPlayer -> {
             VideoPlayerScreen(
                 onBackPressed = {
+                    // Reset the video player state when navigating away
+                    videoPlayerViewModel.reset()
                     currentScreen = Screen.MovieDetails
                 },
                 viewModel = videoPlayerViewModel
