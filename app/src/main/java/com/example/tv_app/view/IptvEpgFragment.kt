@@ -14,6 +14,7 @@ import com.egeniq.androidtvprogramguide.ProgramGuideFragment
 import com.egeniq.androidtvprogramguide.R as ProgramGuideR
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideChannel
 import com.egeniq.androidtvprogramguide.entity.ProgramGuideSchedule
+import com.egeniq.androidtvprogramguide.util.FilterOption
 import com.example.tv_app.model.Channel
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.model.TvProgram
@@ -37,6 +38,8 @@ class IptvEpgFragment(
     private val playlistService: PlaylistService,
     private val onChannelSelected: (Channel) -> Unit = {}
 ) : ProgramGuideFragment<IptvEpgFragment.IptvProgram>() {
+
+    private var selectedCategoryId: Long? = null
 
     override val CAN_FOCUS_CHANNEL = true
     override val SCROLL_SYNCING = true
@@ -152,8 +155,13 @@ class IptvEpgFragment(
         Single.fromCallable {
             runBlocking {
                 try {
-                    val channels = playlistService.getLiveTVChannelsForPlaylist(playlist)
-                    Log.d(TAG, "Found ${channels.size} channels for playlist ${playlist.name}")
+                    val channels = if (selectedCategoryId != null) {
+                        playlistService.getChannelsForCategory(selectedCategoryId!!)
+                    } else {
+                        playlistService.getLiveTVChannelsForPlaylist(playlist)
+                    }
+                    Log.d(TAG, "Found ${channels.size} channels for playlist ${playlist.name}" +
+                          if (selectedCategoryId != null) " in category $selectedCategoryId" else "")
                     
                     val iptvChannels = channels.map { channel ->
                         IptvChannel(
@@ -290,6 +298,37 @@ class IptvEpgFragment(
     }
 
     override fun requestRefresh() {
+        requestingProgramGuideFor(currentDate)
+    }
+
+    override fun getAvailableCategories(): List<FilterOption> {
+        return runBlocking {
+            try {
+                val categories = playlistService.getCategoriesForPlaylist(playlist.id)
+                val filterOptions = mutableListOf<FilterOption>()
+                
+                // Add "All Channels" option
+                filterOptions.add(FilterOption("All Channels", "all", true))
+                
+                // Add category options
+                categories.forEach { category ->
+                    filterOptions.add(FilterOption(category.name, category.id.toString(), false))
+                }
+                
+                filterOptions
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting categories", e)
+                emptyList()
+            }
+        }
+    }
+
+    override fun onCategorySelected(category: FilterOption) {
+        selectedCategoryId = if (category.value == "all") {
+            null
+        } else {
+            category.value.toLongOrNull()
+        }
         requestingProgramGuideFor(currentDate)
     }
 }
