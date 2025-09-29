@@ -23,28 +23,40 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.compose.PlayerSurface
+import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
+import androidx.media3.ui.compose.modifiers.resizeWithContentScale
 import com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerControls
 import com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerOverlay
+import com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerPulse
+import com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerPulseState
+import com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerPulse.Type.BACK
+import com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerPulse.Type.FORWARD
+import com.example.tv_app.presentation.screens.videoPlayer.components.rememberVideoPlayerPulseState
 import com.example.tv_app.presentation.screens.videoPlayer.components.rememberPlayer
 import com.example.tv_app.presentation.screens.videoPlayer.components.rememberVideoPlayerState
+import com.example.tv_app.presentation.utils.handleDPadKeyEvents
 
-@androidx.annotation.OptIn(UnstableApi::class)
+object VideoPlayerScreen {
+    const val MovieIdBundleKey = "movieId"
+}
+
+/**
+ * [Work in progress] A composable screen for playing a video.
+ *
+ * @param onBackPressed The callback to invoke when the user presses the back button.
+ * @param videoPlayerScreenViewModel The view model for the video player screen.
+ */
 @Composable
 fun VideoPlayerScreen(
     onBackPressed: () -> Unit,
     viewModel: VideoPlayerViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    val context = LocalContext.current
-    val exoPlayer = rememberPlayer(context)
-    val videoPlayerState = rememberVideoPlayerState(hideSeconds = 4)
 
-    // Handle back button
-    BackHandler(onBack = onBackPressed)
-
-    when (val state = uiState) {
+    // TODO: Handle Loading & Error states
+    when (val s = uiState) {
         is VideoPlayerUiState.Loading -> {
-            // Show loading state
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -52,28 +64,8 @@ fun VideoPlayerScreen(
                 // You can add a loading indicator here if needed
             }
         }
-        
-        is VideoPlayerUiState.Ready -> {
-            // Prepare and play the media
-            LaunchedEffect(exoPlayer, state.movie) {
-                val mediaItem = MediaItem.Builder()
-                    .setUri(state.movie.streamUrl)
-                    .build()
-                exoPlayer.setMediaItem(mediaItem)
-                exoPlayer.prepare()
-                exoPlayer.play()
-            }
 
-            VideoPlayerContent(
-                exoPlayer = exoPlayer,
-                movie = state.movie,
-                videoPlayerState = videoPlayerState,
-                onBackPressed = onBackPressed
-            )
-        }
-        
         is VideoPlayerUiState.Error -> {
-            // Show error state
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -81,63 +73,101 @@ fun VideoPlayerScreen(
                 // You can add an error message here if needed
             }
         }
+
+        is VideoPlayerUiState.Ready -> {
+            VideoPlayerScreenContent(
+                movie = s.movie,
+                onBackPressed = onBackPressed
+            )
+        }
     }
 }
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-private fun VideoPlayerContent(
-    exoPlayer: ExoPlayer,
-    movie: com.example.tv_app.model.Movie,
-    videoPlayerState: com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerState,
-    onBackPressed: () -> Unit
-) {
-    val focusRequester = remember { FocusRequester() }
+fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPressed: () -> Unit) {
+    val context = LocalContext.current
+    val exoPlayer = rememberPlayer(context)
+
+    val videoPlayerState = rememberVideoPlayerState(
+        hideSeconds = 4,
+    )
+
+    LaunchedEffect(exoPlayer, movie) {
+        exoPlayer.addMediaItem(movie.intoMediaItem())
+        exoPlayer.prepare()
+    }
+
+    BackHandler(onBack = onBackPressed)
+
+    val pulseState = rememberVideoPlayerPulseState()
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
+        Modifier
+            .dPadEvents(
+                exoPlayer,
+                videoPlayerState,
+                pulseState
+            )
             .focusable()
     ) {
-        // Video surface - using AndroidView for ExoPlayer integration
-        AndroidView(
-            factory = { context ->
-                PlayerView(context).apply {
-                    this.player = exoPlayer
-                    useController = false
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-                }
-            },
-            modifier = Modifier.fillMaxSize()
+        PlayerSurface(
+            player = exoPlayer,
+            surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
+            modifier = Modifier.resizeWithContentScale(
+                contentScale = ContentScale.Fit,
+                sourceSizeDp = null
+            )
         )
 
-        // Video controls overlay
+        val focusRequester = remember { FocusRequester() }
         VideoPlayerOverlay(
             modifier = Modifier.align(Alignment.BottomCenter),
             focusRequester = focusRequester,
             isPlaying = exoPlayer.isPlaying,
             isControlsVisible = videoPlayerState.isControlsVisible,
-            centerButton = {
-                // You can add a play/pause button here if needed
-            },
-            subtitles = {
-                // Subtitles can be implemented here
-            },
-            showControls = { videoPlayerState.showControls(exoPlayer.isPlaying) },
+            centerButton = { VideoPlayerPulse(pulseState) },
+            subtitles = { /* TODO Implement subtitles */ },
+            showControls = videoPlayerState::showControls,
             controls = {
                 VideoPlayerControls(
                     player = exoPlayer,
                     movie = movie,
                     focusRequester = focusRequester,
-                    onShowControls = { videoPlayerState.showControls(exoPlayer.isPlaying) }
+                    onShowControls = { videoPlayerState.showControls(exoPlayer.isPlaying) },
                 )
             }
         )
     }
+}
 
-    // Clean up when the composable is disposed
-    LaunchedEffect(Unit) {
-        // Request focus for the controls
-        focusRequester.requestFocus()
+private fun Modifier.dPadEvents(
+    exoPlayer: ExoPlayer,
+    videoPlayerState: com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerState,
+    pulseState: VideoPlayerPulseState
+): Modifier = this.handleDPadKeyEvents(
+    onLeft = {
+        if (!videoPlayerState.isControlsVisible) {
+            exoPlayer.seekBack()
+            pulseState.setType(BACK)
+        }
+    },
+    onRight = {
+        if (!videoPlayerState.isControlsVisible) {
+            exoPlayer.seekForward()
+            pulseState.setType(FORWARD)
+        }
+    },
+    onUp = { videoPlayerState.showControls() },
+    onDown = { videoPlayerState.showControls() },
+    onEnter = {
+        exoPlayer.pause()
+        videoPlayerState.showControls()
     }
+)
+
+private fun com.example.tv_app.model.Movie.intoMediaItem(): MediaItem {
+    return MediaItem.Builder()
+        .setUri(streamUrl)
+        .build()
 }
