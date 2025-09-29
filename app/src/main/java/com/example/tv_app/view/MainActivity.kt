@@ -20,6 +20,8 @@ import com.example.tv_app.model.Movie
 import com.example.tv_app.model.TvEpisode
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.ui.theme.TV_APPTheme
+import com.example.tv_app.presentation.screens.videoPlayer.VideoPlayerScreen
+import com.example.tv_app.presentation.screens.videoPlayer.VideoPlayerViewModel
 import io.objectbox.Box
 import android.util.Log
 import com.google.firebase.firestore.ktx.firestore
@@ -78,6 +80,9 @@ fun AppNavigation() {
     var movieDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     var tvSeriesDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     val playlistService = remember { PlaylistService() }
+    
+    // Create a shared ViewModel for the video player
+    val videoPlayerViewModel = remember { VideoPlayerViewModel() }
 
     when (currentScreen) {
         Screen.MyPlaylists -> {
@@ -207,7 +212,8 @@ fun AppNavigation() {
                     },
                     onPlayMovie = { movie ->
                         Log.d("MainActivity", "Playing movie: ${movie.name}")
-                        // TODO: Navigate to player
+                        videoPlayerViewModel.loadMovie(movie)
+                        currentScreen = Screen.VideoPlayer
                     }
                 )
             }
@@ -232,6 +238,14 @@ fun AppNavigation() {
                 )
             }
         }
+        is Screen.VideoPlayer -> {
+            VideoPlayerScreen(
+                onBackPressed = {
+                    currentScreen = Screen.MovieDetails
+                },
+                viewModel = videoPlayerViewModel
+            )
+        }
     }
 }
 
@@ -245,6 +259,7 @@ sealed class Screen {
     object SearchPage : Screen()
     object MovieDetails : Screen()
     object TvSeriesDetails : Screen()
+    object VideoPlayer : Screen()
 }
 
 @Composable

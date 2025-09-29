@@ -107,6 +107,11 @@ dependencies {
     implementation("com.github.bumptech.glide:glide:4.14.2")
     implementation("androidx.leanback:leanback:1.0.0")
     implementation("androidx.fragment:fragment-ktx:1.8.5")
+    
+    // Media3 ExoPlayer for video playback
+    implementation("androidx.media3:media3-exoplayer:1.3.1")
+    implementation("androidx.media3:media3-ui:1.3.1")
+    implementation("androidx.media3:media3-common:1.3.1")
 }
 
 apply(plugin = "io.objectbox")
