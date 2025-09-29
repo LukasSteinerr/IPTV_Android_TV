@@ -7,11 +7,6 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
 }
 
-repositories {
-    google()
-    mavenCentral()
-}
-
 android {
     namespace = "com.example.tv_app"
     compileSdk = 36
@@ -105,7 +100,7 @@ dependencies {
     implementation("com.google.accompanist:accompanist-pager-indicators:0.23.1")
     
     // Android TV Program Guide
-    implementation(project(":android-tv-program-guide:library"))
+    implementation("com.github.LukasSteinerr:Android_TV_EPG:main")
     implementation("io.reactivex.rxjava3:rxjava:3.1.5")
     implementation("io.reactivex.rxjava3:rxandroid:3.0.0")
     implementation("com.jakewharton.threetenabp:threetenabp:1.4.4")
