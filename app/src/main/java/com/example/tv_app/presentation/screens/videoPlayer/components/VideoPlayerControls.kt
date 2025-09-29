@@ -52,20 +52,20 @@ fun VideoPlayerControls(
                     onShowControls = onShowControls,
                 )
                 VideoPlayerControlsIcon(
-                    icon = Icons.Default.AutoAwesomeMotion,
                     isPlaying = isPlaying,
+                    icon = Icons.Default.AutoAwesomeMotion,
                     contentDescription = "Playlist",
                     onShowControls = onShowControls
                 )
                 VideoPlayerControlsIcon(
-                    icon = Icons.Default.ClosedCaption,
                     isPlaying = isPlaying,
+                    icon = Icons.Default.ClosedCaption,
                     contentDescription = "Closed Captions",
                     onShowControls = onShowControls
                 )
                 VideoPlayerControlsIcon(
-                    icon = Icons.Default.Settings,
                     isPlaying = isPlaying,
+                    icon = Icons.Default.Settings,
                     contentDescription = "Settings",
                     onShowControls = onShowControls
                 )

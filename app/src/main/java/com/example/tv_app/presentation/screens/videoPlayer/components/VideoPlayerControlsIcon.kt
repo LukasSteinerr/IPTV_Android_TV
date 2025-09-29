@@ -1,49 +1,59 @@
 package com.example.tv_app.presentation.screens.videoPlayer.components
 
-import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.ClickableSurfaceDefaults
 import androidx.tv.material3.Icon
-import androidx.tv.material3.IconButton
+import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Surface
 
 @Composable
 fun VideoPlayerControlsIcon(
-    icon: ImageVector,
     isPlaying: Boolean,
-    contentDescription: String,
-    onShowControls: () -> Unit,
-    onClick: (() -> Unit)? = null
+    icon: ImageVector,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null,
+    onShowControls: () -> Unit = {},
+    onClick: () -> Unit = {}
 ) {
-    var isFocused by remember { mutableStateOf(false) }
-    
-    IconButton(
-        onClick = { 
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
+    LaunchedEffect(isFocused && isPlaying) {
+        if (isFocused && isPlaying) {
             onShowControls()
-            onClick?.invoke()
-        },
-        modifier = Modifier
-            .size(48.dp)
-            .onFocusChanged { isFocused = it.isFocused }
-            .focusable()
+        }
+    }
+
+    Surface(
+        modifier = modifier.size(40.dp),
+        onClick = onClick,
+        shape = ClickableSurfaceDefaults.shape(shape = CircleShape),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1.05f),
+        interactionSource = interactionSource
     ) {
         Icon(
-            imageVector = icon,
+            icon,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
             contentDescription = contentDescription,
-            tint = if (isFocused) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
-            modifier = Modifier.size(24.dp)
+            tint = LocalContentColor.current
         )
     }
 }
