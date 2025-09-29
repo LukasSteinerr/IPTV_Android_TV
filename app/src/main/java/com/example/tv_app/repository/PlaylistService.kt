@@ -293,4 +293,51 @@ class PlaylistService {
             Log.e("PlaylistService", "Error matching TMDB popular TV series", e)
         }
     }
+
+    suspend fun crossReferenceSimilarMovies(similarMovies: List<Movie>): List<Movie> {
+        return withContext(Dispatchers.IO) {
+            if (similarMovies.isEmpty()) return@withContext emptyList()
+
+            val syncedSimilarMovies = mutableListOf<Movie>()
+
+            for (tmdbMovie in similarMovies) {
+                if (!tmdbMovie.tmdbId.isNullOrEmpty()) {
+                    val localMovie = movieBox.query(Movie_.tmdbId.equal(tmdbMovie.tmdbId)).build().findFirst()
+
+                    if (localMovie != null) {
+                        // Update the local movie with TMDB image URLs if available
+                        localMovie.posterUrl = tmdbMovie.posterUrl ?: localMovie.posterUrl
+                        localMovie.backdropUrl = tmdbMovie.backdropUrl ?: localMovie.backdropUrl
+                        localMovie.featuredPosterUrl = tmdbMovie.featuredPosterUrl ?: localMovie.featuredPosterUrl
+                        syncedSimilarMovies.add(localMovie)
+                    }
+                }
+            }
+
+            syncedSimilarMovies
+        }
+    }
+
+    suspend fun crossReferenceSimilarTvSeries(similarTvSeries: List<TvSeries>): List<TvSeries> {
+        return withContext(Dispatchers.IO) {
+            if (similarTvSeries.isEmpty()) return@withContext emptyList()
+
+            val syncedSimilarTvSeries = mutableListOf<TvSeries>()
+
+            for (tmdbSeries in similarTvSeries) {
+                if (!tmdbSeries.tmdbId.isNullOrEmpty()) {
+                    val localSeries = tvSeriesBox.query(TvSeries_.tmdbId.equal(tmdbSeries.tmdbId)).build().findFirst()
+
+                    if (localSeries != null) {
+                        // Update the local series with TMDB image URLs if available
+                        localSeries.coverUrl = tmdbSeries.coverUrl ?: localSeries.coverUrl
+                        localSeries.featuredPosterUrl = tmdbSeries.featuredPosterUrl ?: localSeries.featuredPosterUrl
+                        syncedSimilarTvSeries.add(localSeries)
+                    }
+                }
+            }
+
+            syncedSimilarTvSeries
+        }
+    }
 }

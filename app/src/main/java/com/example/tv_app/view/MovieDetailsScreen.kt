@@ -110,7 +110,9 @@ fun MovieDetailsScreen(
                         genres = tmdbService.parseGenres(details)
                     }
                     cast = tmdbService.getMovieCredits(tmdbId)
-                    similarMovies = tmdbService.getSimilarMovies(tmdbId)
+                    val tmdbSimilarMovies = tmdbService.getSimilarMovies(tmdbId)
+                    // Cross-reference similar movies with local playlist
+                    similarMovies = playlistService.crossReferenceSimilarMovies(tmdbSimilarMovies)
                     val images = tmdbService.getMovieImages(tmdbId)
                     posterUrl = images["poster"]
                     backdropUrl = images["backdrop"]

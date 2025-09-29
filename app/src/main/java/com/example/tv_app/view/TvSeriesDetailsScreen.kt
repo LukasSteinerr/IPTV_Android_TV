@@ -108,7 +108,9 @@ fun TvSeriesDetailsScreen(
                         genres = tmdbService.parseGenres(details)
                     }
                     cast = tmdbService.getTvSeriesCredits(tmdbId)
-                    similarTvSeries = tmdbService.getSimilarTvSeries(tmdbId)
+                    val tmdbSimilarTvSeries = tmdbService.getSimilarTvSeries(tmdbId)
+                    // Cross-reference similar TV series with local playlist
+                    similarTvSeries = playlistService.crossReferenceSimilarTvSeries(tmdbSimilarTvSeries)
                     val images = tmdbService.getTvSeriesImages(tmdbId)
                     posterUrl = images["poster"]
                     backdropUrl = images["backdrop"]
