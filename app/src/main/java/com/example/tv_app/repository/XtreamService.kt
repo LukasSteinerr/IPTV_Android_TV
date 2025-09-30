@@ -220,10 +220,53 @@ class XtreamService(private val epgParserService: EpgParserService) {
                                     "$baseUrl/series/$username/$password/$streamId.$containerExtension"
                                 } else ""
                                 
+                                // Try to get cover URL from multiple sources
+                                var coverUrl: String? = null
+                                
+                                // First try the direct cover field
                                 val coverElement = episodeElement["cover"]?.jsonPrimitive
+                                coverUrl = coverElement?.content
+                                
+                                // If no cover, try to get it from the info.movie_image field
+                                if (coverUrl == null) {
+                                    val infoElement = episodeElement["info"]?.jsonObject
+                                    if (infoElement != null) {
+                                        val movieImageElement = infoElement["movie_image"]?.jsonPrimitive
+                                        coverUrl = movieImageElement?.content
+                                    }
+                                }
+                                
+                                // If still no cover, use the series cover as fallback
+                                if (coverUrl == null) {
+                                    coverUrl = series.coverUrl
+                                }
+                                
                                 val plotElement = episodeElement["plot"]?.jsonPrimitive
                                 val overviewElement = episodeElement["overview"]?.jsonPrimitive
                                 val durationElement = episodeElement["duration"]?.jsonPrimitive
+                                
+                                // Try to get description from multiple sources
+                                var description: String? = null
+                                description = plotElement?.content ?: overviewElement?.content
+                                
+                                // If no description, try to get it from the info.plot field
+                                if (description == null) {
+                                    val infoElement = episodeElement["info"]?.jsonObject
+                                    if (infoElement != null) {
+                                        val infoPlotElement = infoElement["plot"]?.jsonPrimitive
+                                        description = infoPlotElement?.content
+                                    }
+                                }
+                                
+                                // Try to get duration from the info.duration field if not available directly
+                                var duration: String? = durationElement?.content
+                                if (duration == null) {
+                                    val infoElement = episodeElement["info"]?.jsonObject
+                                    if (infoElement != null) {
+                                        val infoDurationElement = infoElement["duration"]?.jsonPrimitive
+                                        duration = infoDurationElement?.content
+                                    }
+                                }
                                 
                                 val episode = TvEpisode(
                                     title = title,
@@ -231,9 +274,9 @@ class XtreamService(private val epgParserService: EpgParserService) {
                                     streamUrl = streamUrl,
                                     seasonNumber = seasonNumber,
                                     episodeNumber = episodeNumber,
-                                    coverUrl = coverElement?.content ?: series.coverUrl,
-                                    description = plotElement?.content ?: overviewElement?.content,
-                                    duration = durationElement?.content,
+                                    coverUrl = coverUrl,
+                                    description = description,
+                                    duration = duration,
                                     streamId = streamId
                                 )
                                 
