@@ -2,6 +2,7 @@ package com.example.tv_app.presentation.screens.videoPlayer
 
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -108,6 +110,7 @@ fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPresse
                 pulseState
             )
             .focusable()
+            .background(Color.Black)
     ) {
         AndroidView(
             factory = {
