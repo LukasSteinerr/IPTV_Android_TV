@@ -8,21 +8,37 @@ import androidx.compose.material.icons.filled.AutoAwesomeMotion
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import com.example.tv_app.model.Movie
+import com.example.tv_app.model.Track
 
 @Composable
 fun VideoPlayerControls(
     player: Player,
     movie: Movie,
+    subtitleTracks: List<Track>,
+    onSubtitleSelected: (Track) -> Unit,
     focusRequester: FocusRequester,
     onShowControls: () -> Unit = {},
 ) {
-    val isPlaying = player.isPlaying
+    val (showSubtitleDialog, setShowSubtitleDialog) = remember { mutableStateOf(false) }
+
+    if (showSubtitleDialog) {
+        SubtitleDialog(
+            subtitleTracks = subtitleTracks,
+            onSubtitleSelected = {
+                onSubtitleSelected(it)
+                setShowSubtitleDialog(false)
+            },
+            onDismiss = { setShowSubtitleDialog(false) }
+        )
+    }
 
     VideoPlayerMainFrame(
         mediaTitle = {
@@ -52,22 +68,19 @@ fun VideoPlayerControls(
                     onShowControls = onShowControls,
                 )
                 VideoPlayerControlsIcon(
-                    isPlaying = isPlaying,
                     icon = Icons.Default.AutoAwesomeMotion,
                     contentDescription = "Playlist",
-                    onShowControls = onShowControls
+                    onClick = onShowControls
                 )
                 VideoPlayerControlsIcon(
-                    isPlaying = isPlaying,
+                    onClick = { setShowSubtitleDialog(true) },
                     icon = Icons.Default.ClosedCaption,
-                    contentDescription = "Closed Captions",
-                    onShowControls = onShowControls
+                    contentDescription = "Closed Captions"
                 )
                 VideoPlayerControlsIcon(
-                    isPlaying = isPlaying,
                     icon = Icons.Default.Settings,
                     contentDescription = "Settings",
-                    onShowControls = onShowControls
+                    onClick = onShowControls
                 )
             }
         },

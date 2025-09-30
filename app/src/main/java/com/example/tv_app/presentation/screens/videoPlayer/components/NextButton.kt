@@ -12,12 +12,11 @@ fun NextButton(
 ) {
     VideoPlayerControlsIcon(
         icon = Icons.Default.SkipNext,
-        isPlaying = player.isPlaying,
         contentDescription = "Next",
-        onShowControls = onShowControls,
         onClick = {
             // Seek forward by 10 seconds
             player.seekForward()
+            onShowControls()
         }
     )
 }

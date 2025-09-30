@@ -69,11 +69,12 @@ fun VideoPlayerSeeker(
         verticalAlignment = Alignment.CenterVertically
     ) {
         VideoPlayerControlsIcon(
-            isPlaying = player.isPlaying,
             icon = if (state.showPlay) Icons.Default.PlayArrow else Icons.Default.Pause,
             contentDescription = "Play/Pause",
-            onShowControls = onShowControls,
-            onClick = state::onClick
+            onClick = {
+                state.onClick()
+                onShowControls()
+            }
         )
         VideoPlayerControllerText(text = contentProgressString)
         VideoPlayerControllerIndicator(

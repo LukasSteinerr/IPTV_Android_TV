@@ -15,12 +15,10 @@ fun RepeatButton(
     onShowControls: () -> Unit
 ) {
     var isRepeatMode by remember { mutableStateOf(false) }
-    
+
     VideoPlayerControlsIcon(
         icon = Icons.Default.Replay,
-        isPlaying = player.isPlaying,
         contentDescription = if (isRepeatMode) "Repeat On" else "Repeat Off",
-        onShowControls = onShowControls,
         onClick = {
             isRepeatMode = !isRepeatMode
             player.repeatMode = if (isRepeatMode) {
@@ -28,6 +26,7 @@ fun RepeatButton(
             } else {
                 Player.REPEAT_MODE_OFF
             }
+            onShowControls()
         }
     )
 }

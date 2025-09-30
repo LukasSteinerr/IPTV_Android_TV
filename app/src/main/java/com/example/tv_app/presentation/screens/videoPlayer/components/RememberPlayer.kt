@@ -10,12 +10,14 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-fun rememberPlayer(context: Context): ExoPlayer {
+fun rememberPlayer(context: Context, trackSelector: DefaultTrackSelector): ExoPlayer {
     val player = remember {
         ExoPlayer.Builder(context)
+            .setTrackSelector(trackSelector)
             .setSeekForwardIncrementMs(10_000) // 10 seconds forward
             .setSeekBackIncrementMs(10_000) // 10 seconds back
             .setMediaSourceFactory(

@@ -18,9 +18,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerControls
@@ -33,6 +36,7 @@ import com.example.tv_app.presentation.screens.videoPlayer.components.rememberVi
 import com.example.tv_app.presentation.screens.videoPlayer.components.rememberPlayer
 import com.example.tv_app.presentation.screens.videoPlayer.components.rememberVideoPlayerState
 import com.example.tv_app.presentation.utils.handleDPadKeyEvents
+import com.example.tv_app.presentation.screens.videoPlayer.components.getSubtitleTracks
 
 object VideoPlayerScreen {
     const val MovieIdBundleKey = "movieId"
@@ -84,7 +88,8 @@ fun VideoPlayerScreen(
 @Composable
 fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPressed: () -> Unit) {
     val context = LocalContext.current
-    val exoPlayer = rememberPlayer(context)
+    val trackSelector = remember { DefaultTrackSelector(context) }
+    val exoPlayer = rememberPlayer(context, trackSelector)
 
     val videoPlayerState = rememberVideoPlayerState(
         hideSeconds = 4,
@@ -135,6 +140,13 @@ fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPresse
                 VideoPlayerControls(
                     player = exoPlayer,
                     movie = movie,
+                    subtitleTracks = getSubtitleTracks(exoPlayer),
+                    onSubtitleSelected = { track ->
+                        trackSelector.setParameters(
+                            trackSelector.buildUponParameters()
+                                .setPreferredTextLanguage(track.language)
+                        )
+                    },
                     focusRequester = focusRequester,
                     onShowControls = { videoPlayerState.showControls(exoPlayer.isPlaying) },
                 )
