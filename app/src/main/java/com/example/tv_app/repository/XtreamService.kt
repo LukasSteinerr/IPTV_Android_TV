@@ -8,9 +8,13 @@ import io.ktor.client.plugins.*
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.contentOrNull
 
 class XtreamService(private val epgParserService: EpgParserService) {
 
@@ -171,6 +175,83 @@ class XtreamService(private val epgParserService: EpgParserService) {
             seriesList.add(series)
         }
         return seriesList
+    }
+
+    suspend fun fetchSeriesEpisodes(
+        series: TvSeries,
+        playlist: Playlist,
+        onProgress: (String) -> Unit
+    ): List<TvEpisode> {
+        val baseUrl = getBaseUrl(playlist.url)
+        val username = playlist.username ?: ""
+        val password = playlist.password ?: ""
+        
+        onProgress("Fetching episodes for ${series.name}...")
+        
+        val url = "$baseUrl/player_api.php?username=$username&password=$password&action=get_series_info&series_id=${series.seriesId}"
+        
+        return try {
+            val response: HttpResponse = client.get(url)
+            val content = response.bodyAsText()
+            val seriesInfoJson = Json.parseToJsonElement(content).jsonObject
+            val episodes = mutableListOf<TvEpisode>()
+            
+            if (seriesInfoJson.containsKey("episodes")) {
+                val episodesMap = seriesInfoJson["episodes"]?.jsonObject
+                if (episodesMap == null) {
+                    return emptyList()
+                }
+                
+                episodesMap.forEach { (seasonKey, seasonData) ->
+                    val seasonNumber = seasonKey.replace("season_", "").toIntOrNull() ?: 0
+                    
+                    if (seasonData is JsonArray) {
+                        seasonData.forEach { episodeElement ->
+                            if (episodeElement is JsonObject) {
+                                val episodeNum = episodeElement["episode_num"]?.jsonPrimitive
+                                val episodeNumber = episodeNum?.content?.toIntOrNull() ?: 0
+                                val titleElement = episodeElement["title"]?.jsonPrimitive
+                                val title = titleElement?.content ?: "Episode $episodeNumber"
+                                val containerExtension = episodeElement["container_extension"]?.jsonPrimitive?.content ?: "mp4"
+                                val idElement = episodeElement["id"]?.jsonPrimitive
+                                val streamIdElement = episodeElement["stream_id"]?.jsonPrimitive
+                                val streamId = idElement?.content ?: streamIdElement?.content
+                                val streamUrl = if (streamId != null) {
+                                    "$baseUrl/series/$username/$password/$streamId.$containerExtension"
+                                } else ""
+                                
+                                val coverElement = episodeElement["cover"]?.jsonPrimitive
+                                val plotElement = episodeElement["plot"]?.jsonPrimitive
+                                val overviewElement = episodeElement["overview"]?.jsonPrimitive
+                                val durationElement = episodeElement["duration"]?.jsonPrimitive
+                                
+                                val episode = TvEpisode(
+                                    title = title,
+                                    name = title,
+                                    streamUrl = streamUrl,
+                                    seasonNumber = seasonNumber,
+                                    episodeNumber = episodeNumber,
+                                    coverUrl = coverElement?.content ?: series.coverUrl,
+                                    description = plotElement?.content ?: overviewElement?.content,
+                                    duration = durationElement?.content,
+                                    streamId = streamId
+                                )
+                                
+                                episode.series.target = series
+                                episodes.add(episode)
+                            }
+                        }
+                    }
+                }
+            }
+            
+            onProgress("Found ${episodes.size} episodes for ${series.name}")
+            episodes
+        } catch (e: Exception) {
+            android.util.Log.e("XtreamService", "Failed to fetch episodes for ${series.name}", e)
+            onProgress("Failed to fetch episodes: ${e.message}")
+            emptyList()
+        }
     }
 
     internal fun getBaseUrl(url: String): String {

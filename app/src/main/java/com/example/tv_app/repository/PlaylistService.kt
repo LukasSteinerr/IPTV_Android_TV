@@ -199,10 +199,27 @@ class PlaylistService {
         }
     }
 
-    suspend fun getTvSeriesEpisodes(tvSeries: TvSeries): List<TvEpisode> {
+    suspend fun getTvSeriesEpisodes(tvSeries: TvSeries, playlist: Playlist, onProgress: (String) -> Unit): List<TvEpisode> {
         return withContext(Dispatchers.IO) {
-            // Get episodes related to this TV series
-            tvSeries.episodes
+            // First check if episodes already exist in the database
+            val existingEpisodes = tvSeries.episodes
+            
+            if (existingEpisodes.isNotEmpty()) {
+                onProgress("Found ${existingEpisodes.size} cached episodes for ${tvSeries.name}")
+                return@withContext existingEpisodes
+            }
+            
+            // If no episodes exist, fetch them from the API
+            onProgress("Fetching episodes for ${tvSeries.name} from API...")
+            val fetchedEpisodes = xtreamService.fetchSeriesEpisodes(tvSeries, playlist, onProgress)
+            
+            if (fetchedEpisodes.isNotEmpty()) {
+                // Store the fetched episodes in the database
+                tvEpisodeBox.put(fetchedEpisodes)
+                onProgress("Stored ${fetchedEpisodes.size} episodes for ${tvSeries.name}")
+            }
+            
+            fetchedEpisodes
         }
     }
 

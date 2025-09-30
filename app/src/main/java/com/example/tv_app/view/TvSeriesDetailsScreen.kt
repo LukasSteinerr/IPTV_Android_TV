@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +33,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.*
 import androidx.tv.material3.Border
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.RadioButton
 import coil.compose.AsyncImage
 import com.example.tv_app.model.TvSeries
 import com.example.tv_app.model.TvEpisode
@@ -48,7 +53,6 @@ import kotlinx.coroutines.launch
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -69,6 +73,8 @@ fun TvSeriesDetailsScreen(
     onTvSeriesSelected: (TvSeries) -> Unit = {},
     onEpisodeSelected: (TvEpisode) -> Unit = {}
 ) {
+    // Get the playlist associated with this TV series
+    val playlist = remember { tvSeries.playlist.target }
     // Force recomposition when key changes
     LaunchedEffect(key) {
         // This will trigger when key changes, ensuring fresh state
@@ -81,6 +87,8 @@ fun TvSeriesDetailsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var posterUrl by remember { mutableStateOf<String?>(null) }
     var backdropUrl by remember { mutableStateOf<String?>(null) }
+    var selectedSeason by remember { mutableStateOf(0) }
+    var showSeasonSelector by remember { mutableStateOf(false) }
     // var isInMyList by remember { mutableStateOf(tvSeries.myList == 1) } // Unused for now
 
     val coroutineScope = rememberCoroutineScope()
@@ -115,14 +123,59 @@ fun TvSeriesDetailsScreen(
                     posterUrl = images["poster"]
                     backdropUrl = images["backdrop"]
                 }
-                episodes = playlistService.getTvSeriesEpisodes(tvSeries)
+                
+                // Fetch episodes with progress callback
+                playlist?.let { pl ->
+                    episodes = playlistService.getTvSeriesEpisodes(
+                        tvSeries = tvSeries,
+                        playlist = pl,
+                        onProgress = { progress ->
+                            // Could update a state variable to show progress if needed
+                        }
+                    )
+                } ?: run {
+                    episodes = emptyList()
+                }
+                
                 isLoading = false
             } catch (e: Exception) {
                 isLoading = false
                 tvSeriesDetails = tvSeries
-                episodes = playlistService.getTvSeriesEpisodes(tvSeries)
+                playlist?.let { pl ->
+                    episodes = playlistService.getTvSeriesEpisodes(
+                        tvSeries = tvSeries,
+                        playlist = pl,
+                        onProgress = { progress ->
+                            // Could update a state variable to show progress if needed
+                        }
+                    )
+                } ?: run {
+                    episodes = emptyList()
+                }
             }
         }
+    }
+
+    // Group episodes by season
+    val episodesBySeason = remember(episodes) {
+        episodes.groupBy { it.seasonNumber }.toSortedMap()
+    }
+    
+    // Get available seasons
+    val availableSeasons = remember(episodesBySeason) {
+        episodesBySeason.keys.toList()
+    }
+    
+    // Update selected season if it's not available
+    LaunchedEffect(availableSeasons) {
+        if (availableSeasons.isNotEmpty() && !availableSeasons.contains(selectedSeason)) {
+            selectedSeason = availableSeasons.first()
+        }
+    }
+    
+    // Get episodes for selected season
+    val currentSeasonEpisodes = remember(selectedSeason, episodesBySeason) {
+        episodesBySeason[selectedSeason] ?: emptyList()
     }
 
     val displayTvSeries = tvSeriesDetails ?: tvSeries
@@ -145,10 +198,16 @@ fun TvSeriesDetailsScreen(
                 tvSeriesDetails = displayTvSeries,
                 cast = cast,
                 similarTvSeries = similarTvSeries,
-                episodes = episodes,
+                episodes = currentSeasonEpisodes,
+                allEpisodes = episodes,
                 genres = genres,
                 backdropUrl = backdropUrl,
-                onPlayEpisode = { if (episodes.isNotEmpty()) onEpisodeSelected(episodes.first()) },
+                availableSeasons = availableSeasons,
+                selectedSeason = selectedSeason,
+                onSeasonSelected = { season -> selectedSeason = season },
+                onShowSeasonSelector = { showSeasonSelector = true },
+                onHideSeasonSelector = { showSeasonSelector = false },
+                showSeasonSelector = showSeasonSelector,
                 onBackPressed = onBackPressed,
                 onTvSeriesSelected = onTvSeriesSelected,
                 onEpisodeSelected = onEpisodeSelected,
@@ -167,9 +226,15 @@ private fun Details(
     cast: List<Cast>,
     similarTvSeries: List<TvSeries>,
     episodes: List<TvEpisode>,
+    allEpisodes: List<TvEpisode>,
     genres: List<String>,
     backdropUrl: String?,
-    onPlayEpisode: () -> Unit,
+    availableSeasons: List<Int>,
+    selectedSeason: Int,
+    onSeasonSelected: (Int) -> Unit,
+    onShowSeasonSelector: () -> Unit,
+    onHideSeasonSelector: () -> Unit,
+    showSeasonSelector: Boolean,
     onBackPressed: () -> Unit,
     onTvSeriesSelected: (TvSeries) -> Unit,
     onEpisodeSelected: (TvEpisode) -> Unit,
@@ -189,8 +254,14 @@ private fun Details(
                 tvSeriesDetails = tvSeriesDetails,
                 backdropUrl = backdropUrl,
                 episodes = episodes,
-                genres = genres,
-                onPlayEpisode = onPlayEpisode
+                allEpisodes = allEpisodes,
+                availableSeasons = availableSeasons,
+                selectedSeason = selectedSeason,
+                onSeasonSelected = onSeasonSelected,
+                onShowSeasonSelector = onShowSeasonSelector,
+                onHideSeasonSelector = onHideSeasonSelector,
+                showSeasonSelector = showSeasonSelector,
+                genres = genres
             )
         }
 
@@ -271,17 +342,23 @@ private fun TvSeriesDetailsHeader(
     tvSeriesDetails: TvSeries,
     backdropUrl: String?,
     episodes: List<TvEpisode>,
-    genres: List<String>,
-    onPlayEpisode: () -> Unit
+    allEpisodes: List<TvEpisode>,
+    availableSeasons: List<Int>,
+    selectedSeason: Int,
+    onSeasonSelected: (Int) -> Unit,
+    onShowSeasonSelector: () -> Unit,
+    onHideSeasonSelector: () -> Unit,
+    showSeasonSelector: Boolean,
+    genres: List<String>
 ) {
     val childPadding = rememberChildPadding()
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    val playButtonFocusRequester = remember { FocusRequester() }
+    val seasonButtonFocusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
 
-    // Request focus for the play button when the screen first appears
+    // Request focus for the season button when the screen first appears
     LaunchedEffect(Unit) {
-        playButtonFocusRequester.requestFocus()
+        seasonButtonFocusRequester.requestFocus()
     }
 
     Box(
@@ -321,45 +398,41 @@ private fun TvSeriesDetailsHeader(
                         music = "Various"
                     )
                 }
-                if (episodes.isNotEmpty()) {
-                    WatchTrailerButton(
-                        modifier = Modifier
-                            .focusRequester(playButtonFocusRequester)
-                            .onFocusChanged {
-                                if (it.isFocused) {
-                                    coroutineScope.launch { bringIntoViewRequester.bringIntoView() }
-                                }
+                if (allEpisodes.isNotEmpty()) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        SeasonSelectorButton(
+                            modifier = Modifier
+                                .focusRequester(seasonButtonFocusRequester)
+                                .onFocusChanged {
+                                    if (it.isFocused) {
+                                        coroutineScope.launch { bringIntoViewRequester.bringIntoView() }
+                                    }
+                                },
+                            selectedSeason = selectedSeason,
+                            onShowSeasonSelector = onShowSeasonSelector
+                        )
+                    }
+                    
+                    if (showSeasonSelector && availableSeasons.size > 1) {
+                        SeasonSelectorDialog(
+                            availableSeasons = availableSeasons,
+                            selectedSeason = selectedSeason,
+                            onSeasonSelected = { season ->
+                                onSeasonSelected(season)
+                                onHideSeasonSelector()
                             },
-                        goToTvSeriesPlayer = onPlayEpisode
-                    )
+                            onDismiss = onHideSeasonSelector
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-@Composable
-private fun WatchTrailerButton(
-    modifier: Modifier = Modifier,
-    goToTvSeriesPlayer: () -> Unit
-) {
-    Button(
-        onClick = goToTvSeriesPlayer,
-        modifier = modifier.padding(top = 24.dp),
-        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-        shape = ButtonDefaults.shape(shape = JetStreamButtonShape)
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.PlayArrow,
-            contentDescription = null
-        )
-        Spacer(Modifier.size(8.dp))
-        Text(
-            text = "Play",
-            style = MaterialTheme.typography.titleSmall
-        )
-    }
-}
 
 @Composable
 private fun DirectorScreenplayMusicRow(
@@ -548,7 +621,7 @@ private fun EpisodesRow(
     
     Column(modifier = Modifier.padding(top = childPadding.top)) {
         Text(
-            text = "Episodes",
+            text = "Season ${episodes.firstOrNull()?.seasonNumber ?: 1} Episodes",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(start = childPadding.start, bottom = 16.dp)
         )
@@ -649,6 +722,90 @@ private fun TvSeriesRow(
             }
         }
     }
+}
+
+@Composable
+private fun SeasonSelectorButton(
+    modifier: Modifier = Modifier,
+    selectedSeason: Int,
+    onShowSeasonSelector: () -> Unit
+) {
+    Button(
+        onClick = onShowSeasonSelector,
+        modifier = modifier.padding(top = 24.dp),
+        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+        shape = ButtonDefaults.shape(shape = JetStreamButtonShape)
+    ) {
+        Text(
+            text = "Season $selectedSeason",
+            style = MaterialTheme.typography.titleSmall
+        )
+        Spacer(Modifier.size(4.dp))
+        Icon(
+            imageVector = Icons.Filled.KeyboardArrowDown,
+            contentDescription = "Select Season"
+        )
+    }
+}
+
+@Composable
+private fun SeasonSelectorDialog(
+    availableSeasons: List<Int>,
+    selectedSeason: Int,
+    onSeasonSelected: (Int) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Select Season",
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(availableSeasons) { season ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable {
+                                onSeasonSelected(season)
+                            }
+                            .padding(vertical = 12.dp, horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = season == selectedSeason,
+                            onClick = { onSeasonSelected(season) }
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Text(
+                            text = "Season $season",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("OK")
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text("Cancel")
+            }
+        }
+    )
 }
 
 private val BottomDividerPadding = PaddingValues(vertical = 48.dp)
