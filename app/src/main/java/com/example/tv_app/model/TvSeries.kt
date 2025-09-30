@@ -18,7 +18,8 @@ data class TvSeries(
     var tmdbId: String? = null,
     var myList: Int? = null,
     var isFeatured: Boolean = false,
-    var featuredPosterUrl: String? = null
+    var featuredPosterUrl: String? = null,
+    var lastModified: String? = null
 ) {
     lateinit var category: ToOne<Category>
     lateinit var playlist: ToOne<Playlist>
