@@ -12,20 +12,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
 import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.compose.PlayerSurface
-import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
-import androidx.media3.ui.compose.modifiers.resizeWithContentScale
+import androidx.media3.ui.PlayerView
 import com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerControls
 import com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerOverlay
 import com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerPulse
@@ -98,15 +93,12 @@ fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPresse
         exoPlayer.prepare()
     }
 
-    // Handle back navigation with proper cleanup
-    BackHandler(onBack = {
-        // Stop and release the player before navigating away
-        exoPlayer.stop()
+    val pulseState = rememberVideoPlayerPulseState()
+
+    BackHandler {
         exoPlayer.release()
         onBackPressed()
-    })
-
-    val pulseState = rememberVideoPlayerPulseState()
+    }
 
     Box(
         Modifier
@@ -117,15 +109,16 @@ fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPresse
             )
             .focusable()
     ) {
-        PlayerSurface(
-            player = exoPlayer,
-            surfaceType = SURFACE_TYPE_TEXTURE_VIEW,
-            modifier = Modifier.resizeWithContentScale(
-                contentScale = ContentScale.Fit,
-                sourceSizeDp = null
-            )
+        AndroidView(
+            factory = {
+                PlayerView(it).apply {
+                    player = exoPlayer
+                    useController = false
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                }
+            },
+            modifier = Modifier.fillMaxSize()
         )
-
         val focusRequester = remember { FocusRequester() }
         VideoPlayerOverlay(
             modifier = Modifier.align(Alignment.BottomCenter),
