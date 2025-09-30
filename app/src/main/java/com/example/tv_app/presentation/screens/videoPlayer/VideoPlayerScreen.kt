@@ -134,7 +134,6 @@ fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPresse
             isPlaying = exoPlayer.isPlaying,
             isControlsVisible = videoPlayerState.isControlsVisible,
             centerButton = { VideoPlayerPulse(pulseState) },
-            subtitles = { /* TODO Implement subtitles */ },
             showControls = videoPlayerState::showControls,
             controls = {
                 VideoPlayerControls(
@@ -142,10 +141,19 @@ fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPresse
                     movie = movie,
                     subtitleTracks = getSubtitleTracks(exoPlayer),
                     onSubtitleSelected = { track ->
-                        trackSelector.setParameters(
-                            trackSelector.buildUponParameters()
-                                .setPreferredTextLanguage(track.language)
-                        )
+                        if (track.language == "off") {
+                            // Disable subtitles
+                            trackSelector.setParameters(
+                                trackSelector.buildUponParameters()
+                                    .setPreferredTextLanguage(null)
+                            )
+                        } else {
+                            // Enable selected subtitle
+                            trackSelector.setParameters(
+                                trackSelector.buildUponParameters()
+                                    .setPreferredTextLanguage(track.language)
+                            )
+                        }
                     },
                     focusRequester = focusRequester,
                     onShowControls = { videoPlayerState.showControls(exoPlayer.isPlaying) },

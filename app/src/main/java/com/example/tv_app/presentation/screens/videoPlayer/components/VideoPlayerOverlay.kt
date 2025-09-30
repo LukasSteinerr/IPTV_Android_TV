@@ -37,7 +37,6 @@ fun VideoPlayerOverlay(
     focusRequester: FocusRequester = remember { FocusRequester() },
     showControls: () -> Unit = {},
     centerButton: @Composable () -> Unit = {},
-    subtitles: @Composable () -> Unit = {},
     controls: @Composable () -> Unit = {}
 ) {
     LaunchedEffect(isControlsVisible) {
@@ -62,9 +61,7 @@ fun VideoPlayerOverlay(
             Box(
                 Modifier.weight(1f),
                 contentAlignment = Alignment.BottomCenter
-            ) {
-                subtitles()
-            }
+            ) {}
 
             AnimatedVisibility(
                 isControlsVisible,
@@ -107,14 +104,6 @@ private fun VideoPlayerOverlayPreview() {
             VideoPlayerOverlay(
                 modifier = Modifier.align(Alignment.BottomCenter),
                 isPlaying = true,
-                subtitles = {
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(100.dp)
-                            .background(Color.Red)
-                    )
-                },
                 controls = {
                     Box(
                         Modifier

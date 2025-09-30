@@ -27,18 +27,20 @@ fun VideoPlayerControls(
     focusRequester: FocusRequester,
     onShowControls: () -> Unit = {},
 ) {
-    val (showSubtitleDialog, setShowSubtitleDialog) = remember { mutableStateOf(false) }
+    val (showSubtitleMenu, setShowSubtitleMenu) = remember { mutableStateOf(false) }
+    val (currentSelectedTrack, setCurrentSelectedTrack) = remember { mutableStateOf<Track?>(null) }
 
-    if (showSubtitleDialog) {
-        SubtitleDialog(
-            subtitleTracks = subtitleTracks,
-            onSubtitleSelected = {
-                onSubtitleSelected(it)
-                setShowSubtitleDialog(false)
-            },
-            onDismiss = { setShowSubtitleDialog(false) }
-        )
-    }
+    SubtitleMenu(
+        subtitleTracks = subtitleTracks,
+        onSubtitleSelected = {
+            setCurrentSelectedTrack(it)
+            onSubtitleSelected(it)
+            setShowSubtitleMenu(false)
+        },
+        onDismiss = { setShowSubtitleMenu(false) },
+        isVisible = showSubtitleMenu,
+        currentSelectedTrack = currentSelectedTrack
+    )
 
     VideoPlayerMainFrame(
         mediaTitle = {
@@ -73,7 +75,7 @@ fun VideoPlayerControls(
                     onClick = onShowControls
                 )
                 VideoPlayerControlsIcon(
-                    onClick = { setShowSubtitleDialog(true) },
+                    onClick = { setShowSubtitleMenu(true) },
                     icon = Icons.Default.ClosedCaption,
                     contentDescription = "Closed Captions"
                 )
