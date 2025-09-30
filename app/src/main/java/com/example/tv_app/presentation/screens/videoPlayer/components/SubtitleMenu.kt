@@ -66,11 +66,10 @@ fun SubtitleMenu(
         enter = fadeIn() + slideInVertically(initialOffsetY = { it }),
         exit = fadeOut() + slideOutVertically(targetOffsetY = { it })
     ) {
+        // Single layer - just the menu box, no background overlay
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.8f))
-                .clickable { onDismiss() }
                 .focusable()
         ) {
             // Main content container - clean single layer
@@ -91,7 +90,7 @@ fun SubtitleMenu(
                         .fillMaxWidth()
                         .padding(24.dp),
                     horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
                 ) {
                     // Header
                     Text(
@@ -108,7 +107,7 @@ fun SubtitleMenu(
                     LazyColumn(
                         state = listState,
                         modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
                         // Add "Off" option
                         item {
@@ -171,7 +170,7 @@ fun SubtitleMenuItem(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(48.dp)
+            .height(56.dp) // Increased height to accommodate all text
             .let { if (focusRequester != null) it.focusRequester(focusRequester) else it }
             .onFocusChanged { setFocused(it.isFocused) }
             .clickable { onClick() }
@@ -182,73 +181,69 @@ fun SubtitleMenuItem(
                     else -> Color.Transparent
                 }
             )
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp), // Adjusted padding
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Selection indicator
+        // Selection indicator - properly sized checkbox
         Box(
             modifier = Modifier
                 .width(24.dp)
-                .height(24.dp)
-                .padding(end = 12.dp),
+                .height(24.dp) // Fixed size for proper square checkbox
+                .padding(end = 16.dp),
             contentAlignment = Alignment.Center
         ) {
             if (isSelected) {
+                // Filled checkbox when selected
                 Box(
                     modifier = Modifier
-                        .width(16.dp)
-                        .height(16.dp)
+                        .width(18.dp)
+                        .height(18.dp) // Slightly smaller than container
                         .background(
                             color = JetStreamPrimary,
-                            shape = RoundedCornerShape(2.dp)
-                        )
-                )
-            } else if (isFocused) {
-                Box(
-                    modifier = Modifier
-                        .width(16.dp)
-                        .height(16.dp)
-                        .border(
-                            width = 2.dp,
-                            color = JetStreamOnSurface,
-                            shape = RoundedCornerShape(2.dp)
+                            shape = RoundedCornerShape(4.dp) // More rounded corners
                         )
                 )
             } else {
+                // Empty checkbox border when not selected
                 Box(
                     modifier = Modifier
-                        .width(16.dp)
-                        .height(16.dp)
+                        .width(18.dp)
+                        .height(18.dp)
                         .border(
-                            width = 1.dp,
-                            color = JetStreamOnSurface.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(2.dp)
+                            width = if (isFocused) 2.dp else 1.dp,
+                            color = if (isFocused) JetStreamOnSurface else JetStreamOnSurface.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(4.dp)
                         )
                 )
             }
         }
         
-        // Text content
+        // Text content - aligned with checkbox, proper spacing
         Column(
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = track.label,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
                     color = JetStreamOnSurface,
-                    fontSize = 16.sp
+                    fontSize = 16.sp,
+                    lineHeight = 18.sp // Reduced line height for better fit
                 ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
             
+            // Only show language if it's not "Off" with proper spacing
             if (track.language != "off") {
+                Spacer(modifier = Modifier.height(2.dp))
                 Text(
                     text = track.language.uppercase(),
                     style = MaterialTheme.typography.bodySmall.copy(
                         color = JetStreamOnSurface.copy(alpha = 0.7f),
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        lineHeight = 14.sp // Reduced line height for better fit
                     ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
