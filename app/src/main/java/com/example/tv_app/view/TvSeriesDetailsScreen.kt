@@ -62,6 +62,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import coil.request.ImageRequest
+import android.content.Intent
+import android.net.Uri
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -355,6 +357,7 @@ private fun TvSeriesDetailsHeader(
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val seasonButtonFocusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // Request focus for the season button when the screen first appears
     LaunchedEffect(Unit) {
@@ -414,6 +417,17 @@ private fun TvSeriesDetailsHeader(
                             selectedSeason = selectedSeason,
                             onShowSeasonSelector = onShowSeasonSelector
                         )
+                        
+                        // Add Watch Trailer button if youtubeTrailer is available
+                        if (!tvSeriesDetails.youtubeTrailer.isNullOrBlank()) {
+                            WatchTrailerButton(
+                                onClick = {
+                                    val youtubeUrl = "https://www.youtube.com/watch?v=${tvSeriesDetails.youtubeTrailer}"
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
                     }
                     
                     if (showSeasonSelector && availableSeasons.size > 1) {
@@ -847,6 +861,28 @@ private fun SeasonSelectorDialog(
             }
         }
     )
+}
+
+@Composable
+private fun WatchTrailerButton(
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.padding(top = 24.dp),
+        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+        shape = ButtonDefaults.shape(shape = JetStreamButtonShape)
+    ) {
+        Text(
+            text = "Watch Trailer",
+            style = MaterialTheme.typography.titleSmall
+        )
+        Spacer(Modifier.size(4.dp))
+        Icon(
+            imageVector = Icons.Filled.PlayArrow,
+            contentDescription = "Watch Trailer"
+        )
+    }
 }
 
 private val BottomDividerPadding = PaddingValues(vertical = 48.dp)

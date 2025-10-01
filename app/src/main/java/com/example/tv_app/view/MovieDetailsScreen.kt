@@ -59,6 +59,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import coil.request.ImageRequest
+import android.content.Intent
+import android.net.Uri
 
 @OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
@@ -289,6 +291,7 @@ private fun MovieDetailsHeader(
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val playButtonFocusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
+    val context = LocalContext.current
 
     // Request focus for the play button when the screen first appears
     LaunchedEffect(Unit) {
@@ -332,23 +335,39 @@ private fun MovieDetailsHeader(
                         music = "Various"
                     )
                 }
-                WatchTrailerButton(
-                    modifier = Modifier
-                        .focusRequester(playButtonFocusRequester)
-                        .onFocusChanged {
-                            if (it.isFocused) {
-                                coroutineScope.launch { bringIntoViewRequester.bringIntoView() }
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    PlayMovieButton(
+                        modifier = Modifier
+                            .focusRequester(playButtonFocusRequester)
+                            .onFocusChanged {
+                                if (it.isFocused) {
+                                    coroutineScope.launch { bringIntoViewRequester.bringIntoView() }
+                                }
+                            },
+                        goToMoviePlayer = onPlayMovie
+                    )
+
+                    // Add Watch Trailer button if trailer is available
+                    if (!movieDetails.trailer.isNullOrBlank()) {
+                        WatchTrailerButton(
+                            onClick = {
+                                val youtubeUrl = "https://www.youtube.com/watch?v=${movieDetails.trailer}"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))
+                                context.startActivity(intent)
                             }
-                        },
-                    goToMoviePlayer = onPlayMovie
-                )
+                        )
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun WatchTrailerButton(
+private fun PlayMovieButton(
     modifier: Modifier = Modifier,
     goToMoviePlayer: () -> Unit
 ) {
@@ -366,6 +385,28 @@ private fun WatchTrailerButton(
         Text(
             text = "Play",
             style = MaterialTheme.typography.titleSmall
+        )
+    }
+}
+
+@Composable
+private fun WatchTrailerButton(
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.padding(top = 24.dp),
+        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+        shape = ButtonDefaults.shape(shape = JetStreamButtonShape)
+    ) {
+        Text(
+            text = "Watch Trailer",
+            style = MaterialTheme.typography.titleSmall
+        )
+        Spacer(Modifier.size(4.dp))
+        Icon(
+            imageVector = Icons.Filled.PlayArrow,
+            contentDescription = "Watch Trailer"
         )
     }
 }
