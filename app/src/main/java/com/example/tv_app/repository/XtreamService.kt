@@ -208,11 +208,16 @@ class XtreamService(private val epgParserService: EpgParserService) {
                     if (seasonData is JsonArray) {
                         seasonData.forEach { episodeElement ->
                             if (episodeElement is JsonObject) {
+                                // Get episode number with fallback to 'episode' field
                                 val episodeNum = episodeElement["episode_num"]?.jsonPrimitive
+                                    ?: episodeElement["episode"]?.jsonPrimitive
                                 val episodeNumber = episodeNum?.content?.toIntOrNull() ?: 0
+                                
                                 val titleElement = episodeElement["title"]?.jsonPrimitive
                                 val title = titleElement?.content ?: "Episode $episodeNumber"
                                 val containerExtension = episodeElement["container_extension"]?.jsonPrimitive?.content ?: "mp4"
+                                
+                                // Get stream ID with fallback to 'id' field
                                 val idElement = episodeElement["id"]?.jsonPrimitive
                                 val streamIdElement = episodeElement["stream_id"]?.jsonPrimitive
                                 val streamId = idElement?.content ?: streamIdElement?.content
@@ -220,20 +225,40 @@ class XtreamService(private val epgParserService: EpgParserService) {
                                     "$baseUrl/series/$username/$password/$streamId.$containerExtension"
                                 } else ""
                                 
-                                // Try to get cover URL from multiple sources
+                                // Initialize variables
                                 var coverUrl: String? = null
+                                var description: String? = null
+                                var duration: String? = null
                                 
-                                // First try the direct cover field
-                                val coverElement = episodeElement["cover"]?.jsonPrimitive
-                                coverUrl = coverElement?.content
+                                // Debug logging for first episode of each season
+                                if (episodeNumber == 1) {
+                                    android.util.Log.d("XtreamService", "Episode data keys: ${episodeElement.keys}")
+                                    android.util.Log.d("XtreamService", "Episode data: $episodeElement")
+                                }
                                 
-                                // If no cover, try to get it from the info.movie_image field
-                                if (coverUrl == null) {
-                                    val infoElement = episodeElement["info"]?.jsonObject
-                                    if (infoElement != null) {
-                                        val movieImageElement = infoElement["movie_image"]?.jsonPrimitive
-                                        coverUrl = movieImageElement?.content
+                                // First check if episodeData contains 'info' and it's a Map (like in Flutter)
+                                if (episodeElement.containsKey("info") && episodeElement["info"] is JsonObject) {
+                                    val info = episodeElement["info"] as JsonObject
+                                    
+                                    // Debug logging for info object
+                                    if (episodeNumber == 1) {
+                                        android.util.Log.d("XtreamService", "Info object keys: ${info.keys}")
+                                        android.util.Log.d("XtreamService", "Info object: $info")
                                     }
+                                    
+                                    // Extract movie_image from info (primary source as in Flutter)
+                                    coverUrl = info["movie_image"]?.jsonPrimitive?.content
+                                    
+                                    // Extract plot from info
+                                    description = info["plot"]?.jsonPrimitive?.content
+                                    
+                                    // Extract duration from info
+                                    duration = info["duration"]?.jsonPrimitive?.content
+                                }
+                                
+                                // If no cover from info, try the direct cover field
+                                if (coverUrl == null) {
+                                    coverUrl = episodeElement["cover"]?.jsonPrimitive?.content
                                 }
                                 
                                 // If still no cover, use the series cover as fallback
@@ -241,31 +266,21 @@ class XtreamService(private val epgParserService: EpgParserService) {
                                     coverUrl = series.coverUrl
                                 }
                                 
-                                val plotElement = episodeElement["plot"]?.jsonPrimitive
-                                val overviewElement = episodeElement["overview"]?.jsonPrimitive
-                                val durationElement = episodeElement["duration"]?.jsonPrimitive
-                                
-                                // Try to get description from multiple sources
-                                var description: String? = null
-                                description = plotElement?.content ?: overviewElement?.content
-                                
-                                // If no description, try to get it from the info.plot field
+                                // If no description from info, try other fields
                                 if (description == null) {
-                                    val infoElement = episodeElement["info"]?.jsonObject
-                                    if (infoElement != null) {
-                                        val infoPlotElement = infoElement["plot"]?.jsonPrimitive
-                                        description = infoPlotElement?.content
-                                    }
+                                    description = episodeElement["plot"]?.jsonPrimitive?.content
+                                        ?: episodeElement["overview"]?.jsonPrimitive?.content
                                 }
                                 
-                                // Try to get duration from the info.duration field if not available directly
-                                var duration: String? = durationElement?.content
+                                // If no duration from info, try the direct duration field
                                 if (duration == null) {
-                                    val infoElement = episodeElement["info"]?.jsonObject
-                                    if (infoElement != null) {
-                                        val infoDurationElement = infoElement["duration"]?.jsonPrimitive
-                                        duration = infoDurationElement?.content
-                                    }
+                                    duration = episodeElement["duration"]?.jsonPrimitive?.content
+                                }
+                                
+                                // Debug logging the final cover URL
+                                if (episodeNumber == 1) {
+                                    android.util.Log.d("XtreamService", "Final cover URL for episode $episodeNumber: $coverUrl")
+                                    android.util.Log.d("XtreamService", "Series cover URL: ${series.coverUrl}")
                                 }
                                 
                                 val episode = TvEpisode(
