@@ -79,6 +79,7 @@ fun AppNavigation() {
     var selectedTvSeries by remember { mutableStateOf<TvSeries?>(null) }
     var movieDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     var tvSeriesDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
+    var selectedTab by remember { mutableStateOf(0) } // Centralized tab state
     val playlistService = remember { PlaylistService() }
     
     // Create a shared ViewModel for the video player
@@ -111,6 +112,17 @@ fun AppNavigation() {
                 MoviePageScreen(
                     playlist = playlist,
                     playlistService = playlistService,
+                    selectedTab = selectedTab,
+                    onTabSelected = { newTab ->
+                        selectedTab = newTab
+                        // Handle tab navigation here
+                        when (newTab) {
+                            0 -> { /* Movies - current screen */ }
+                            1 -> currentScreen = Screen.ShowsPage
+                            2 -> currentScreen = Screen.LiveTVPage
+                            3 -> currentScreen = Screen.FavoritesPage
+                        }
+                    },
                     onBackPressed = {
                         currentScreen = Screen.MyPlaylists
                     },
@@ -118,15 +130,6 @@ fun AppNavigation() {
                         selectedMovie = movie
                         currentScreen = Screen.MovieDetails
                         Log.d("MainActivity", "Selected movie: ${movie.name}")
-                    },
-                    onNavigateToShows = {
-                        currentScreen = Screen.ShowsPage
-                    },
-                    onNavigateToLiveTV = {
-                        currentScreen = Screen.LiveTVPage
-                    },
-                    onNavigateToFavorites = {
-                        currentScreen = Screen.FavoritesPage
                     },
                     onNavigateToSearch = {
                         currentScreen = Screen.SearchPage
@@ -139,6 +142,17 @@ fun AppNavigation() {
                 ShowsScreen(
                     playlist = playlist,
                     playlistService = playlistService,
+                    selectedTab = selectedTab,
+                    onTabSelected = { newTab ->
+                        selectedTab = newTab
+                        // Handle tab navigation here
+                        when (newTab) {
+                            0 -> currentScreen = Screen.MoviePage
+                            1 -> { /* Shows - current screen */ }
+                            2 -> currentScreen = Screen.LiveTVPage
+                            3 -> currentScreen = Screen.FavoritesPage
+                        }
+                    },
                     onBackPressed = {
                         currentScreen = Screen.MoviePage
                     },
@@ -146,15 +160,6 @@ fun AppNavigation() {
                         selectedTvSeries = show
                         currentScreen = Screen.TvSeriesDetails
                         Log.d("MainActivity", "Selected show: ${show.name}")
-                    },
-                    onNavigateToMovies = {
-                        currentScreen = Screen.MoviePage
-                    },
-                    onNavigateToLiveTV = {
-                        currentScreen = Screen.LiveTVPage
-                    },
-                    onNavigateToFavorites = {
-                        currentScreen = Screen.FavoritesPage
                     },
                     onNavigateToSearch = {
                         currentScreen = Screen.SearchPage
@@ -167,6 +172,17 @@ fun AppNavigation() {
                 LiveTVScreen(
                     playlist = playlist,
                     playlistService = playlistService,
+                    selectedTab = selectedTab,
+                    onTabSelected = { newTab ->
+                        selectedTab = newTab
+                        // Handle tab navigation here
+                        when (newTab) {
+                            0 -> currentScreen = Screen.MoviePage
+                            1 -> currentScreen = Screen.ShowsPage
+                            2 -> { /* Live TV - current screen */ }
+                            3 -> currentScreen = Screen.FavoritesPage
+                        }
+                    },
                     onBackPressed = {
                         currentScreen = Screen.MoviePage
                     },
@@ -181,6 +197,17 @@ fun AppNavigation() {
             selectedPlaylist?.let { playlist ->
                 FavoritesScreen(
                     playlist = playlist,
+                    selectedTab = selectedTab,
+                    onTabSelected = { newTab ->
+                        selectedTab = newTab
+                        // Handle tab navigation here
+                        when (newTab) {
+                            0 -> currentScreen = Screen.MoviePage
+                            1 -> currentScreen = Screen.ShowsPage
+                            2 -> currentScreen = Screen.LiveTVPage
+                            3 -> { /* Favorites - current screen */ }
+                        }
+                    },
                     onBackPressed = {
                         currentScreen = Screen.MoviePage
                     }
@@ -191,6 +218,17 @@ fun AppNavigation() {
             selectedPlaylist?.let { playlist ->
                 SearchScreen(
                     playlist = playlist,
+                    selectedTab = selectedTab,
+                    onTabSelected = { newTab ->
+                        selectedTab = newTab
+                        // Handle tab navigation here
+                        when (newTab) {
+                            0 -> currentScreen = Screen.MoviePage
+                            1 -> currentScreen = Screen.ShowsPage
+                            2 -> currentScreen = Screen.LiveTVPage
+                            3 -> currentScreen = Screen.FavoritesPage
+                        }
+                    },
                     onBackPressed = {
                         currentScreen = Screen.MoviePage
                     }

@@ -28,10 +28,11 @@ import com.example.tv_app.model.Channel
 fun LiveTVScreen(
     playlist: Playlist,
     playlistService: PlaylistService,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
     onBackPressed: () -> Unit,
     onChannelSelected: (Channel) -> Unit = {}
 ) {
-    var selectedTab by remember { mutableStateOf(2) } // Live TV tab
     
     Box(
         modifier = Modifier
@@ -50,16 +51,7 @@ fun LiveTVScreen(
             // Appbar with matching background
             Appbar(
                 selectedTab = selectedTab,
-                onTabSelected = { newTab ->
-                    selectedTab = newTab
-                    when (newTab) {
-                        0 -> onBackPressed() // Navigate back to Movies
-                        1 -> { /* Shows - TODO */ }
-                        2 -> { /* Live TV - current screen */ }
-                        3 -> { /* Favorites - TODO */ }
-                        4 -> { /* Search - TODO */ }
-                    }
-                },
+                onTabSelected = onTabSelected,
                 backgroundColor = Color.Transparent
             )
 

@@ -41,18 +41,16 @@ import com.example.tv_app.presentation.common.TvSeriesCard
 fun ShowsScreen(
     playlist: Playlist,
     playlistService: PlaylistService,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
     onBackPressed: () -> Unit,
     onShowSelected: (TvSeries) -> Unit = {},
-    onNavigateToMovies: () -> Unit = {},
-    onNavigateToLiveTV: () -> Unit = {},
-    onNavigateToFavorites: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {}
 ) {
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var featuredTvSeries by remember { mutableStateOf<List<TvSeries>>(emptyList()) }
     var tvSeriesByCategory by remember { mutableStateOf<Map<Long, List<TvSeries>>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(true) }
-    var selectedTab by remember { mutableStateOf(1) }
     
     val coroutineScope = rememberCoroutineScope()
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
@@ -107,16 +105,7 @@ fun ShowsScreen(
             // Appbar with matching background
             Appbar(
                 selectedTab = selectedTab,
-                onTabSelected = { newTab ->
-                    selectedTab = newTab
-                    // Handle tab navigation here
-                    when (newTab) {
-                        0 -> onNavigateToMovies()
-                        1 -> { /* Shows - current screen */ }
-                        2 -> onNavigateToLiveTV()
-                        3 -> onNavigateToFavorites()
-                    }
-                },
+                onTabSelected = onTabSelected,
                 onSearchClicked = onNavigateToSearch,
                 backgroundColor = Color.Transparent // Make appbar blend with background
             )

@@ -23,10 +23,11 @@ import com.example.tv_app.model.Playlist
 @Composable
 fun SearchScreen(
     playlist: Playlist,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
     onBackPressed: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var selectedTab by remember { mutableStateOf(4) } // Search tab
     
     Box(
         modifier = Modifier
@@ -45,16 +46,7 @@ fun SearchScreen(
             // Appbar with matching background
             Appbar(
                 selectedTab = selectedTab,
-                onTabSelected = { newTab ->
-                    selectedTab = newTab
-                    when (newTab) {
-                        0 -> onBackPressed() // Navigate back to Movies
-                        1 -> { /* Shows - TODO */ }
-                        2 -> { /* Live TV - TODO */ }
-                        3 -> { /* Favorites - TODO */ }
-                        4 -> { /* Search - current screen */ }
-                    }
-                },
+                onTabSelected = onTabSelected,
                 backgroundColor = Color.Transparent
             )
 

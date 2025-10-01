@@ -20,9 +20,10 @@ import com.example.tv_app.model.Playlist
 @Composable
 fun FavoritesScreen(
     playlist: Playlist,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
     onBackPressed: () -> Unit
 ) {
-    var selectedTab by remember { mutableStateOf(3) } // Favorites tab
     
     Box(
         modifier = Modifier
@@ -41,16 +42,7 @@ fun FavoritesScreen(
             // Appbar with matching background
             Appbar(
                 selectedTab = selectedTab,
-                onTabSelected = { newTab ->
-                    selectedTab = newTab
-                    when (newTab) {
-                        0 -> onBackPressed() // Navigate back to Movies
-                        1 -> { /* Shows - TODO */ }
-                        2 -> { /* Live TV - TODO */ }
-                        3 -> { /* Favorites - current screen */ }
-                        4 -> { /* Search - TODO */ }
-                    }
-                },
+                onTabSelected = onTabSelected,
                 backgroundColor = Color.Transparent
             )
 

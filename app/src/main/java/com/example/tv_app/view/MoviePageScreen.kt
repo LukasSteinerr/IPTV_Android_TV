@@ -41,18 +41,16 @@ import com.example.tv_app.presentation.common.MovieCard
 fun MoviePageScreen(
     playlist: Playlist,
     playlistService: PlaylistService,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit = {},
-    onNavigateToShows: () -> Unit = {},
-    onNavigateToLiveTV: () -> Unit = {},
-    onNavigateToFavorites: () -> Unit = {},
     onNavigateToSearch: () -> Unit = {}
 ) {
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var featuredMovies by remember { mutableStateOf<List<Movie>>(emptyList()) }
     var moviesByCategory by remember { mutableStateOf<Map<Long, List<Movie>>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(true) }
-    var selectedTab by remember { mutableStateOf(0) }
     
     val coroutineScope = rememberCoroutineScope()
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
@@ -107,16 +105,7 @@ fun MoviePageScreen(
             // Appbar with matching background
             Appbar(
                 selectedTab = selectedTab,
-                onTabSelected = { newTab ->
-                    selectedTab = newTab
-                    // Handle tab navigation here
-                    when (newTab) {
-                        0 -> { /* Movies - current screen */ }
-                        1 -> onNavigateToShows()
-                        2 -> onNavigateToLiveTV()
-                        3 -> onNavigateToFavorites()
-                    }
-                },
+                onTabSelected = onTabSelected,
                 onSearchClicked = onNavigateToSearch,
                 backgroundColor = Color.Transparent // Make appbar blend with background
             )

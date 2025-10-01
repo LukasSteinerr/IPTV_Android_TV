@@ -10,6 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -26,6 +28,15 @@ fun Appbar(
     backgroundColor: Color = Color.Black.copy(alpha = 0.8f)
 ) {
     val tabs = listOf("Movies", "Shows", "Live TV", "Favorites")
+    val focusRequesters = remember { List(tabs.size) { FocusRequester() } }
+    val searchFocusRequester = remember { FocusRequester() }
+    
+    // Request focus on the selected tab when it changes
+    LaunchedEffect(selectedTab) {
+        if (selectedTab in tabs.indices) {
+            focusRequesters[selectedTab].requestFocus()
+        }
+    }
     
     Row(
         modifier = Modifier
@@ -56,7 +67,8 @@ fun Appbar(
                 AppbarTab(
                     text = tabName,
                     isSelected = selectedTab == index,
-                    onClick = { onTabSelected(index) }
+                    onClick = { onTabSelected(index) },
+                    focusRequester = focusRequesters[index]
                 )
             }
             
@@ -65,7 +77,8 @@ fun Appbar(
                 onClick = onSearchClicked,
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(RoundedCornerShape(8.dp)),
+                    .clip(RoundedCornerShape(8.dp))
+                    .focusRequester(searchFocusRequester),
                 colors = androidx.tv.material3.IconButtonDefaults.colors(
                     containerColor = if (selectedTab == 4) TvMaterialTheme.colorScheme.primary
                     else Color.Transparent,
@@ -90,12 +103,14 @@ fun Appbar(
 private fun AppbarTab(
     text: String,
     isSelected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    focusRequester: FocusRequester
 ) {
     androidx.tv.material3.Button(
         onClick = onClick,
         modifier = Modifier
-            .clip(RoundedCornerShape(8.dp)),
+            .clip(RoundedCornerShape(8.dp))
+            .focusRequester(focusRequester),
         colors = androidx.tv.material3.ButtonDefaults.colors(
             containerColor = if (isSelected) TvMaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
             else Color.Transparent,
