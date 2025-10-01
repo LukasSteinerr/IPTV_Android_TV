@@ -19,7 +19,8 @@ data class TvSeries(
     var myList: Int? = null,
     var isFeatured: Boolean = false,
     var featuredPosterUrl: String? = null,
-    var lastModified: String? = null
+    var lastModified: String? = null,
+    var youtubeTrailer: String? = null
 ) {
     lateinit var category: ToOne<Category>
     lateinit var playlist: ToOne<Playlist>

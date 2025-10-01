@@ -354,7 +354,7 @@
     },
     {
       "id": "8:8289470244902045538",
-      "lastPropertyId": "14:9156085129072859804",
+      "lastPropertyId": "15:5787889970902715134",
       "name": "TvSeries",
       "properties": [
         {
@@ -432,6 +432,11 @@
         {
           "id": "14:9156085129072859804",
           "name": "lastModified",
+          "type": 9
+        },
+        {
+          "id": "15:5787889970902715134",
+          "name": "youtubeTrailer",
           "type": 9
         }
       ],

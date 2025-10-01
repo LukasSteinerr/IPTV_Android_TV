@@ -165,7 +165,8 @@ class XtreamService(private val epgParserService: EpgParserService) {
                 coverUrl = seriesObject["cover"]?.jsonPrimitive?.content,
                 seriesId = seriesObject["series_id"]!!.jsonPrimitive.content,
                 tmdbId = seriesObject["tmdb"]?.jsonPrimitive?.content,
-                lastModified = seriesObject["last_modified"]?.jsonPrimitive?.content
+                lastModified = seriesObject["last_modified"]?.jsonPrimitive?.content,
+                youtubeTrailer = seriesObject["youtube_trailer"]?.jsonPrimitive?.content
             )
             series.playlist.target = playlist
             val categoryId = seriesObject["category_id"]?.jsonPrimitive?.content
