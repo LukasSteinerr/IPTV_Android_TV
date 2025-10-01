@@ -25,7 +25,11 @@ class TMDBImageProvider private constructor() {
     private val backdropCache: ConcurrentHashMap<String, String?> = ConcurrentHashMap()
 
     // Helper method to create distinct cache keys
-    private fun createCacheKey(type: String, id: String, isBackdrop: Boolean): String {
+    private fun createCacheKey(type: String, id: String?, isBackdrop: Boolean): String? {
+        // Return null if id is null or empty to prevent invalid cache keys
+        if (id.isNullOrEmpty()) {
+            return null
+        }
         return "${type}_${if (isBackdrop) "backdrop" else "poster"}_$id"
     }
 
@@ -42,6 +46,11 @@ class TMDBImageProvider private constructor() {
 
         // Create a distinct cache key for movie posters
         val cacheKey = createCacheKey("movie", tmdbId, false)
+        
+        // Ensure cacheKey is not null
+        if (cacheKey.isNullOrEmpty()) {
+            return fallbackUrl
+        }
 
         // Check cache first
         if (posterCache.containsKey(cacheKey)) {
@@ -75,6 +84,11 @@ class TMDBImageProvider private constructor() {
 
         // Create a distinct cache key for movie backdrops
         val cacheKey = createCacheKey("movie", tmdbId, true)
+        
+        // Ensure cacheKey is not null
+        if (cacheKey.isNullOrEmpty()) {
+            return null
+        }
 
         // Check cache first
         if (backdropCache.containsKey(cacheKey)) {
@@ -107,6 +121,11 @@ class TMDBImageProvider private constructor() {
 
         // Create a distinct cache key for TV posters
         val cacheKey = createCacheKey("tv", tmdbId, false)
+        
+        // Ensure cacheKey is not null
+        if (cacheKey.isNullOrEmpty()) {
+            return fallbackUrl
+        }
 
         // Check cache first
         if (posterCache.containsKey(cacheKey)) {
@@ -140,6 +159,11 @@ class TMDBImageProvider private constructor() {
 
         // Create a distinct cache key for TV backdrops
         val cacheKey = createCacheKey("tv", tmdbId, true)
+        
+        // Ensure cacheKey is not null
+        if (cacheKey.isNullOrEmpty()) {
+            return null
+        }
 
         // Check cache first
         if (backdropCache.containsKey(cacheKey)) {

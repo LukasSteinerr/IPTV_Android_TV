@@ -233,7 +233,8 @@ fun AppNavigation() {
                     },
                     onEpisodeSelected = { episode ->
                         Log.d("MainActivity", "Playing episode: ${episode.name}")
-                        // TODO: Navigate to player
+                        videoPlayerViewModel.loadEpisode(episode)
+                        currentScreen = Screen.VideoPlayer
                     }
                 )
             }
@@ -243,7 +244,9 @@ fun AppNavigation() {
                 onBackPressed = {
                     // Reset the video player state when navigating away
                     videoPlayerViewModel.reset()
-                    currentScreen = Screen.MovieDetails
+                    // Check if we were playing a movie or episode to navigate back to the correct screen
+                    // For now, we'll check if we have a selected TV series to determine the back navigation
+                    currentScreen = if (selectedTvSeries != null) Screen.TvSeriesDetails else Screen.MovieDetails
                 },
                 viewModel = videoPlayerViewModel
             )

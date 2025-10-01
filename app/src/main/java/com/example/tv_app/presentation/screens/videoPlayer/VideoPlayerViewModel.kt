@@ -4,6 +4,7 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tv_app.model.Movie
+import com.example.tv_app.model.TvEpisode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,6 +17,19 @@ class VideoPlayerViewModel : ViewModel() {
     fun loadMovie(movie: Movie) {
         viewModelScope.launch {
             _uiState.value = VideoPlayerUiState.Ready(movie)
+        }
+    }
+
+    fun loadEpisode(episode: TvEpisode) {
+        viewModelScope.launch {
+            // Convert episode to a movie-like object for the player
+            val episodeMovie = Movie(
+                name = episode.name.ifEmpty { episode.title },
+                streamUrl = episode.streamUrl,
+                description = episode.description ?: "Episode ${episode.episodeNumber}",
+                duration = episode.duration
+            )
+            _uiState.value = VideoPlayerUiState.Ready(episodeMovie)
         }
     }
 

@@ -663,7 +663,7 @@ private fun EpisodeCard(
         modifier = Modifier.width(300.dp)
     ) {
         Column {
-            // Episode image
+            // Episode image with play button overlay
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -678,6 +678,28 @@ private fun EpisodeCard(
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
+                
+                // Play button overlay
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            Brush.radialGradient(
+                                colors = listOf(
+                                    Color.Black.copy(alpha = 0.3f),
+                                    Color.Transparent
+                                )
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = "Play Episode",
+                        tint = Color.White,
+                        modifier = Modifier.size(48.dp)
+                    )
+                }
             }
             
             Column(
