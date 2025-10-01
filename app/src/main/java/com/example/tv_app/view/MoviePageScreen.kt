@@ -68,7 +68,7 @@ fun MoviePageScreen(
                 var allMovies = mutableListOf<Movie>()
                 
                 categories.forEach { category ->
-                    val movies = playlistService.getMoviesForCategory(category.id)
+                    val movies = playlistService.getMoviesForCategory(category.id).sortedByDescending { it.added }
                     movieMap[category.id] = movies
                     allMovies.addAll(movies)
                 }

@@ -68,7 +68,7 @@ fun ShowsScreen(
                 var allTvSeries = mutableListOf<TvSeries>()
                 
                 categories.forEach { category ->
-                    val series = playlistService.getTvSeriesForCategory(category.id)
+                    val series = playlistService.getTvSeriesForCategory(category.id).sortedByDescending { it.lastModified }
                     tvSeriesMap[category.id] = series
                     allTvSeries.addAll(series)
                 }
