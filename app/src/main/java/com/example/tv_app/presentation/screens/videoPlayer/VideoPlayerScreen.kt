@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.clickable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,6 +52,7 @@ object VideoPlayerScreen {
 @Composable
 fun VideoPlayerScreen(
     onBackPressed: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: VideoPlayerViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -78,7 +80,8 @@ fun VideoPlayerScreen(
         is VideoPlayerUiState.Ready -> {
             VideoPlayerScreenContent(
                 movie = s.movie,
-                onBackPressed = onBackPressed
+                onBackPressed = onBackPressed,
+                modifier = modifier
             )
         }
     }
@@ -86,7 +89,11 @@ fun VideoPlayerScreen(
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPressed: () -> Unit) {
+fun VideoPlayerScreenContent(
+    movie: com.example.tv_app.model.Movie,
+    onBackPressed: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     val context = LocalContext.current
     val trackSelector = remember { DefaultTrackSelector(context) }
     val exoPlayer = rememberPlayer(context, trackSelector)
@@ -108,14 +115,10 @@ fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPresse
     }
 
     Box(
-        Modifier
-            .dPadEvents(
-                exoPlayer,
-                videoPlayerState,
-                pulseState
-            )
-            .focusable()
+        modifier
             .background(Color.Black)
+            .fillMaxSize()
+            .clickable { videoPlayerState.showControls(exoPlayer.isPlaying) } // Use click for controls visibility
     ) {
         AndroidView(
             factory = {
@@ -162,31 +165,6 @@ fun VideoPlayerScreenContent(movie: com.example.tv_app.model.Movie, onBackPresse
         )
     }
 }
-
-private fun Modifier.dPadEvents(
-    exoPlayer: ExoPlayer,
-    videoPlayerState: com.example.tv_app.presentation.screens.videoPlayer.components.VideoPlayerState,
-    pulseState: VideoPlayerPulseState
-): Modifier = this.handleDPadKeyEvents(
-    onLeft = {
-        if (!videoPlayerState.isControlsVisible) {
-            exoPlayer.seekBack()
-            pulseState.setType(BACK)
-        }
-    },
-    onRight = {
-        if (!videoPlayerState.isControlsVisible) {
-            exoPlayer.seekForward()
-            pulseState.setType(FORWARD)
-        }
-    },
-    onUp = { videoPlayerState.showControls() },
-    onDown = { videoPlayerState.showControls() },
-    onEnter = {
-        exoPlayer.pause()
-        videoPlayerState.showControls()
-    }
-)
 
 private fun com.example.tv_app.model.Movie.intoMediaItem(): MediaItem {
     return MediaItem.Builder()

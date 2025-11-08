@@ -8,6 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.tv.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import com.example.tv_app.presentation.utils.DeviceType
+import com.example.tv_app.mobile_ui.MobileAppNavigation
+import com.example.tv_app.mobile_ui.MobileScreen
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.tv.material3.ExperimentalTvMaterial3Api
@@ -42,7 +46,7 @@ class MainActivity : FragmentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     shape = RectangleShape
                 ) {
-                    AppNavigation()
+                    AppNavigation() // This will handle the device check
                 }
             }
         }
@@ -73,7 +77,19 @@ class MainActivity : FragmentActivity() {
 
 @Composable
 fun AppNavigation() {
-    var currentScreen by remember { mutableStateOf<Screen>(Screen.MyPlaylists) }
+    val context = LocalContext.current
+    val isTv = remember { DeviceType.isTv(context) }
+
+    if (isTv) {
+        TvAppNavigation()
+    } else {
+        MobileAppNavigation()
+    }
+}
+
+@Composable
+fun TvAppNavigation() {
+    var currentScreen by remember { mutableStateOf<TvScreen>(TvScreen.MyPlaylists) }
     var selectedPlaylist by remember { mutableStateOf<Playlist?>(null) }
     var selectedMovie by remember { mutableStateOf<Movie?>(null) }
     var selectedTvSeries by remember { mutableStateOf<TvSeries?>(null) }
@@ -86,28 +102,28 @@ fun AppNavigation() {
     val videoPlayerViewModel = remember { VideoPlayerViewModel() }
 
     when (currentScreen) {
-        Screen.MyPlaylists -> {
+        TvScreen.MyPlaylists -> {
             MyPlaylistsScreen(
                 playlistService = playlistService,
                 onNavigateToAddPlaylist = {
-                    currentScreen = Screen.AddPlaylist
+                    currentScreen = TvScreen.AddPlaylist
                 },
                 onPlaylistSelected = { playlist ->
                     selectedPlaylist = playlist
-                    currentScreen = Screen.MoviePage
+                    currentScreen = TvScreen.MoviePage
                     Log.d("MainActivity", "Selected playlist: ${playlist.name}")
                 }
             )
         }
-        Screen.AddPlaylist -> {
+        TvScreen.AddPlaylist -> {
             AddPlaylistScreen(
                 playlistService = playlistService,
                 onPlaylistAdded = {
-                    currentScreen = Screen.MyPlaylists
+                    currentScreen = TvScreen.MyPlaylists
                 }
             )
         }
-        Screen.MoviePage -> {
+        TvScreen.MoviePage -> {
             selectedPlaylist?.let { playlist ->
                 MoviePageScreen(
                     playlist = playlist,
@@ -118,26 +134,26 @@ fun AppNavigation() {
                         // Handle tab navigation here
                         when (newTab) {
                             0 -> { /* Movies - current screen */ }
-                            1 -> currentScreen = Screen.ShowsPage
-                            2 -> currentScreen = Screen.LiveTVPage
-                            3 -> currentScreen = Screen.FavoritesPage
+                            1 -> currentScreen = TvScreen.ShowsPage
+                            2 -> currentScreen = TvScreen.LiveTVPage
+                            3 -> currentScreen = TvScreen.FavoritesPage
                         }
                     },
                     onBackPressed = {
-                        currentScreen = Screen.MyPlaylists
+                        currentScreen = TvScreen.MyPlaylists
                     },
                     onMovieSelected = { movie ->
                         selectedMovie = movie
-                        currentScreen = Screen.MovieDetails
+                        currentScreen = TvScreen.MovieDetails
                         Log.d("MainActivity", "Selected movie: ${movie.name}")
                     },
                     onNavigateToSearch = {
-                        currentScreen = Screen.SearchPage
+                        currentScreen = TvScreen.SearchPage
                     }
                 )
             }
         }
-        is Screen.ShowsPage -> {
+        is TvScreen.ShowsPage -> {
             selectedPlaylist?.let { playlist ->
                 ShowsScreen(
                     playlist = playlist,
@@ -147,27 +163,27 @@ fun AppNavigation() {
                         selectedTab = newTab
                         // Handle tab navigation here
                         when (newTab) {
-                            0 -> currentScreen = Screen.MoviePage
+                            0 -> currentScreen = TvScreen.MoviePage
                             1 -> { /* Shows - current screen */ }
-                            2 -> currentScreen = Screen.LiveTVPage
-                            3 -> currentScreen = Screen.FavoritesPage
+                            2 -> currentScreen = TvScreen.LiveTVPage
+                            3 -> currentScreen = TvScreen.FavoritesPage
                         }
                     },
                     onBackPressed = {
-                        currentScreen = Screen.MoviePage
+                        currentScreen = TvScreen.MoviePage
                     },
                     onShowSelected = { show ->
                         selectedTvSeries = show
-                        currentScreen = Screen.TvSeriesDetails
+                        currentScreen = TvScreen.TvSeriesDetails
                         Log.d("MainActivity", "Selected show: ${show.name}")
                     },
                     onNavigateToSearch = {
-                        currentScreen = Screen.SearchPage
+                        currentScreen = TvScreen.SearchPage
                     }
                 )
             }
         }
-        is Screen.LiveTVPage -> {
+        is TvScreen.LiveTVPage -> {
             selectedPlaylist?.let { playlist ->
                 LiveTVScreen(
                     playlist = playlist,
@@ -177,14 +193,14 @@ fun AppNavigation() {
                         selectedTab = newTab
                         // Handle tab navigation here
                         when (newTab) {
-                            0 -> currentScreen = Screen.MoviePage
-                            1 -> currentScreen = Screen.ShowsPage
+                            0 -> currentScreen = TvScreen.MoviePage
+                            1 -> currentScreen = TvScreen.ShowsPage
                             2 -> { /* Live TV - current screen */ }
-                            3 -> currentScreen = Screen.FavoritesPage
+                            3 -> currentScreen = TvScreen.FavoritesPage
                         }
                     },
                     onBackPressed = {
-                        currentScreen = Screen.MoviePage
+                        currentScreen = TvScreen.MoviePage
                     },
                     onChannelSelected = { channel ->
                         Log.d("MainActivity", "Selected channel: ${channel.name}")
@@ -193,7 +209,7 @@ fun AppNavigation() {
                 )
             }
         }
-        is Screen.FavoritesPage -> {
+        is TvScreen.FavoritesPage -> {
             selectedPlaylist?.let { playlist ->
                 FavoritesScreen(
                     playlist = playlist,
@@ -202,19 +218,19 @@ fun AppNavigation() {
                         selectedTab = newTab
                         // Handle tab navigation here
                         when (newTab) {
-                            0 -> currentScreen = Screen.MoviePage
-                            1 -> currentScreen = Screen.ShowsPage
-                            2 -> currentScreen = Screen.LiveTVPage
+                            0 -> currentScreen = TvScreen.MoviePage
+                            1 -> currentScreen = TvScreen.ShowsPage
+                            2 -> currentScreen = TvScreen.LiveTVPage
                             3 -> { /* Favorites - current screen */ }
                         }
                     },
                     onBackPressed = {
-                        currentScreen = Screen.MoviePage
+                        currentScreen = TvScreen.MoviePage
                     }
                 )
             }
         }
-        is Screen.SearchPage -> {
+        is TvScreen.SearchPage -> {
             selectedPlaylist?.let { playlist ->
                 SearchScreen(
                     playlist = playlist,
@@ -223,26 +239,26 @@ fun AppNavigation() {
                         selectedTab = newTab
                         // Handle tab navigation here
                         when (newTab) {
-                            0 -> currentScreen = Screen.MoviePage
-                            1 -> currentScreen = Screen.ShowsPage
-                            2 -> currentScreen = Screen.LiveTVPage
-                            3 -> currentScreen = Screen.FavoritesPage
+                            0 -> currentScreen = TvScreen.MoviePage
+                            1 -> currentScreen = TvScreen.ShowsPage
+                            2 -> currentScreen = TvScreen.LiveTVPage
+                            3 -> currentScreen = TvScreen.FavoritesPage
                         }
                     },
                     onBackPressed = {
-                        currentScreen = Screen.MoviePage
+                        currentScreen = TvScreen.MoviePage
                     }
                 )
             }
         }
-        is Screen.MovieDetails -> {
+        is TvScreen.MovieDetails -> {
             selectedMovie?.let { movie ->
                 MovieDetailsScreen(
                     key = movieDetailsKey, // Force recomposition when key changes
                     movie = movie,
                     playlistService = playlistService,
                     onBackPressed = {
-                        currentScreen = Screen.MoviePage
+                        currentScreen = TvScreen.MoviePage
                     },
                     onMovieSelected = { newMovie ->
                         selectedMovie = newMovie
@@ -251,19 +267,19 @@ fun AppNavigation() {
                     onPlayMovie = { movie ->
                         Log.d("MainActivity", "Playing movie: ${movie.name}")
                         videoPlayerViewModel.loadMovie(movie)
-                        currentScreen = Screen.VideoPlayer
+                        currentScreen = TvScreen.VideoPlayer
                     }
                 )
             }
         }
-        is Screen.TvSeriesDetails -> {
+        is TvScreen.TvSeriesDetails -> {
             selectedTvSeries?.let { tvSeries ->
                 TvSeriesDetailsScreen(
                     key = tvSeriesDetailsKey, // Force recomposition when key changes
                     tvSeries = tvSeries,
                     playlistService = playlistService,
                     onBackPressed = {
-                        currentScreen = Screen.ShowsPage
+                        currentScreen = TvScreen.ShowsPage
                     },
                     onTvSeriesSelected = { newSeries ->
                         selectedTvSeries = newSeries
@@ -272,19 +288,19 @@ fun AppNavigation() {
                     onEpisodeSelected = { episode ->
                         Log.d("MainActivity", "Playing episode: ${episode.name}")
                         videoPlayerViewModel.loadEpisode(episode)
-                        currentScreen = Screen.VideoPlayer
+                        currentScreen = TvScreen.VideoPlayer
                     }
                 )
             }
         }
-        is Screen.VideoPlayer -> {
+        is TvScreen.VideoPlayer -> {
             VideoPlayerScreen(
                 onBackPressed = {
                     // Reset the video player state when navigating away
                     videoPlayerViewModel.reset()
                     // Check if we were playing a movie or episode to navigate back to the correct screen
                     // For now, we'll check if we have a selected TV series to determine the back navigation
-                    currentScreen = if (selectedTvSeries != null) Screen.TvSeriesDetails else Screen.MovieDetails
+                    currentScreen = if (selectedTvSeries != null) TvScreen.TvSeriesDetails else TvScreen.MovieDetails
                 },
                 viewModel = videoPlayerViewModel
             )
@@ -292,17 +308,17 @@ fun AppNavigation() {
     }
 }
 
-sealed class Screen {
-    object MyPlaylists : Screen()
-    object AddPlaylist : Screen()
-    object MoviePage : Screen()
-    object ShowsPage : Screen()
-    object LiveTVPage : Screen()
-    object FavoritesPage : Screen()
-    object SearchPage : Screen()
-    object MovieDetails : Screen()
-    object TvSeriesDetails : Screen()
-    object VideoPlayer : Screen()
+sealed class TvScreen {
+    object MyPlaylists : TvScreen()
+    object AddPlaylist : TvScreen()
+    object MoviePage : TvScreen()
+    object ShowsPage : TvScreen()
+    object LiveTVPage : TvScreen()
+    object FavoritesPage : TvScreen()
+    object SearchPage : TvScreen()
+    object MovieDetails : TvScreen()
+    object TvSeriesDetails : TvScreen()
+    object VideoPlayer : TvScreen()
 }
 
 @Composable
