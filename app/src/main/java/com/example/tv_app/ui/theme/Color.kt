@@ -2,30 +2,18 @@ package com.example.tv_app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// JetStreamCompose Dark Theme Colors
-val JetStreamBackground = Color(0xFF1A1C1E)
-val JetStreamPrimary = Color(0xFFA8C8FF)
-val JetStreamOnPrimary = Color(0xFF003062)
-val JetStreamPrimaryContainer = Color(0xFF00468A)
-val JetStreamOnPrimaryContainer = Color(0xFFD6E3FF)
-val JetStreamSecondary = Color(0xFFBDC7DC)
-val JetStreamOnSecondary = Color(0xFF273141)
-val JetStreamSecondaryContainer = Color(0xFF3E4758)
-val JetStreamOnSecondaryContainer = Color(0xFFD9E3F8)
-val JetStreamTertiary = Color(0xFFDCBCE1)
-val JetStreamOnTertiary = Color(0xFF3E2845)
-val JetStreamTertiaryContainer = Color(0xFF563E5C)
-val JetStreamOnTertiaryContainer = Color(0xFFF9D8FE)
-val JetStreamOnBackground = Color(0xFFE3E2E6)
-val JetStreamSurface = Color(0xFF1A1C1E)
-val JetStreamOnSurface = Color(0xFFE3E2E6)
-val JetStreamSurfaceVariant = Color(0xFF43474E)
-val JetStreamOnSurfaceVariant = Color(0xFFC4C6CF)
-val JetStreamError = Color(0xFFFFB4AB)
-val JetStreamOnError = Color(0xFF690005)
-val JetStreamErrorContainer = Color(0xFF93000A)
-val JetStreamOnErrorContainer = Color(0xFFFFB4AB)
-val JetStreamBorder = Color(0xFF8E9099)
+// IPTV_MOBILE Dark Theme Colors
+val DarkBackground = Color(0xFF121212)
+val DarkSurface = Color(0xFF1E1E1E)
+val DarkPrimary = Color(0xFFBB86FC) // Vibrant accent color
+val DarkOnPrimary = Color.Black
+val DarkSecondary = Color(0xFF03DAC6)
+val DarkOnSecondary = Color.Black
+val DarkError = Color(0xFFCF6679)
+val DarkOnError = Color.Black
+val DarkOnBackground = Color.White
+val DarkOnSurface = Color.White
+val DarkBorder = Color(0xFF404040)
 
 // Legacy colors (kept for compatibility)
 val Purple80 = Color(0xFFD0BCFF)

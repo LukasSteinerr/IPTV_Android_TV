@@ -43,11 +43,12 @@ import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.example.tv_app.model.Track
-import com.example.tv_app.ui.theme.JetStreamBackground
-import com.example.tv_app.ui.theme.JetStreamOnBackground
-import com.example.tv_app.ui.theme.JetStreamOnSurface
-import com.example.tv_app.ui.theme.JetStreamPrimary
-import com.example.tv_app.ui.theme.JetStreamSurface
+import com.example.tv_app.ui.theme.DarkBackground
+import com.example.tv_app.ui.theme.DarkOnBackground
+import com.example.tv_app.ui.theme.DarkOnSurface
+import com.example.tv_app.ui.theme.DarkPrimary
+import com.example.tv_app.ui.theme.DarkSurface
+import com.example.tv_app.ui.theme.DarkBorder
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
@@ -78,10 +79,10 @@ fun SubtitleMenu(
                     .align(Alignment.Center)
                     .width(500.dp)
                     .clip(RoundedCornerShape(8.dp))
-                    .background(JetStreamSurface)
+                    .background(DarkSurface)
                     .border(
                         width = 1.dp,
-                        color = JetStreamBorder,
+                        color = DarkBorder,
                         shape = RoundedCornerShape(8.dp)
                     )
             ) {
@@ -98,7 +99,7 @@ fun SubtitleMenu(
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = JetStreamOnSurface
+                            color = DarkOnSurface
                         ),
                         modifier = Modifier.padding(bottom = 20.dp)
                     )
@@ -136,7 +137,7 @@ fun SubtitleMenu(
                         itemsIndexed(subtitleTracks) { index, track ->
                             SubtitleMenuItem(
                                 track = track,
-                                onClick = {
+                                onClick = { 
                                     onSubtitleSelected(track)
                                     onDismiss()
                                 },
@@ -176,8 +177,8 @@ fun SubtitleMenuItem(
             .clickable { onClick() }
             .background(
                 color = when {
-                    isSelected -> JetStreamPrimary.copy(alpha = 0.2f)
-                    isFocused -> JetStreamOnSurface.copy(alpha = 0.1f)
+                    isSelected -> DarkPrimary.copy(alpha = 0.2f)
+                    isFocused -> DarkOnSurface.copy(alpha = 0.1f)
                     else -> Color.Transparent
                 }
             )
@@ -199,7 +200,7 @@ fun SubtitleMenuItem(
                         .width(18.dp)
                         .height(18.dp) // Slightly smaller than container
                         .background(
-                            color = JetStreamPrimary,
+                            color = DarkPrimary,
                             shape = RoundedCornerShape(4.dp) // More rounded corners
                         )
                 )
@@ -211,7 +212,7 @@ fun SubtitleMenuItem(
                         .height(18.dp)
                         .border(
                             width = if (isFocused) 2.dp else 1.dp,
-                            color = if (isFocused) JetStreamOnSurface else JetStreamOnSurface.copy(alpha = 0.5f),
+                            color = if (isFocused) DarkOnSurface else DarkOnSurface.copy(alpha = 0.5f),
                             shape = RoundedCornerShape(4.dp)
                         )
                 )
@@ -227,7 +228,7 @@ fun SubtitleMenuItem(
                 text = track.label,
                 style = MaterialTheme.typography.bodyMedium.copy(
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = JetStreamOnSurface,
+                    color = DarkOnSurface,
                     fontSize = 16.sp,
                     lineHeight = 18.sp // Reduced line height for better fit
                 ),
@@ -241,7 +242,7 @@ fun SubtitleMenuItem(
                 Text(
                     text = track.language.uppercase(),
                     style = MaterialTheme.typography.bodySmall.copy(
-                        color = JetStreamOnSurface.copy(alpha = 0.7f),
+                        color = DarkOnSurface.copy(alpha = 0.7f),
                         fontSize = 12.sp,
                         lineHeight = 14.sp // Reduced line height for better fit
                     ),
@@ -252,6 +253,3 @@ fun SubtitleMenuItem(
         }
     }
 }
-
-// Add a border color for the container
-val JetStreamBorder = Color(0xFF404040)

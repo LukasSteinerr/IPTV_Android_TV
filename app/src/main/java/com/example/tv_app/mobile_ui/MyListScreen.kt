@@ -15,15 +15,7 @@ fun MyListScreen(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF1A1F2E),
-                        Color(0xFF0F1419)
-                    ),
-                    radius = 1200f
-                )
-            ),
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         Text("My List Screen", color = Color.White)
