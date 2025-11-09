@@ -5,44 +5,29 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusRestorer
-import androidx.tv.material3.ExperimentalTvMaterial3Api
+import androidx.compose.ui.unit.sp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import coil.compose.AsyncImage
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.Category
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.focusGroup
 import com.example.tv_app.presentation.common.MovieCard
 
 @Composable
 fun MoviePageScreen(
     playlist: Playlist,
     playlistService: PlaylistService,
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
@@ -102,55 +87,44 @@ fun MoviePageScreen(
                 )
             )
     ) {
-        Column {
-            // Appbar with matching background
-            Appbar(
-                selectedTab = selectedTab,
-                onTabSelected = onTabSelected,
-                onSearchClicked = onNavigateToSearch,
-                backgroundColor = Color.Transparent // Make appbar blend with background
-            )
-
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 4.dp,
-                        modifier = Modifier.size(64.dp)
-                    )
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 108.dp),
-                    verticalArrangement = Arrangement.spacedBy(32.dp)
-                ) {
-                    // Featured Section
-                    if (featuredMovies.isNotEmpty()) {
-                        item {
-                            FeaturedContent(
-                                movies = featuredMovies,
-                                onPlayTapped = onMovieSelected,
-                                onDetailsTapped = onMovieSelected
-                            )
-                        }
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    strokeWidth = 4.dp,
+                    modifier = Modifier.size(64.dp)
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 108.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Featured Section
+                if (featuredMovies.isNotEmpty()) {
+                    item {
+                        FeaturedContent(
+                            movies = featuredMovies,
+                            onDetailsTapped = onMovieSelected
+                        )
                     }
+                }
 
-                    // Category Rows
-                    categories.forEach { category ->
-                        val movies = moviesByCategory[category.id] ?: emptyList()
-                        if (movies.isNotEmpty()) {
-                            item {
-                                CategoryRow(
-                                    category = category,
-                                    movies = movies,
-                                    tmdbImageProvider = tmdbImageProvider,
-                                    onMovieSelected = onMovieSelected
-                                )
-                            }
+                // Category Rows
+                categories.forEach { category ->
+                    val movies = moviesByCategory[category.id] ?: emptyList()
+                    if (movies.isNotEmpty()) {
+                        item {
+                            MovieCategoryRow(
+                                title = category.name,
+                                movies = movies,
+                                tmdbImageProvider = tmdbImageProvider,
+                                onMovieSelected = onMovieSelected
+                            )
                         }
                     }
                 }
@@ -161,40 +135,46 @@ fun MoviePageScreen(
 
 
 @Composable
-fun CategoryRow(
-    category: Category,
+fun MovieCategoryRow(
+    title: String,
     movies: List<Movie>,
     tmdbImageProvider: TMDBImageProvider,
     onMovieSelected: (Movie) -> Unit
 ) {
-    // Removed TV-specific focus logic
-
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Text(
-            text = category.name,
-            color = Color.White,
-            style = MaterialTheme.typography.headlineSmall.copy(
-                fontWeight = FontWeight.Bold
-            ),
-            modifier = Modifier.padding(
-                start = 16.dp, // Use fixed padding for mobile
-                bottom = 16.dp
-            )
-        )
-        
-        LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(12.dp), // Reduced spacing for mobile
-            contentPadding = PaddingValues(horizontal = 16.dp), // Use fixed padding for mobile
-            modifier = Modifier.fillMaxWidth()
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            Text(
+                text = "See all",
+                color = Color.Gray,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) { 
             items(movies) { movie ->
                 MovieCard(
                     movie = movie,
                     tmdbImageProvider = tmdbImageProvider,
                     onClick = { onMovieSelected(movie) },
-                    modifier = Modifier.width(120.dp) // Reduced card size for mobile
+                    modifier = Modifier.width(120.dp)
                 )
             }
         }

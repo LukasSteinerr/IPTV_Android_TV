@@ -23,8 +23,6 @@ import com.example.tv_app.model.Playlist
 @Composable
 fun SearchScreen(
     playlist: Playlist,
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -44,13 +42,6 @@ fun SearchScreen(
             )
     ) {
         Column {
-            // Appbar with matching background
-            Appbar(
-                selectedTab = selectedTab,
-                onTabSelected = onTabSelected,
-                backgroundColor = Color.Transparent
-            )
-
             // Search content
             Column(
                 modifier = Modifier

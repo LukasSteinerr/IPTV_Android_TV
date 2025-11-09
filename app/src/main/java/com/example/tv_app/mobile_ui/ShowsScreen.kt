@@ -5,44 +5,29 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.ExperimentalComposeUiApi
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.focusRestorer
-import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.MaterialTheme as TvMaterialTheme
-import androidx.tv.material3.Text
-import coil.compose.AsyncImage
+import androidx.compose.ui.unit.sp
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import com.example.tv_app.model.TvSeries
 import com.example.tv_app.model.Category
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.focusGroup
 import com.example.tv_app.presentation.common.TvSeriesCard
 
 @Composable
 fun ShowsScreen(
     playlist: Playlist,
     playlistService: PlaylistService,
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
     onBackPressed: () -> Unit,
     onShowSelected: (TvSeries) -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
@@ -102,58 +87,94 @@ fun ShowsScreen(
                 )
             )
     ) {
-        Column {
-            // Appbar with matching background
-            Appbar(
-                selectedTab = selectedTab,
-                onTabSelected = onTabSelected,
-                onSearchClicked = onNavigateToSearch,
-                backgroundColor = Color.Transparent // Make appbar blend with background
-            )
-
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = TvMaterialTheme.colorScheme.primary,
-                        strokeWidth = 4.dp,
-                        modifier = Modifier.size(64.dp)
-                    )
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(
+                    color = MaterialTheme.colorScheme.primary,
+                    strokeWidth = 4.dp,
+                    modifier = Modifier.size(64.dp)
+                )
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = 108.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Featured Section
+                if (featuredTvSeries.isNotEmpty()) {
+                    item {
+                        FeaturedTvSeriesContent(
+                            tvSeries = featuredTvSeries,
+                            onDetailsTapped = onShowSelected
+                        )
+                    }
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(bottom = 108.dp),
-                    verticalArrangement = Arrangement.spacedBy(32.dp)
-                ) {
-                    // Featured Section
-                    if (featuredTvSeries.isNotEmpty()) {
+
+                // Category Rows
+                categories.forEach { category ->
+                    val series = tvSeriesByCategory[category.id] ?: emptyList()
+                    if (series.isNotEmpty()) {
                         item {
-                            FeaturedTvSeriesContent(
-                                tvSeries = featuredTvSeries,
-                                onPlayTapped = onShowSelected,
-                                onDetailsTapped = onShowSelected
+                            TvSeriesCategoryRow(
+                                title = category.name,
+                                tvSeries = series,
+                                tmdbImageProvider = tmdbImageProvider,
+                                onTvSeriesSelected = onShowSelected
                             )
                         }
                     }
-
-                    // Category Rows
-                    categories.forEach { category ->
-                        val series = tvSeriesByCategory[category.id] ?: emptyList()
-                        if (series.isNotEmpty()) {
-                            item {
-                                TvSeriesCategoryRow(
-                                    category = category,
-                                    tvSeries = series,
-                                    tmdbImageProvider = tmdbImageProvider,
-                                    onTvSeriesSelected = onShowSelected
-                                )
-                            }
-                        }
-                    }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun TvSeriesCategoryRow(
+    title: String,
+    tvSeries: List<TvSeries>,
+    tmdbImageProvider: TMDBImageProvider,
+    onTvSeriesSelected: (TvSeries) -> Unit
+) {
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                color = Color.White,
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            Text(
+                text = "See all",
+                color = Color.Gray,
+                fontSize = 14.sp,
+                modifier = Modifier.padding(start = 8.dp)
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) { 
+            items(tvSeries) { series ->
+                TvSeriesCard(
+                    tvSeries = series,
+                    tmdbImageProvider = tmdbImageProvider,
+                    onClick = { onTvSeriesSelected(series) },
+                    modifier = Modifier.width(120.dp)
+                )
             }
         }
     }

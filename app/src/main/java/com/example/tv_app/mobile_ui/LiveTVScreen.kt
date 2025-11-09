@@ -28,8 +28,6 @@ import com.example.tv_app.model.Channel
 fun LiveTVScreen(
     playlist: Playlist,
     playlistService: PlaylistService,
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
     onBackPressed: () -> Unit,
     onChannelSelected: (Channel) -> Unit = {},
     modifier: Modifier = Modifier
@@ -49,13 +47,6 @@ fun LiveTVScreen(
             )
     ) {
         Column {
-            // Appbar with matching background
-            Appbar(
-                selectedTab = selectedTab,
-                onTabSelected = onTabSelected,
-                backgroundColor = Color.Transparent
-            )
-
             // Live TV content - EPG Guide
             EpgGuide(
                 playlist = playlist,

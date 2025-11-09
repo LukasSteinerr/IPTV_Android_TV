@@ -20,8 +20,6 @@ import com.example.tv_app.model.Playlist
 @Composable
 fun FavoritesScreen(
     playlist: Playlist,
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -40,13 +38,6 @@ fun FavoritesScreen(
             )
     ) {
         Column {
-            // Appbar with matching background
-            Appbar(
-                selectedTab = selectedTab,
-                onTabSelected = onTabSelected,
-                backgroundColor = Color.Transparent
-            )
-
             // Favorites content
             Box(
                 modifier = Modifier.fillMaxSize(),

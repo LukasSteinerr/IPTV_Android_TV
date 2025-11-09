@@ -12,14 +12,12 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.Tv
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.tv.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.tv.material3.ExperimentalTvMaterial3Api
@@ -91,62 +89,21 @@ fun MobileAppNavigation() {
     var selectedTvSeries by remember { mutableStateOf<TvSeries?>(null) }
     var movieDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     var tvSeriesDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
-    var selectedTab by remember { mutableStateOf(0) } // Centralized tab state
     val playlistService = remember { PlaylistService() }
     
     // Create a shared ViewModel for the video player
     val videoPlayerViewModel = remember { VideoPlayerViewModel() }
 
-    val mainNavScreens = listOf(
-        MobileScreen.MoviePage,
-        MobileScreen.ShowsPage,
-        MobileScreen.LiveTVPage,
-        MobileScreen.FavoritesPage,
-    )
-
     val showBottomBar = when (currentScreen) {
-        MobileScreen.MoviePage, MobileScreen.ShowsPage, MobileScreen.LiveTVPage, MobileScreen.FavoritesPage, MobileScreen.SearchPage -> true
+        MobileScreen.Home, MobileScreen.Downloads, MobileScreen.MyList, MobileScreen.Settings, MobileScreen.SearchPage -> true
         else -> false
-    }
-
-    val currentNavScreen = when (currentScreen) {
-        is MobileScreen.MoviePage -> MobileScreen.MoviePage
-        is MobileScreen.ShowsPage -> MobileScreen.ShowsPage
-        is MobileScreen.LiveTVPage -> MobileScreen.LiveTVPage
-        is MobileScreen.FavoritesPage -> MobileScreen.FavoritesPage
-        is MobileScreen.SearchPage -> MobileScreen.MoviePage // Search is not a main tab, default to MoviePage for selection logic
-        else -> MobileScreen.MoviePage // Default for screens without a tab
     }
 
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
-                ) {
-                    mainNavScreens.forEach { screen ->
-                        val isSelected = currentNavScreen == screen
-                        NavigationBarItem(
-                            icon = {
-                                Icon(
-                                    imageVector = when (screen) {
-                                        MobileScreen.MoviePage -> Icons.Filled.Movie
-                                        MobileScreen.ShowsPage -> Icons.Filled.Tv
-                                        MobileScreen.LiveTVPage -> Icons.Filled.Home
-                                        MobileScreen.FavoritesPage -> Icons.Filled.Favorite
-                                        else -> Icons.Filled.Home
-                                    },
-                                    contentDescription = screen.javaClass.simpleName
-                                )
-                            },
-                            label = { androidx.compose.material3.Text(screen.javaClass.simpleName.replace("Page", "")) },
-                            selected = isSelected,
-                            onClick = {
-                                currentScreen = screen
-                                selectedTab = mainNavScreens.indexOf(screen)
-                            }
-                        )
-                    }
+                BottomNavigationBar(currentScreen = currentScreen) {
+                    currentScreen = it
                 }
             }
         }
@@ -160,7 +117,7 @@ fun MobileAppNavigation() {
                     },
                     onPlaylistSelected = { playlist ->
                         selectedPlaylist = playlist
-                        currentScreen = MobileScreen.MoviePage
+                        currentScreen = MobileScreen.Home
                         Log.d("MainActivity", "Selected playlist: ${playlist.name}")
                     },
                     modifier = Modifier.padding(paddingValues)
@@ -175,147 +132,59 @@ fun MobileAppNavigation() {
                     modifier = Modifier.padding(paddingValues)
                 )
             }
-            MobileScreen.MoviePage -> {
+            MobileScreen.Home -> {
                 selectedPlaylist?.let { playlist ->
-                    MoviePageScreen(
+                    HomeScreen(
                         playlist = playlist,
                         playlistService = playlistService,
-                        selectedTab = selectedTab,
-                        onTabSelected = { newTab ->
-                            selectedTab = newTab
-                            // Handle tab navigation here
-                            when (newTab) {
-                                0 -> { /* Movies - current screen */ }
-                                1 -> currentScreen = MobileScreen.ShowsPage
-                                2 -> currentScreen = MobileScreen.LiveTVPage
-                                3 -> currentScreen = MobileScreen.FavoritesPage
-                            }
-                        },
-                        onBackPressed = {
-                            currentScreen = MobileScreen.MyPlaylists
-                        },
                         onMovieSelected = { movie ->
                             selectedMovie = movie
                             currentScreen = MobileScreen.MovieDetails
-                            Log.d("MainActivity", "Selected movie: ${movie.name}")
-                        },
-                        onNavigateToSearch = {
-                            currentScreen = MobileScreen.SearchPage
-                        },
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                }
-            }
-            is MobileScreen.ShowsPage -> {
-                selectedPlaylist?.let { playlist ->
-                    ShowsScreen(
-                        playlist = playlist,
-                        playlistService = playlistService,
-                        selectedTab = selectedTab,
-                        onTabSelected = { newTab ->
-                            selectedTab = newTab
-                            // Handle tab navigation here
-                            when (newTab) {
-                                0 -> currentScreen = MobileScreen.MoviePage
-                                1 -> { /* Shows - current screen */ }
-                                2 -> currentScreen = MobileScreen.LiveTVPage
-                                3 -> currentScreen = MobileScreen.FavoritesPage
-                            }
-                        },
-                        onBackPressed = {
-                            currentScreen = MobileScreen.MoviePage
                         },
                         onShowSelected = { show ->
                             selectedTvSeries = show
                             currentScreen = MobileScreen.TvSeriesDetails
-                            Log.d("MainActivity", "Selected show: ${show.name}")
+                        },
+                        onChannelSelected = { channel ->
+                            // TODO: Navigate to channel player
                         },
                         onNavigateToSearch = {
                             currentScreen = MobileScreen.SearchPage
                         },
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                }
-            }
-            is MobileScreen.LiveTVPage -> {
-                selectedPlaylist?.let { playlist ->
-                    LiveTVScreen(
-                        playlist = playlist,
-                        playlistService = playlistService,
-                        selectedTab = selectedTab,
-                        onTabSelected = { newTab ->
-                            selectedTab = newTab
-                            // Handle tab navigation here
-                            when (newTab) {
-                                0 -> currentScreen = MobileScreen.MoviePage
-                                1 -> currentScreen = MobileScreen.ShowsPage
-                                2 -> { /* Live TV - current screen */ }
-                                3 -> currentScreen = MobileScreen.FavoritesPage
-                            }
-                        },
                         onBackPressed = {
-                            currentScreen = MobileScreen.MoviePage
-                        },
-                        onChannelSelected = { channel ->
-                            Log.d("MainActivity", "Selected channel: ${channel.name}")
-                            // TODO: Navigate to channel player
-                        },
-                        modifier = Modifier.padding(paddingValues)
+                            currentScreen = MobileScreen.MyPlaylists
+                        }
                     )
                 }
             }
-            is MobileScreen.FavoritesPage -> {
-                selectedPlaylist?.let { playlist ->
-                    FavoritesScreen(
-                        playlist = playlist,
-                        selectedTab = selectedTab,
-                        onTabSelected = { newTab ->
-                            selectedTab = newTab
-                            // Handle tab navigation here
-                            when (newTab) {
-                                0 -> currentScreen = MobileScreen.MoviePage
-                                1 -> currentScreen = MobileScreen.ShowsPage
-                                2 -> currentScreen = MobileScreen.LiveTVPage
-                                3 -> { /* Favorites - current screen */ }
-                            }
-                        },
-                        onBackPressed = {
-                            currentScreen = MobileScreen.MoviePage
-                        },
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                }
+            MobileScreen.Downloads -> {
+                DownloadsScreen(modifier = Modifier.padding(paddingValues))
             }
-            is MobileScreen.SearchPage -> {
+            MobileScreen.MyList -> {
+                MyListScreen(modifier = Modifier.padding(paddingValues))
+            }
+            MobileScreen.Settings -> {
+                SettingsScreen(modifier = Modifier.padding(paddingValues))
+            }
+            MobileScreen.SearchPage -> {
                 selectedPlaylist?.let { playlist ->
                     SearchScreen(
                         playlist = playlist,
-                        selectedTab = selectedTab,
-                        onTabSelected = { newTab ->
-                            selectedTab = newTab
-                            // Handle tab navigation here
-                            when (newTab) {
-                                0 -> currentScreen = MobileScreen.MoviePage
-                                1 -> currentScreen = MobileScreen.ShowsPage
-                                2 -> currentScreen = MobileScreen.LiveTVPage
-                                3 -> currentScreen = MobileScreen.FavoritesPage
-                            }
-                        },
                         onBackPressed = {
-                            currentScreen = MobileScreen.MoviePage
+                            currentScreen = MobileScreen.Home
                         },
                         modifier = Modifier.padding(paddingValues)
                     )
                 }
             }
-            is MobileScreen.MovieDetails -> {
+            MobileScreen.MovieDetails -> {
                 selectedMovie?.let { movie ->
                     MovieDetailsScreen(
                         key = movieDetailsKey, // Force recomposition when key changes
                         movie = movie,
                         playlistService = playlistService,
                         onBackPressed = {
-                            currentScreen = MobileScreen.MoviePage
+                            currentScreen = MobileScreen.Home
                         },
                         onMovieSelected = { newMovie ->
                             selectedMovie = newMovie
@@ -330,14 +199,14 @@ fun MobileAppNavigation() {
                     )
                 }
             }
-            is MobileScreen.TvSeriesDetails -> {
+            MobileScreen.TvSeriesDetails -> {
                 selectedTvSeries?.let { tvSeries ->
                     TvSeriesDetailsScreen(
                         key = tvSeriesDetailsKey, // Force recomposition when key changes
                         tvSeries = tvSeries,
                         playlistService = playlistService,
                         onBackPressed = {
-                            currentScreen = MobileScreen.ShowsPage
+                            currentScreen = MobileScreen.Home
                         },
                         onTvSeriesSelected = { newSeries ->
                             selectedTvSeries = newSeries
@@ -352,7 +221,7 @@ fun MobileAppNavigation() {
                     )
                 }
             }
-            is MobileScreen.VideoPlayer -> {
+            MobileScreen.VideoPlayer -> {
                 VideoPlayerScreen(
                     onBackPressed = {
                         // Reset the video player state when navigating away
@@ -365,6 +234,46 @@ fun MobileAppNavigation() {
                     modifier = Modifier.padding(paddingValues)
                 )
             }
+            else -> {
+                // Do nothing
+            }
+        }
+    }
+}
+
+@Composable
+fun BottomNavigationBar(currentScreen: MobileScreen, onScreenSelected: (MobileScreen) -> Unit) {
+    NavigationBar(
+        containerColor = Color(0xFF121212), // Dark background matching the image
+        contentColor = Color.White
+    ) {
+        val navItems = listOf(
+            MobileScreen.Home,
+            MobileScreen.Downloads,
+            MobileScreen.MyList,
+            MobileScreen.Settings
+        )
+
+        navItems.forEach { screen ->
+            val isSelected = currentScreen == screen
+            NavigationBarItem(
+                icon = {
+                    Icon(
+                        imageVector = when (screen) {
+                            MobileScreen.Home -> if (isSelected) Icons.Filled.Home else Icons.Outlined.Home
+                            MobileScreen.Downloads -> if (isSelected) Icons.Filled.Download else Icons.Outlined.Download
+                            MobileScreen.MyList -> if (isSelected) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder
+                            MobileScreen.Settings -> if (isSelected) Icons.Filled.Settings else Icons.Outlined.Settings
+                            else -> Icons.Filled.Home
+                        },
+                        contentDescription = screen.javaClass.simpleName,
+                        tint = Color.White // All icons are white
+                    )
+                },
+                label = { /* Removed label to match the icon-only style in the image */ },
+                selected = isSelected,
+                onClick = { onScreenSelected(screen) }
+            )
         }
     }
 }
@@ -372,14 +281,14 @@ fun MobileAppNavigation() {
 sealed class MobileScreen {
     object MyPlaylists : MobileScreen()
     object AddPlaylist : MobileScreen()
-    object MoviePage : MobileScreen()
-    object ShowsPage : MobileScreen()
-    object LiveTVPage : MobileScreen()
-    object FavoritesPage : MobileScreen()
     object SearchPage : MobileScreen()
     object MovieDetails : MobileScreen()
     object TvSeriesDetails : MobileScreen()
     object VideoPlayer : MobileScreen()
+    object Home : MobileScreen()
+    object Downloads : MobileScreen()
+    object MyList : MobileScreen()
+    object Settings : MobileScreen()
 }
 
 @Composable
