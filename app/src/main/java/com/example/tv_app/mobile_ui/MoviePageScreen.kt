@@ -2,6 +2,7 @@ package com.example.tv_app.mobile_ui
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -35,6 +36,7 @@ fun MoviePageScreen(
     onNavigateToSearch: () -> Unit = {},
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
+    onSeeAllClick: (Long, String) -> Unit,
     selectedTab: Int,
     onTabSelected: (Int) -> Unit
 ) {
@@ -120,10 +122,12 @@ fun MoviePageScreen(
                     if (movies.isNotEmpty()) {
                         item {
                             MovieCategoryRow(
+                                categoryId = category.id,
                                 title = category.name,
                                 movies = movies,
                                 tmdbImageProvider = tmdbImageProvider,
-                                onMovieSelected = onMovieSelected
+                                onMovieSelected = onMovieSelected,
+                                onSeeAllClick = onSeeAllClick
                             )
                         }
                     }
@@ -136,10 +140,12 @@ fun MoviePageScreen(
 
 @Composable
 fun MovieCategoryRow(
+    categoryId: Long,
     title: String,
     movies: List<Movie>,
     tmdbImageProvider: TMDBImageProvider,
-    onMovieSelected: (Movie) -> Unit
+    onMovieSelected: (Movie) -> Unit,
+    onSeeAllClick: (Long, String) -> Unit
 ) {
     Column {
         Row(
@@ -162,7 +168,9 @@ fun MovieCategoryRow(
                 text = "See all",
                 color = Color.Gray,
                 fontSize = 14.sp,
-                modifier = Modifier.padding(start = 8.dp)
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .clickable { onSeeAllClick(categoryId, title) }
             )
         }
 

@@ -2,6 +2,7 @@ package com.example.tv_app.mobile_ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import com.example.tv_app.model.Category
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -22,10 +23,26 @@ fun HomeScreen(
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     var showSearch by remember { mutableStateOf(false) }
+    var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
+    var selectedCategoryName by remember { mutableStateOf<String?>(null) }
+    
+    val onCategorySelected = remember {
+        { id: Long, name: String ->
+            selectedCategoryId = id
+            selectedCategoryName = name
+        }
+    }
+    
+    val onCategoryBackClicked = remember {
+        {
+            selectedCategoryId = null
+            selectedCategoryName = null
+        }
+    }
     
     Scaffold(
         topBar = {
-            if (!showSearch) {
+            if (!showSearch && selectedCategoryId == null) {
                 FixedPrimaryAppBar(
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it },
@@ -38,6 +55,18 @@ fun HomeScreen(
             SearchScreen(
                 onNavigateBack = { showSearch = false }
             )
+        } else if (selectedCategoryId != null && selectedCategoryName != null) {
+            // New "See All" screen
+            CategoryGridScreen(
+                categoryId = selectedCategoryId!!,
+                categoryName = selectedCategoryName!!,
+                playlistService = playlistService,
+                onNavigateBack = onCategoryBackClicked,
+                onMovieSelected = onMovieSelected,
+                onShowSelected = onShowSelected,
+                contentPadding = contentPadding,
+                isMovie = selectedTab == 0 // Use selected tab to infer if it's movie or series
+            )
         } else {
             when (selectedTab) {
                 0 -> MoviePageScreen(
@@ -46,6 +75,7 @@ fun HomeScreen(
                     onMovieSelected = onMovieSelected,
                     onBackPressed = onBackPressed,
                     contentPadding = contentPadding,
+                    onSeeAllClick = onCategorySelected,
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it }
                 )
@@ -55,6 +85,7 @@ fun HomeScreen(
                     onShowSelected = onShowSelected,
                     onBackPressed = onBackPressed,
                     contentPadding = contentPadding,
+                    onSeeAllClick = onCategorySelected,
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it }
                 )
