@@ -101,6 +101,13 @@ fun MovieDetailsScreen(
 
     LaunchedEffect(movie.tmdbId) {
         coroutineScope.launch {
+            if (movie.tmdbId == null) {
+                movieDetails = movie
+                backdropUrl = movie.backdropUrl ?: movie.posterUrl
+                isLoading = false
+                return@launch
+            }
+
             try {
                 movie.tmdbId?.let { tmdbId ->
                     val details = tmdbService.getMovieDetails(tmdbId)
@@ -111,14 +118,14 @@ fun MovieDetailsScreen(
                             duration = details.optInt("runtime", 0).let { if (it > 0) "${it} min" else null }
                         )
                         genres = tmdbService.parseGenres(details)
+                        val images = tmdbService.getMovieImages(tmdbId, details)
+                        posterUrl = images["poster"]
+                        backdropUrl = images["backdrop"]
                     }
                     cast = tmdbService.getMovieCredits(tmdbId)
                     val tmdbSimilarMovies = tmdbService.getSimilarMovies(tmdbId)
                     // Cross-reference similar movies with local playlist
                     similarMovies = playlistService.crossReferenceSimilarMovies(tmdbSimilarMovies)
-                    val images = tmdbService.getMovieImages(tmdbId)
-                    posterUrl = images["poster"]
-                    backdropUrl = images["backdrop"]
                     // Add mock reviews data similar to JetStreamCompose
                     reviewsAndRatings = listOf(
                         MovieReviewsAndRatings(
@@ -139,6 +146,7 @@ fun MovieDetailsScreen(
             } catch (e: Exception) {
                 isLoading = false
                 movieDetails = movie
+                backdropUrl = movie.backdropUrl ?: movie.posterUrl
             }
         }
     }
@@ -475,7 +483,7 @@ private fun MovieImageWithGradients(
     gradientColor: Color = MaterialTheme.colorScheme.surface,
 ) {
     AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current).data(backdropUrl)
+        model = ImageRequest.Builder(LocalContext.current).data(backdropUrl ?: movieDetails.coverUrl)
             .crossfade(true).build(),
         contentDescription = "Movie poster for ${movieDetails.name}",
         contentScale = ContentScale.Crop,

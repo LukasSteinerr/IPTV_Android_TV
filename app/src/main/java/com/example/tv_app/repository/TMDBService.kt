@@ -38,6 +38,8 @@ class TMDBService {
     private suspend fun fetchData(url: String): String? = withContext(Dispatchers.IO) {
         val connection = URL(url).openConnection() as HttpURLConnection
         try {
+            connection.connectTimeout = 10000 // 10 seconds
+            connection.readTimeout = 10000    // 10 seconds
             connection.requestMethod = "GET"
             connection.connect()
 
@@ -81,14 +83,14 @@ class TMDBService {
     } ?: emptyList()
 
 
-    suspend fun getMovieImages(tmdbId: String): Map<String, String?> {
-        val details = getMovieDetails(tmdbId)
-        if (details == null) {
+    suspend fun getMovieImages(tmdbId: String, details: JSONObject? = null): Map<String, String?> {
+        val movieDetails = details ?: getMovieDetails(tmdbId)
+        if (movieDetails == null) {
             return mapOf("poster" to null, "backdrop" to null)
         }
 
-        val posterPath = details.optString("poster_path", null)
-        val backdropPath = details.optString("backdrop_path", null)
+        val posterPath = movieDetails.optString("poster_path", null)
+        val backdropPath = movieDetails.optString("backdrop_path", null)
 
         return mapOf(
             "poster" to posterPath?.let { getPosterUrl(it) },
@@ -96,14 +98,14 @@ class TMDBService {
         )
     }
 
-    suspend fun getTvSeriesImages(tmdbId: String): Map<String, String?> {
-        val details = getTvSeriesDetails(tmdbId)
-        if (details == null) {
+    suspend fun getTvSeriesImages(tmdbId: String, details: JSONObject? = null): Map<String, String?> {
+        val seriesDetails = details ?: getTvSeriesDetails(tmdbId)
+        if (seriesDetails == null) {
             return mapOf("poster" to null, "backdrop" to null)
         }
 
-        val posterPath = details.optString("poster_path", null)
-        val backdropPath = details.optString("backdrop_path", null)
+        val posterPath = seriesDetails.optString("poster_path", null)
+        val backdropPath = seriesDetails.optString("backdrop_path", null)
 
         return mapOf(
             "poster" to posterPath?.let { getPosterUrl(it) },

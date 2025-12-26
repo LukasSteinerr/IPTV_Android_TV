@@ -110,6 +110,21 @@ fun TvSeriesDetailsScreen(
 
     LaunchedEffect(tvSeries.tmdbId) {
         coroutineScope.launch {
+            if (tvSeries.tmdbId == null) {
+                tvSeriesDetails = tvSeries
+                backdropUrl = tvSeries.coverUrl
+                playlist?.let { pl ->
+                    episodes = playlistService.getTvSeriesEpisodes(
+                        tvSeries = tvSeries,
+                        playlist = pl,
+                        onProgress = {}
+                    )
+                } ?: run {
+                    episodes = emptyList()
+                }
+                isLoading = false
+                return@launch
+            }
             try {
                 tvSeries.tmdbId?.let { tmdbId ->
                     val details = tmdbService.getTvSeriesDetails(tmdbId)
@@ -119,14 +134,14 @@ fun TvSeriesDetailsScreen(
                             rating = details.optDouble("vote_average", 0.0).toString()
                         )
                         genres = tmdbService.parseGenres(details)
+                        val images = tmdbService.getTvSeriesImages(tmdbId, details)
+                        posterUrl = images["poster"]
+                        backdropUrl = images["backdrop"]
                     }
                     cast = tmdbService.getTvSeriesCredits(tmdbId)
                     val tmdbSimilarTvSeries = tmdbService.getSimilarTvSeries(tmdbId)
                     // Cross-reference similar TV series with local playlist
                     similarTvSeries = playlistService.crossReferenceSimilarTvSeries(tmdbSimilarTvSeries)
-                    val images = tmdbService.getTvSeriesImages(tmdbId)
-                    posterUrl = images["poster"]
-                    backdropUrl = images["backdrop"]
                 }
                 
                 // Fetch episodes with progress callback
@@ -146,6 +161,7 @@ fun TvSeriesDetailsScreen(
             } catch (e: Exception) {
                 isLoading = false
                 tvSeriesDetails = tvSeries
+                backdropUrl = tvSeries.coverUrl
                 playlist?.let { pl ->
                     episodes = playlistService.getTvSeriesEpisodes(
                         tvSeries = tvSeries,
@@ -469,7 +485,7 @@ private fun TvSeriesImageWithGradients(
     gradientColor: Color = MaterialTheme.colorScheme.surface,
 ) {
     AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current).data(backdropUrl)
+        model = ImageRequest.Builder(LocalContext.current).data(backdropUrl ?: tvSeriesDetails.coverUrl)
             .crossfade(true).build(),
         contentDescription = "TV Series poster for ${tvSeriesDetails.name}",
         contentScale = ContentScale.Crop,

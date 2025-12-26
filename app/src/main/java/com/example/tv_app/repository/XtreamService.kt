@@ -20,9 +20,9 @@ class XtreamService(private val epgParserService: EpgParserService) {
 
     private val client = HttpClient(CIO) {
         install(HttpTimeout) {
-            requestTimeoutMillis = 300_000 // 5 minutes
-            connectTimeoutMillis = 60_000  // 1 minute
-            socketTimeoutMillis = 60_000   // 1 minute
+            requestTimeoutMillis = 30000 // 30 seconds
+            connectTimeoutMillis = 10000  // 10 seconds
+            socketTimeoutMillis = 10000   // 10 seconds
         }
     }
     private val json = Json { ignoreUnknownKeys = true }

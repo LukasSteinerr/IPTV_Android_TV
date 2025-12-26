@@ -20,18 +20,19 @@ fun DotSeparatedRow(
     modifier: Modifier = Modifier,
     texts: List<String>
 ) {
+    val filteredTexts = texts.filter { it.isNotBlank() }
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        texts.forEachIndexed { index, text ->
+        filteredTexts.forEachIndexed { index, text ->
             Text(
                 text = text,
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = FontWeight.Normal
                 )
             )
-            if (index != texts.lastIndex) {
+            if (index != filteredTexts.lastIndex) {
                 Box(
                     modifier = Modifier
                         .padding(horizontal = 8.dp)
