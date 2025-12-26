@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
@@ -30,22 +32,24 @@ fun LiveTVScreen(
     playlistService: PlaylistService,
     onBackPressed: () -> Unit,
     onChannelSelected: (Channel) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
 ) {
     
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black)
+            .padding(top = contentPadding.calculateTopPadding())
     ) {
-        Column {
-            // Live TV content - EPG Guide
-            EpgGuide(
-                playlist = playlist,
-                playlistService = playlistService,
-                onChannelSelected = onChannelSelected,
-                modifier = Modifier.fillMaxSize()
-            )
-        }
+        // Live TV content - EPG Guide
+        EpgGuide(
+            playlist = playlist,
+            playlistService = playlistService,
+            onChannelSelected = onChannelSelected,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 }

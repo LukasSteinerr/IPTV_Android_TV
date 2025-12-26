@@ -6,10 +6,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,20 +15,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun Appbar(
+fun SecondaryNavTabs(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
-    onSearchClicked: () -> Unit
+    modifier: Modifier = Modifier,
+    backgroundColor: Color = Color.Black
 ) {
     val tabs = listOf("Movies", "TV Shows", "Live TV")
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .background(Color.Black)
+            .background(backgroundColor)
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.spacedBy(24.dp)
     ) {
         tabs.forEachIndexed { index, title ->
             val selected = selectedTab == index
@@ -42,9 +39,6 @@ fun Appbar(
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
                 modifier = Modifier.clickable { onTabSelected(index) }
             )
-        }
-        IconButton(onClick = onSearchClicked) {
-            Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.White)
         }
     }
 }

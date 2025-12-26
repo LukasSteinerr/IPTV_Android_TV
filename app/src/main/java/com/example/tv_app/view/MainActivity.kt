@@ -147,9 +147,6 @@ fun TvAppNavigation() {
                         currentScreen = TvScreen.MovieDetails
                         Log.d("MainActivity", "Selected movie: ${movie.name}")
                     },
-                    onNavigateToSearch = {
-                        currentScreen = TvScreen.SearchPage
-                    }
                 )
             }
         }
@@ -177,9 +174,6 @@ fun TvAppNavigation() {
                         currentScreen = TvScreen.TvSeriesDetails
                         Log.d("MainActivity", "Selected show: ${show.name}")
                     },
-                    onNavigateToSearch = {
-                        currentScreen = TvScreen.SearchPage
-                    }
                 )
             }
         }
@@ -222,27 +216,6 @@ fun TvAppNavigation() {
                             1 -> currentScreen = TvScreen.ShowsPage
                             2 -> currentScreen = TvScreen.LiveTVPage
                             3 -> { /* Favorites - current screen */ }
-                        }
-                    },
-                    onBackPressed = {
-                        currentScreen = TvScreen.MoviePage
-                    }
-                )
-            }
-        }
-        is TvScreen.SearchPage -> {
-            selectedPlaylist?.let { playlist ->
-                SearchScreen(
-                    playlist = playlist,
-                    selectedTab = selectedTab,
-                    onTabSelected = { newTab ->
-                        selectedTab = newTab
-                        // Handle tab navigation here
-                        when (newTab) {
-                            0 -> currentScreen = TvScreen.MoviePage
-                            1 -> currentScreen = TvScreen.ShowsPage
-                            2 -> currentScreen = TvScreen.LiveTVPage
-                            3 -> currentScreen = TvScreen.FavoritesPage
                         }
                     },
                     onBackPressed = {
@@ -315,7 +288,6 @@ sealed class TvScreen {
     object ShowsPage : TvScreen()
     object LiveTVPage : TvScreen()
     object FavoritesPage : TvScreen()
-    object SearchPage : TvScreen()
     object MovieDetails : TvScreen()
     object TvSeriesDetails : TvScreen()
     object VideoPlayer : TvScreen()

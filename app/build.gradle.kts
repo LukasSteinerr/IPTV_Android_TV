@@ -81,6 +81,7 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.tv:tv-material:1.0.0-beta01")
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation("androidx.palette:palette-ktx:1.0.0")
     implementation(libs.androidx.activity.compose)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

@@ -31,42 +31,57 @@ fun FeaturedContent(
 ) {
     val pagerState = rememberPagerState(pageCount = { movies.size })
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        HorizontalPager(
-            state = pagerState,
-            contentPadding = PaddingValues(horizontal = 32.dp),
-            pageSpacing = 16.dp
-        ) { page ->
-            var imageUrl by remember { mutableStateOf<String?>(null) }
-            val coroutineScope = rememberCoroutineScope()
+    val currentMovie = movies.getOrNull(pagerState.currentPage)
+    var currentImageUrl by remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
-            LaunchedEffect(movies[page].featuredPosterUrl) {
-                coroutineScope.launch {
-                    imageUrl = TMDBImageProvider.getInstance().getBackdropUrl(movies[page].featuredPosterUrl) ?: movies[page].coverUrl
+    LaunchedEffect(currentMovie) {
+        if (currentMovie != null) {
+            currentImageUrl = TMDBImageProvider.getInstance().getBackdropUrl(currentMovie.featuredPosterUrl)
+                ?: currentMovie.coverUrl
+        }
+    }
+
+    PaletteBackedContent(
+        imageUrl = currentImageUrl,
+        modifier = modifier
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = 32.dp),
+                pageSpacing = 16.dp
+            ) { page ->
+                var imageUrl by remember { mutableStateOf<String?>(null) }
+
+                LaunchedEffect(movies[page].featuredPosterUrl) {
+                    coroutineScope.launch {
+                        imageUrl = TMDBImageProvider.getInstance().getBackdropUrl(movies[page].featuredPosterUrl) ?: movies[page].coverUrl
+                    }
+                }
+
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    border = if (pagerState.currentPage == page) BorderStroke(2.dp, Color.White) else null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.75f) // Make it longer vertically (taller than wide)
+                        .clickable { onDetailsTapped(movies[page]) }
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUrl),
+                        contentDescription = "Featured Movie",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
-
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                border = if (pagerState.currentPage == page) BorderStroke(2.dp, Color.White) else null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(0.75f) // Make it longer vertically (taller than wide)
-                    .clickable { onDetailsTapped(movies[page]) }
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(imageUrl),
-                    contentDescription = "Featured Movie",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            Spacer(Modifier.height(16.dp))
+            PageIndicator(
+                numberOfPages = movies.size,
+                selectedPage = pagerState.currentPage
+            )
         }
-        Spacer(Modifier.height(16.dp))
-        PageIndicator(
-            numberOfPages = movies.size,
-            selectedPage = pagerState.currentPage
-        )
     }
 }
 

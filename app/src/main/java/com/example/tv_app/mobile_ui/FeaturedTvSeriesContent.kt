@@ -3,7 +3,6 @@ package com.example.tv_app.mobile_ui
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -30,42 +29,57 @@ fun FeaturedTvSeriesContent(
     modifier: Modifier = Modifier
 ) {
     val pagerState = rememberPagerState(pageCount = { tvSeries.size })
+    val coroutineScope = rememberCoroutineScope()
+    
+    val currentTvSeries = tvSeries.getOrNull(pagerState.currentPage)
+    var currentImageUrl by remember { mutableStateOf<String?>(null) }
 
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        HorizontalPager(
-            state = pagerState,
-            contentPadding = PaddingValues(horizontal = 32.dp),
-            pageSpacing = 16.dp
-        ) { page ->
-            var imageUrl by remember { mutableStateOf<String?>(null) }
-            val coroutineScope = rememberCoroutineScope()
+    LaunchedEffect(currentTvSeries) {
+        if (currentTvSeries != null) {
+            currentImageUrl = TMDBImageProvider.getInstance().getBackdropUrl(currentTvSeries.featuredPosterUrl)
+                ?: currentTvSeries.coverUrl
+        }
+    }
 
-            LaunchedEffect(tvSeries[page].featuredPosterUrl) {
-                coroutineScope.launch {
-                    imageUrl = TMDBImageProvider.getInstance().getBackdropUrl(tvSeries[page].featuredPosterUrl) ?: tvSeries[page].coverUrl
+    PaletteBackedContent(
+        imageUrl = currentImageUrl,
+        modifier = modifier
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            HorizontalPager(
+                state = pagerState,
+                contentPadding = PaddingValues(horizontal = 32.dp),
+                pageSpacing = 16.dp
+            ) { page ->
+                var imageUrl by remember { mutableStateOf<String?>(null) }
+
+                LaunchedEffect(tvSeries[page].featuredPosterUrl) {
+                    coroutineScope.launch {
+                        imageUrl = TMDBImageProvider.getInstance().getBackdropUrl(tvSeries[page].featuredPosterUrl) ?: tvSeries[page].coverUrl
+                    }
+                }
+
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    border = if (pagerState.currentPage == page) BorderStroke(2.dp, Color.White) else null,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(0.75f) // Make it longer vertically (taller than wide)
+                        .clickable { onDetailsTapped(tvSeries[page]) }
+                ) {
+                    Image(
+                        painter = rememberAsyncImagePainter(imageUrl),
+                        contentDescription = "Featured TV Series",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
             }
-
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                border = if (pagerState.currentPage == page) BorderStroke(2.dp, Color.White) else null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(0.75f) // Make it longer vertically (taller than wide)
-                    .clickable { onDetailsTapped(tvSeries[page]) }
-            ) {
-                Image(
-                    painter = rememberAsyncImagePainter(imageUrl),
-                    contentDescription = "Featured TV Series",
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
+            Spacer(Modifier.height(16.dp))
+            PageIndicator(
+                numberOfPages = tvSeries.size,
+                selectedPage = pagerState.currentPage
+            )
         }
-        Spacer(Modifier.height(16.dp))
-        PageIndicator(
-            numberOfPages = tvSeries.size,
-            selectedPage = pagerState.currentPage
-        )
     }
 }

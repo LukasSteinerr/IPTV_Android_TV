@@ -136,6 +136,53 @@ class TMDBService {
         } ?: emptyList()
     } ?: emptyList()
 
+    suspend fun searchMovies(query: String): List<Movie> = safeApiCall {
+        val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
+        val url = "$API_BASE_URL/search/movie?api_key=$API_KEY&query=$encodedQuery"
+        val response = fetchData(url)
+        response?.let {
+            val data = JSONObject(it)
+            val results = data.getJSONArray("results")
+            (0 until results.length()).map { i ->
+                val movieData = results.getJSONObject(i)
+                Movie(
+                    name = movieData.optString("title", "No Title"),
+                    streamUrl = "", // Placeholder
+                    description = movieData.optString("overview", ""),
+                    year = movieData.optString("release_date", "").take(4),
+                    rating = movieData.optDouble("vote_average", 0.0).toString(),
+                    tmdbId = movieData.optString("id"),
+                    posterUrl = movieData.optString("poster_path")?.let { getPosterUrl(it) },
+                    backdropUrl = movieData.optString("backdrop_path")?.let { getBackdropUrl(it) },
+                    featuredPosterUrl = movieData.optString("poster_path")?.let { getFeaturedPosterUrl(it) },
+                    streamId = movieData.optString("id")
+                )
+            }
+        } ?: emptyList()
+    } ?: emptyList()
+    
+    suspend fun searchTvSeries(query: String): List<TvSeries> = safeApiCall {
+        val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
+        val url = "$API_BASE_URL/search/tv?api_key=$API_KEY&query=$encodedQuery"
+        val response = fetchData(url)
+        response?.let {
+            val data = JSONObject(it)
+            val results = data.getJSONArray("results")
+            (0 until results.length()).map { i ->
+                val tvSeriesData = results.getJSONObject(i)
+                TvSeries(
+                    name = tvSeriesData.optString("name", "No Title"),
+                    description = tvSeriesData.optString("overview", ""),
+                    year = tvSeriesData.optString("first_air_date", "").take(4),
+                    rating = tvSeriesData.optDouble("vote_average", 0.0).toString(),
+                    tmdbId = tvSeriesData.optString("id"),
+                    coverUrl = tvSeriesData.optString("poster_path")?.let { getPosterUrl(it) },
+                    featuredPosterUrl = tvSeriesData.optString("poster_path")?.let { getFeaturedPosterUrl(it) }
+                )
+            }
+        } ?: emptyList()
+    } ?: emptyList()
+    
     suspend fun getPopularTvSeries(): List<TvSeries> = safeApiCall {
         val url = "$API_BASE_URL/tv/popular?api_key=$API_KEY"
         val response = fetchData(url)

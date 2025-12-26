@@ -311,6 +311,34 @@ class PlaylistService {
         }
     }
 
+    suspend fun searchContent(playlistId: Long, query: String): Map<String, List<Any>> {
+        return withContext(Dispatchers.IO) {
+            val movies = movieBox.query()
+                .equal(Movie_.playlistId, playlistId)
+                .contains(Movie_.name, query, io.objectbox.query.QueryBuilder.StringOrder.CASE_INSENSITIVE)
+                .build()
+                .find()
+
+            val series = tvSeriesBox.query()
+                .equal(TvSeries_.playlistId, playlistId)
+                .contains(TvSeries_.name, query, io.objectbox.query.QueryBuilder.StringOrder.CASE_INSENSITIVE)
+                .build()
+                .find()
+
+            val channels = channelBox.query()
+                .equal(Channel_.playlistId, playlistId)
+                .contains(Channel_.name, query, io.objectbox.query.QueryBuilder.StringOrder.CASE_INSENSITIVE)
+                .build()
+                .find()
+
+            mapOf(
+                "movies" to movies,
+                "series" to series,
+                "channels" to channels
+            )
+        }
+    }
+
     suspend fun crossReferenceSimilarMovies(similarMovies: List<Movie>): List<Movie> {
         return withContext(Dispatchers.IO) {
             if (similarMovies.isEmpty()) return@withContext emptyList()

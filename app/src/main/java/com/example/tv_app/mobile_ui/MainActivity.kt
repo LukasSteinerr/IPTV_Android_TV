@@ -95,7 +95,7 @@ fun MobileAppNavigation() {
     val videoPlayerViewModel = remember { VideoPlayerViewModel() }
 
     val showBottomBar = when (currentScreen) {
-        MobileScreen.Home, MobileScreen.Downloads, MobileScreen.MyList, MobileScreen.Settings, MobileScreen.SearchPage -> true
+        MobileScreen.Home, MobileScreen.Downloads, MobileScreen.MyList, MobileScreen.Settings -> true
         else -> false
     }
 
@@ -148,9 +148,6 @@ fun MobileAppNavigation() {
                         onChannelSelected = { channel ->
                             // TODO: Navigate to channel player
                         },
-                        onNavigateToSearch = {
-                            currentScreen = MobileScreen.SearchPage
-                        },
                         onBackPressed = {
                             currentScreen = MobileScreen.MyPlaylists
                         }
@@ -165,17 +162,6 @@ fun MobileAppNavigation() {
             }
             MobileScreen.Settings -> {
                 SettingsScreen(modifier = Modifier.padding(paddingValues))
-            }
-            MobileScreen.SearchPage -> {
-                selectedPlaylist?.let { playlist ->
-                    SearchScreen(
-                        playlist = playlist,
-                        onBackPressed = {
-                            currentScreen = MobileScreen.Home
-                        },
-                        modifier = Modifier.padding(paddingValues)
-                    )
-                }
             }
             MobileScreen.MovieDetails -> {
                 selectedMovie?.let { movie ->
@@ -281,7 +267,6 @@ fun BottomNavigationBar(currentScreen: MobileScreen, onScreenSelected: (MobileSc
 sealed class MobileScreen {
     object MyPlaylists : MobileScreen()
     object AddPlaylist : MobileScreen()
-    object SearchPage : MobileScreen()
     object MovieDetails : MobileScreen()
     object TvSeriesDetails : MobileScreen()
     object VideoPlayer : MobileScreen()

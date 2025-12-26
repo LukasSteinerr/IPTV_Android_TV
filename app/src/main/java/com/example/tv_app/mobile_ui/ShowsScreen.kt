@@ -1,5 +1,6 @@
 package com.example.tv_app.mobile_ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -24,6 +25,7 @@ import com.example.tv_app.repository.TMDBImageProvider
 import kotlinx.coroutines.launch
 import com.example.tv_app.presentation.common.TvSeriesCard
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ShowsScreen(
     playlist: Playlist,
@@ -31,7 +33,10 @@ fun ShowsScreen(
     onBackPressed: () -> Unit,
     onShowSelected: (TvSeries) -> Unit = {},
     onNavigateToSearch: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    contentPadding: PaddingValues,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
 ) {
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var featuredTvSeries by remember { mutableStateOf<List<TvSeries>>(emptyList()) }
@@ -93,7 +98,10 @@ fun ShowsScreen(
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = 108.dp),
+                contentPadding = PaddingValues(
+                    top = contentPadding.calculateTopPadding(),
+                    bottom = 108.dp
+                ),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 // Featured Section
