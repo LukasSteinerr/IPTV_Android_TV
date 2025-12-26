@@ -23,21 +23,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.Border
-import androidx.tv.material3.CardDefaults
-import androidx.tv.material3.ClickableSurfaceDefaults
-import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.StandardCardContainer
-import androidx.tv.material3.Surface
-import androidx.tv.material3.Text
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Column
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import coil.compose.AsyncImage
 import com.example.tv_app.model.Movie
 import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.ui.theme.JetStreamCardShape
 import androidx.compose.ui.graphics.Color
 
-@OptIn(ExperimentalTvMaterial3Api::class)
 @Composable
 fun MovieCard(
     movie: Movie,
@@ -47,65 +44,42 @@ fun MovieCard(
     showTitle: Boolean = true
 ) {
     var posterUrl by remember { mutableStateOf<String?>(null) }
-    var isFocused by remember { mutableStateOf(false) }
-
+    
     LaunchedEffect(movie.tmdbId) {
         posterUrl = tmdbImageProvider.getPosterUrl(movie.tmdbId, movie.posterUrl)
     }
 
-    // Animate the title alpha based on focus state
-    val titleAlpha by animateFloatAsState(
-        targetValue = if (isFocused && showTitle) 1f else 0f,
-        label = "titleAlpha"
-    )
-
-    StandardCardContainer(
-        modifier = modifier,
-        title = {
-            if (showTitle) {
-                Text(
-                    text = movie.name,
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .alpha(titleAlpha)
-                        .fillMaxWidth()
-                        .padding(top = 4.dp),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    color = Color.White
-                )
-            }
-        },
-        imageCard = {
-            Surface(
-                onClick = onClick,
-                shape = ClickableSurfaceDefaults.shape(JetStreamCardShape),
-                border = ClickableSurfaceDefaults.border(
-                    focusedBorder = Border(
-                        border = BorderStroke(
-                            width = 3.dp,
-                            color = Color(0xFFE3E2E6)
-                        ),
-                        shape = JetStreamCardShape
-                    )
-                ),
-                scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
-                modifier = Modifier.onFocusChanged { focusState ->
-                    isFocused = focusState.isFocused
-                }
-            ) {
-                AsyncImage(
-                    model = posterUrl ?: movie.posterUrl,
-                    contentDescription = movie.name,
-                    modifier = Modifier
-                        .aspectRatio(10.5f / 16f)
-                        .clip(JetStreamCardShape),
-                    contentScale = ContentScale.Crop
-                )
-            }
+    Column(modifier = modifier.clickable(onClick = onClick)) {
+        Card(
+            shape = JetStreamCardShape,
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(0.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            AsyncImage(
+                model = posterUrl ?: movie.posterUrl,
+                contentDescription = movie.name,
+                modifier = Modifier
+                    .aspectRatio(10.5f / 16f)
+                    .clip(JetStreamCardShape),
+                contentScale = ContentScale.Crop
+            )
         }
-    )
+
+        if (showTitle) {
+            Text(
+                text = movie.name,
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                color = Color.White
+            )
+        }
+    }
 }

@@ -71,7 +71,6 @@ fun CategoryGridScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .padding(top = contentPadding.calculateTopPadding())
     ) {
         if (isLoading) {
             Box(
@@ -87,7 +86,7 @@ fun CategoryGridScreen(
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 120.dp),
                 contentPadding = PaddingValues(
-                    top = 80.dp, // 64.dp for TopBar + 16.dp initial offset
+                    top = contentPadding.calculateTopPadding() + 80.dp, // Add Scaffold's top padding (Status Bar) + Custom TopBar height (approx 80.dp)
                     start = 16.dp,
                     end = 16.dp,
                     bottom = 16.dp
