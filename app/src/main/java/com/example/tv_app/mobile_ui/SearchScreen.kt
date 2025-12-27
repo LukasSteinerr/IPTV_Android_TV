@@ -51,90 +51,110 @@ fun SearchScreen(
 
     Scaffold(
         topBar = {
-            SearchAppBar(
-                query = searchQuery,
-                onQueryChange = viewModel::updateSearchQuery,
+            SearchTopBar(
                 onNavigateBack = onNavigateBack
             )
         },
         containerColor = Color.Black // Ensure a dark background for the screen
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
         ) {
+            SearchField(
+                query = searchQuery,
+                onQueryChange = viewModel::updateSearchQuery
+            )
+            
             if (isLoading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center),
-                    color = Color.Red
-                )
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = Color.Red
+                    )
+                }
             } else if (combinedResults.isNotEmpty()) {
                 SearchResultsGrid(
                     results = combinedResults,
                     tmdbImageProvider = tmdbImageProvider
                 )
             } else if (searchQuery.isNotBlank()) {
-                Text(
-                    text = "No results found for \"$searchQuery\"",
-                    color = Color.White.copy(alpha = 0.7f),
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "No results found for \"$searchQuery\"",
+                        color = Color.White.copy(alpha = 0.7f),
+                    )
+                }
             } else {
-                Text(
-                    text = "Start typing to search movies and TV shows.",
-                    color = Color.White.copy(alpha = 0.5f),
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                Box(
+                    modifier = Modifier.fillMaxWidth().weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Start typing to search movies and TV shows.",
+                        color = Color.White.copy(alpha = 0.5f),
+                    )
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SearchAppBar(
-    query: String,
-    onQueryChange: (String) -> Unit,
+fun SearchTopBar(
     onNavigateBack: () -> Unit
 ) {
-    Row(
+    TopAppBar(
+        title = { Text("Search", color = Color.White) },
+        navigationIcon = {
+            IconButton(onClick = onNavigateBack) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(
+            containerColor = Color.Black
+        )
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun SearchField(
+    query: String,
+    onQueryChange: (String) -> Unit
+) {
+    OutlinedTextField(
+        value = query,
+        onValueChange = onQueryChange,
+        placeholder = { Text("Search for titles...", color = Color.White.copy(alpha = 0.5f)) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Gray) },
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.Black)
-            .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top)) // Apply padding for status bar
-            .padding(horizontal = 8.dp), // Add necessary horizontal padding
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onNavigateBack) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                contentDescription = "Back",
-                tint = Color.White
-            )
-        }
-        
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            placeholder = { Text("Search for titles...", color = Color.White.copy(alpha = 0.5f)) },
-            leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Gray) },
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 0.dp), // Remove redundant end padding, keep it tight with the row padding
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color.White,
-                unfocusedTextColor = Color.White,
-                focusedBorderColor = Color.White,
-                unfocusedBorderColor = Color.Gray,
-                cursorColor = Color.White,
-                focusedLeadingIconColor = Color.White,
-                unfocusedLeadingIconColor = Color.Gray,
-                focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
-                unfocusedPlaceholderColor = Color.White.copy(alpha = 0.5f)
-            )
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        singleLine = true,
+        colors = OutlinedTextFieldDefaults.colors(
+            focusedTextColor = Color.White,
+            unfocusedTextColor = Color.White,
+            focusedBorderColor = Color.White,
+            unfocusedBorderColor = Color.Gray,
+            cursorColor = Color.White,
+            focusedLeadingIconColor = Color.White,
+            unfocusedLeadingIconColor = Color.Gray,
+            focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
+            unfocusedPlaceholderColor = Color.White.copy(alpha = 0.5f)
         )
-    }
+    )
 }
 
 @Composable
