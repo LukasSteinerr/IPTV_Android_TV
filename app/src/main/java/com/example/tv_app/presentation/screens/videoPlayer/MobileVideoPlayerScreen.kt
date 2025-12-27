@@ -5,6 +5,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -77,6 +78,16 @@ fun MobileVideoPlayerScreenContent(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
+    val window = (context as? androidx.activity.ComponentActivity)?.window
+
+    // Keep screen on while video is playing
+    DisposableEffect(Unit) {
+        window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose {
+            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
+
     val trackSelector = remember { DefaultTrackSelector(context) }
     val exoPlayer = rememberPlayer(context, trackSelector)
 
