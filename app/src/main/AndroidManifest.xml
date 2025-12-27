@@ -23,7 +23,9 @@
         android:usesCleartextTraffic="true">
         <activity
             android:name=".view.MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:configChanges="screenSize|orientation|keyboardHidden"
+            android:screenOrientation="fullSensor">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

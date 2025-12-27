@@ -38,6 +38,8 @@ import com.example.tv_app.presentation.screens.videoPlayer.components.rememberPl
 import com.example.tv_app.presentation.screens.videoPlayer.components.rememberVideoPlayerState
 import com.example.tv_app.presentation.utils.handleDPadKeyEvents
 import com.example.tv_app.presentation.screens.videoPlayer.components.getSubtitleTracks
+import com.example.tv_app.presentation.utils.DeviceType // Added import
+import com.example.tv_app.presentation.screens.videoPlayer.MobileVideoPlayerScreen // Added import
 
 object VideoPlayerScreen {
     const val MovieIdBundleKey = "movieId"
@@ -51,6 +53,20 @@ object VideoPlayerScreen {
  */
 @Composable
 fun VideoPlayerScreen(
+    onBackPressed: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: VideoPlayerViewModel = viewModel()
+) {
+    val context = LocalContext.current
+    if (DeviceType.isTv(context)) {
+        TvVideoPlayerScreen(onBackPressed, modifier, viewModel)
+    } else {
+        MobileVideoPlayerScreen(onBackPressed, modifier, viewModel)
+    }
+}
+
+@Composable
+fun TvVideoPlayerScreen(
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: VideoPlayerViewModel = viewModel()
@@ -78,7 +94,7 @@ fun VideoPlayerScreen(
         }
 
         is VideoPlayerUiState.Ready -> {
-            VideoPlayerScreenContent(
+            TvVideoPlayerScreenContent(
                 movie = s.movie,
                 onBackPressed = onBackPressed,
                 modifier = modifier
@@ -89,7 +105,7 @@ fun VideoPlayerScreen(
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-fun VideoPlayerScreenContent(
+fun TvVideoPlayerScreenContent(
     movie: com.example.tv_app.model.Movie,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier
