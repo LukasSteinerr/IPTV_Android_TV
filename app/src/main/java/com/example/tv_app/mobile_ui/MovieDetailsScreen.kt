@@ -621,7 +621,7 @@ private fun MoviesRow(
                     movie = movie,
                     tmdbImageProvider = TMDBImageProvider.getInstance(),
                     onClick = { onMovieSelected(movie) },
-                    modifier = Modifier.width(150.dp),
+                    modifier = Modifier.width(130.dp),
                     showTitle = true
                 )
             }

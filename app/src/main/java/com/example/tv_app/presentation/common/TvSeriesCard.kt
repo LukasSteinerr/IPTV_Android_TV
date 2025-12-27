@@ -54,7 +54,7 @@ fun TvSeriesCard(
                 model = posterUrl ?: tvSeries.coverUrl,
                 contentDescription = tvSeries.name,
                 modifier = Modifier
-                    .aspectRatio(10.5f / 16f)
+                    .aspectRatio(130f / 190f)
                     .clip(JetStreamCardShape),
                 contentScale = ContentScale.Crop
             )
@@ -64,12 +64,12 @@ fun TvSeriesCard(
             Text(
                 text = tvSeries.name,
                 style = MaterialTheme.typography.bodyMedium.copy(
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Medium
                 ),
                 textAlign = TextAlign.Center,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp),
+                    .padding(top = 6.dp),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 color = Color.White

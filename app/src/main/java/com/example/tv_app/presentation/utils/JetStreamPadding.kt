@@ -7,7 +7,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 
-val ParentPadding = PaddingValues(vertical = 16.dp, horizontal = 58.dp)
+val ParentPadding = PaddingValues(vertical = 16.dp, horizontal = 36.dp)
 
 @Composable
 fun rememberChildPadding(direction: LayoutDirection = LocalLayoutDirection.current): Padding {
