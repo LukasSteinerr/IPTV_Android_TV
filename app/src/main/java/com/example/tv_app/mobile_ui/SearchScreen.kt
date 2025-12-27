@@ -31,6 +31,8 @@ import com.example.tv_app.viewmodel.SearchViewModelFactory
 @Composable
 fun SearchScreen(
     onNavigateBack: () -> Unit,
+    onMovieClick: (Movie) -> Unit,
+    onTvSeriesClick: (TvSeries) -> Unit,
     tmdbImageProvider: TMDBImageProvider = TMDBImageProvider.getInstance() // Inject or instantiate provider
 ) {
     // Instantiate dependencies and ViewModel Factory for injection
@@ -79,7 +81,9 @@ fun SearchScreen(
             } else if (combinedResults.isNotEmpty()) {
                 SearchResultsGrid(
                     results = combinedResults,
-                    tmdbImageProvider = tmdbImageProvider
+                    tmdbImageProvider = tmdbImageProvider,
+                    onMovieClick = onMovieClick,
+                    onTvSeriesClick = onTvSeriesClick
                 )
             } else if (searchQuery.isNotBlank()) {
                 Box(
@@ -160,7 +164,9 @@ fun SearchField(
 @Composable
 fun SearchResultsGrid(
     results: List<Any>,
-    tmdbImageProvider: TMDBImageProvider
+    tmdbImageProvider: TMDBImageProvider,
+    onMovieClick: (Movie) -> Unit,
+    onTvSeriesClick: (TvSeries) -> Unit
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(3), // Responsive grid display
@@ -173,12 +179,12 @@ fun SearchResultsGrid(
             when (item) {
                 is Movie -> MovieCard(
                     movie = item,
-                    onClick = { /* Handle movie click */ },
+                    onClick = { onMovieClick(item) },
                     tmdbImageProvider = tmdbImageProvider
                 )
                 is TvSeries -> TvSeriesCard(
                     tvSeries = item,
-                    onClick = { /* Handle TV series click */ },
+                    onClick = { onTvSeriesClick(item) },
                     tmdbImageProvider = tmdbImageProvider
                 )
                 // Note: The original requirements specified only Movies and TV Shows. Channels excluded for now.

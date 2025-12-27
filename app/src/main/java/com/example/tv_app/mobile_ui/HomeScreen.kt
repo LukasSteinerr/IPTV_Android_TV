@@ -53,7 +53,9 @@ fun HomeScreen(
     ) { contentPadding ->
         if (showSearch) {
             SearchScreen(
-                onNavigateBack = { showSearch = false }
+                onNavigateBack = { showSearch = false },
+                onMovieClick = onMovieSelected,
+                onTvSeriesClick = onShowSelected
             )
         } else if (selectedCategoryId != null && selectedCategoryName != null) {
             // New "See All" screen
