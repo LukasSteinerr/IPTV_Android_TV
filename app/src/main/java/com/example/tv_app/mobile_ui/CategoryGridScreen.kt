@@ -125,6 +125,7 @@ private fun TopBar(title: String, onNavigateBack: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .statusBarsPadding()
             .background(Color.Black.copy(alpha = 0.9f))
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
