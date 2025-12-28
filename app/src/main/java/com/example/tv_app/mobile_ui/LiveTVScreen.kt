@@ -244,143 +244,139 @@ fun TimeSlider(
 ) {
     val haptic = LocalHapticFeedback.current
     val interactionLastHour = remember { mutableIntStateOf(-1) }
-    
-    Column(modifier = modifier) {
-        // Refresh button at top
-        IconButton(
-            onClick = onInteractionEnd
-        ) {
-            Icon(Icons.Default.Refresh, contentDescription = "Refresh EPG", tint = Color.White)
-        }
-        
-        BoxWithConstraints(
+
+    BoxWithConstraints(modifier = modifier) {
+        val actualAvailableHeight = constraints.maxHeight.toFloat()
+        val dynamicHourHeight = actualAvailableHeight / 24f
+
+        // This Column holds the visible slider bar and refresh button
+        Column(
             modifier = Modifier
+                .align(Alignment.TopEnd)
                 .fillMaxHeight()
-                .width(45.dp)
-                .background(Color.Black.copy(alpha = 0.3f))
-                .pointerInput(Unit) {
-                    // Removed detectTapGestures as it potentially interfered with drag gestures.
-                    
-                    detectVerticalDragGestures(
-                        onDragStart = {
-                            onInteractionStart()
-                            // Initialize last hour at drag start
-                            val calendar = Calendar.getInstance()
-                            calendar.timeInMillis = selectedTime
-                            interactionLastHour.intValue = calendar.get(Calendar.HOUR_OF_DAY)
-                        },
-                        onDragEnd = { onInteractionEnd() },
-                        onDragCancel = { onInteractionEnd() },
-                        onVerticalDrag = { change, _ ->
-                            val hourHeight = size.height / 24f
-                            val offset = change.position.y
-                            val touchedIndex = floor(offset / hourHeight).toInt().coerceIn(0, 23)
-                            val newSelectedHour = touchedIndex
-                            
-                            if (interactionLastHour.intValue != newSelectedHour) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                
+        ) {
+            IconButton(onClick = onInteractionEnd) {
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh EPG", tint = Color.White)
+            }
+
+            Box(
+                modifier = Modifier
+                    .weight(1f) // Takes remaining height
+                    .width(45.dp)
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .pointerInput(Unit) {
+                        detectVerticalDragGestures(
+                            onDragStart = {
+                                onInteractionStart()
                                 val calendar = Calendar.getInstance()
                                 calendar.timeInMillis = selectedTime
-                                calendar.set(Calendar.HOUR_OF_DAY, newSelectedHour)
-                                calendar.set(Calendar.MINUTE, 0)
-                                calendar.set(Calendar.SECOND, 0)
-                                onTimeChange(calendar.timeInMillis)
-                                
-                                // Update anchor hour
-                                interactionLastHour.intValue = newSelectedHour
-                            }
-                        }
-                    )
-                } // This closes the pointerInput lambda/modifier
-        ) { // This closes the modifier argument and starts the BoxWithConstraints trailing content lambda
-            
-            val actualAvailableHeight = constraints.maxHeight.toFloat()
-            val dynamicHourHeight = actualAvailableHeight / 24f
-            
-            val calendar = Calendar.getInstance()
-            calendar.timeInMillis = selectedTime
-            val currentCalendar = Calendar.getInstance()
-            currentCalendar.timeInMillis = currentTime
-            
-            val selectedHour = calendar.get(Calendar.HOUR_OF_DAY)
-            val currentHour = currentCalendar.get(Calendar.HOUR_OF_DAY)
-            
-            Column(modifier = Modifier.fillMaxHeight()) {
-                for (hourValue in 0..23) {
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .background(
-                                when {
-                                    hourValue == selectedHour -> Color.Blue.copy(alpha = 0.3f)
-                                    hourValue == currentHour -> Color.Blue.copy(alpha = 0.3f)
-                                    else -> Color.Transparent
-                                }
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = hourValue.toString().padStart(2, '0'),
-                            color = when {
-                                hourValue == currentHour -> Color.Blue
-                                hourValue == selectedHour -> Color.White
-                                else -> Color.White.copy(alpha = 0.7f)
+                                interactionLastHour.intValue = calendar.get(Calendar.HOUR_OF_DAY)
                             },
-                            fontWeight = if (hourValue == selectedHour || hourValue == currentHour) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 16.sp,
+                            onDragEnd = { onInteractionEnd() },
+                            onDragCancel = { onInteractionEnd() },
+                            onVerticalDrag = { change, _ ->
+                                val hourHeight = size.height / 24f
+                                val offset = change.position.y
+                                val touchedIndex = floor(offset / hourHeight).toInt().coerceIn(0, 23)
+                                val newSelectedHour = touchedIndex
+
+                                if (interactionLastHour.intValue != newSelectedHour) {
+                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                    val calendar = Calendar.getInstance()
+                                    calendar.timeInMillis = selectedTime
+                                    calendar.set(Calendar.HOUR_OF_DAY, newSelectedHour)
+                                    calendar.set(Calendar.MINUTE, 0)
+                                    calendar.set(Calendar.SECOND, 0)
+                                    onTimeChange(calendar.timeInMillis)
+                                    interactionLastHour.intValue = newSelectedHour
+                                }
+                            }
                         )
                     }
-                }
-            }
-            
-            // Bump-out Indicator overlay, visible only during interaction
-            if (showBumpOut) {
-                val calendar = Calendar.getInstance()
-                calendar.timeInMillis = selectedTime
+            ) {
+                val calendar = Calendar.getInstance().apply { timeInMillis = selectedTime }
+                val currentCalendar = Calendar.getInstance().apply { timeInMillis = currentTime }
                 val selectedHour = calendar.get(Calendar.HOUR_OF_DAY)
-                
-                // Calculate vertical offset relative to BoxWithConstraints top edge
-                // dynamicHourHeight (pixel float) calculated on line 326
-                val selectedHourTopY = selectedHour * dynamicHourHeight
-                
-                val indicatorHeightPx = with(LocalDensity.current) { 36.dp.toPx() }
-                val topOffsetPx = selectedHourTopY + (dynamicHourHeight / 2f) - (indicatorHeightPx / 2f)
-                
-                Card(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .offset(x = (-45).dp - 10.dp, y = with(LocalDensity.current) { topOffsetPx.toDp() })
-                        .shadow(elevation = 6.dp, shape = RoundedCornerShape(4.dp)),
-                    shape = RoundedCornerShape(4.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1976D2))
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .size(width = 140.dp, height = 36.dp) // Increased width for better rectangle appearance
-                            .padding(horizontal = 16.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "${selectedHour.toString().padStart(2, '0')}:00",
-                            color = Color.White,
-                            fontWeight = FontWeight.W500,
-                            fontSize = 15.sp,
-                        )
-                        Icon(
-                            Icons.Default.MoreHoriz,
-                            contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                val currentHour = currentCalendar.get(Calendar.HOUR_OF_DAY)
+
+                Column(modifier = Modifier.fillMaxHeight()) {
+                    for (hourValue in 0..23) {
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .background(
+                                    when {
+                                        hourValue == selectedHour -> Color.Blue.copy(alpha = 0.3f)
+                                        hourValue == currentHour -> Color.Blue.copy(alpha = 0.3f)
+                                        else -> Color.Transparent
+                                    }
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = hourValue.toString().padStart(2, '0'),
+                                color = when {
+                                    hourValue == currentHour -> Color.Blue
+                                    hourValue == selectedHour -> Color.White
+                                    else -> Color.White.copy(alpha = 0.7f)
+                                },
+                                fontWeight = if (hourValue == selectedHour || hourValue == currentHour) FontWeight.Bold else FontWeight.Normal,
+                                fontSize = 16.sp,
+                            )
+                        }
                     }
                 }
             }
-        } // Close BoxWithConstraints
-    } // Close Column (line 253)
-} // Close TimeSlider (line 240)
+        }
+
+        // Bump-out Indicator overlay, now a sibling and unconstrained by width
+        if (showBumpOut) {
+            val calendar = Calendar.getInstance().apply { timeInMillis = selectedTime }
+            val selectedHour = calendar.get(Calendar.HOUR_OF_DAY)
+
+            // We need to account for the refresh button's height in our offset calculation.
+            // Assuming the IconButton has a default size of 48.dp.
+            val refreshButtonHeightPx = with(LocalDensity.current) { 48.dp.toPx() }
+            val sliderAreaHeight = actualAvailableHeight - refreshButtonHeightPx
+            val hourHeightInSlider = sliderAreaHeight / 24f
+
+            val selectedHourTopY = hourHeightInSlider * selectedHour + refreshButtonHeightPx
+            val indicatorHeightPx = with(LocalDensity.current) { 36.dp.toPx() }
+            val topOffsetPx = selectedHourTopY + (hourHeightInSlider / 2f) - (indicatorHeightPx / 2f)
+
+            Card(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = (-45).dp - 10.dp, y = with(LocalDensity.current) { topOffsetPx.toDp() })
+                    .shadow(elevation = 6.dp, shape = RoundedCornerShape(4.dp)),
+                shape = RoundedCornerShape(4.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFF1976D2))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .size(width = 100.dp, height = 36.dp) // User's desired width
+                        .padding(horizontal = 16.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "${selectedHour.toString().padStart(2, '0')}:00",
+                        color = Color.White,
+                        fontWeight = FontWeight.W500,
+                        fontSize = 15.sp,
+                    )
+                    Icon(
+                        Icons.Default.MoreHoriz,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+    }
+}
 
 fun findNowAndNextPrograms(programs: List<TvProgram>, currentTime: Long): Pair<TvProgram?, TvProgram?> {
     val now = Date(currentTime)
