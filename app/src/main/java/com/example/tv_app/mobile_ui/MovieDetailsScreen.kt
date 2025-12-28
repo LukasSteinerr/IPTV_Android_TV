@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -13,26 +14,31 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.border
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.*
-import androidx.tv.material3.Border
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.Cast
 import com.example.tv_app.model.MovieReviewsAndRatings
@@ -40,29 +46,16 @@ import com.example.tv_app.repository.TMDBService
 import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.presentation.common.MovieCard
-import com.example.tv_app.presentation.utils.rememberChildPadding
-import com.example.tv_app.presentation.theme.JetStreamButtonShape
-import com.example.tv_app.presentation.theme.JetStreamCardShape
-import com.example.tv_app.presentation.theme.JetStreamBorderWidth
 import com.example.tv_app.presentation.components.TitleValueText
+import com.example.tv_app.mobile_ui.DotSeparatedRow // Corrected import
+import com.example.tv_app.mobile_ui.MovieReviews // Existing screen review component
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.material.icons.outlined.PlayArrow
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
-import coil.request.ImageRequest
 import android.content.Intent
 import android.net.Uri
 
-@OptIn(ExperimentalTvMaterial3Api::class)
+// Define constant for fixed mobile padding
+private val MobilePadding = 16.dp
+
 @Composable
 fun MovieDetailsScreen(
     key: Int = 0, // Key to force recomposition
@@ -85,11 +78,9 @@ fun MovieDetailsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var posterUrl by remember { mutableStateOf<String?>(null) }
     var backdropUrl by remember { mutableStateOf<String?>(null) }
-    // var isInMyList by remember { mutableStateOf(movie.myList == 1) } // Unused for now
 
     val coroutineScope = rememberCoroutineScope()
     val tmdbService = remember { TMDBService() }
-    val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
     val lazyListState = rememberLazyListState()
 
     // Scroll to top when movie changes (similar movie selected)
@@ -115,7 +106,8 @@ fun MovieDetailsScreen(
                         movieDetails = movie.copy(
                             description = details.optString("overview", movie.description ?: ""),
                             rating = details.optDouble("vote_average", 0.0).toString(),
-                            duration = details.optInt("runtime", 0).let { if (it > 0) "${it} min" else null }
+                            duration = details.optInt("runtime", 0).let { if (it > 0) "${it} min" else null },
+                            trailer = details.optString("youtube_trailer", movie.trailer)
                         )
                         genres = tmdbService.parseGenres(details)
                         val images = tmdbService.getMovieImages(tmdbId, details)
@@ -200,118 +192,163 @@ private fun Details(
     lazyListState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
-    val childPadding = rememberChildPadding()
-
     BackHandler(onBack = onBackPressed)
-    LazyColumn(
-        state = lazyListState,
-        contentPadding = PaddingValues(bottom = 135.dp),
-        modifier = modifier,
-    ) {
-        item {
-            MovieDetailsHeader(
-                movieDetails = movieDetails,
-                genres = genres,
-                backdropUrl = backdropUrl,
-                onPlayMovie = onPlayMovie
-            )
-        }
-
-        item {
-            CastAndCrewList(
-                cast = cast
-            )
-        }
-
-        if (similarMovies.isNotEmpty()) {
+    Box(modifier = modifier.background(Color.Black)) { // Ensure background is black for Netflix look
+        LazyColumn(
+            state = lazyListState,
+            contentPadding = PaddingValues(bottom = 16.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            // 1. Header with backdrop and play icon overlay
             item {
-                MoviesRow(
-                    title = "Similar to ${movieDetails.name}",
-                    movies = similarMovies,
-                    onMovieSelected = onMovieSelected
+                MovieDetailsHeader(
+                    movieDetails = movieDetails,
+                    backdropUrl = backdropUrl,
+                    onPlayMovie = onPlayMovie
                 )
             }
-        }
 
-        if (reviewsAndRatings.isNotEmpty()) {
+            // 2. Title and Metadata
             item {
-                MovieReviews(
-                    modifier = Modifier.padding(top = childPadding.top),
-                    reviewsAndRatings = reviewsAndRatings
+                Column(
+                    modifier = Modifier.padding(horizontal = MobilePadding)
+                ) {
+                    MovieLargeTitle(movieTitle = movieDetails.name)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MetadataRow(
+                        movieDetails = movieDetails,
+                        onMyListToggle = { /* TODO: Implement MyList toggle logic */ },
+                        onDownload = { /* TODO: Implement Download logic */ }
+                    )
+                }
+            }
+
+            // 3. Play Button (Pill shaped)
+            item {
+                PlayMovieButtonPill(
+                    goToMoviePlayer = onPlayMovie,
+                    modifier = Modifier.padding(horizontal = MobilePadding, vertical = 24.dp)
                 )
+            }
+            
+            // 4. Watch Trailer Button (if available)
+            if (!movieDetails.trailer.isNullOrBlank()) {
+                item {
+                    WatchTrailerButtonPill(
+                        trailerUrl = movieDetails.trailer!!,
+                        modifier = Modifier.padding(horizontal = MobilePadding)
+                    )
+                }
+            }
+
+            // 5. Overview/Synopsis
+            item {
+                MovieOverview(
+                    description = movieDetails.description ?: "No description available.",
+                    modifier = Modifier.padding(horizontal = MobilePadding, vertical = 24.dp)
+                )
+            }
+
+            // 6. Cast and Crew List
+            item {
+                CastAndCrewList(
+                    cast = cast,
+                    modifier = Modifier.padding(bottom = 24.dp)
+                )
+            }
+
+            // 7. Similar Movies
+            if (similarMovies.isNotEmpty()) {
+                item {
+                    MoviesRow(
+                        title = "More Like This",
+                        movies = similarMovies,
+                        onMovieSelected = onMovieSelected,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                }
+            }
+
+            // 8. Footer details (simplified to the Flutter version's metadata footer)
+            item {
+                Column(
+                    modifier = Modifier.padding(horizontal = MobilePadding)
+                ) {
+                    // Movie Reviews (if available)
+                    if (reviewsAndRatings.isNotEmpty()) {
+                        MovieReviews(
+                            modifier = Modifier.padding(top = 24.dp),
+                            reviewsAndRatings = reviewsAndRatings
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .padding(vertical = 24.dp)
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .alpha(0.15f)
+                            .background(MaterialTheme.colorScheme.onSurface)
+                    )
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TitleValueText(
+                            title = "Year",
+                            value = movieDetails.year ?: "Unknown"
+                        )
+                        TitleValueText(
+                            title = "Duration",
+                            value = movieDetails.duration ?: "Unknown"
+                        )
+                        TitleValueText(
+                            title = "Rating",
+                            value = movieDetails.rating?.let { "⭐ $it" } ?: "N/A"
+                        )
+                        TitleValueText(
+                            title = "Genre",
+                            value = genres.firstOrNull() ?: "Unknown"
+                        )
+                    }
+                }
             }
         }
 
-        item {
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = childPadding.start)
-                    .padding(BottomDividerPadding)
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .alpha(0.15f)
-                    .background(MaterialTheme.colorScheme.onSurface)
+        // Close button absolute positioning (Flutter style)
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 24.dp, end = 16.dp)
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(onClick = onBackPressed),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Using back arrow as a close icon replacement
+                contentDescription = "Close",
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
             )
-        }
-
-        item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = childPadding.start),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                val itemModifier = Modifier.width(192.dp)
-
-                TitleValueText(
-                    modifier = itemModifier,
-                    title = "Year",
-                    value = movieDetails.year ?: "Unknown"
-                )
-                TitleValueText(
-                    modifier = itemModifier,
-                    title = "Duration",
-                    value = movieDetails.duration ?: "Unknown"
-                )
-                TitleValueText(
-                    modifier = itemModifier,
-                    title = "Rating",
-                    value = movieDetails.rating?.let { "⭐ $it" } ?: "N/A"
-                )
-                TitleValueText(
-                    modifier = itemModifier,
-                    title = "Genre",
-                    value = genres.firstOrNull() ?: "Unknown"
-                )
-            }
         }
     }
 }
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun MovieDetailsHeader(
     movieDetails: Movie,
-    genres: List<String>,
     backdropUrl: String?,
     onPlayMovie: () -> Unit
 ) {
-    val childPadding = rememberChildPadding()
-    val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    val playButtonFocusRequester = remember { FocusRequester() }
-    val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
-
-    // Request focus for the play button when the screen first appears
-    LaunchedEffect(Unit) {
-        playButtonFocusRequester.requestFocus()
-    }
+    val headerHeight = 250.dp // Reduced height for mobile look
 
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(432.dp)
-            .bringIntoViewRequester(bringIntoViewRequester)
+            .height(headerHeight)
     ) {
         MovieImageWithGradients(
             movieDetails = movieDetails,
@@ -319,160 +356,21 @@ private fun MovieDetailsHeader(
             modifier = Modifier.fillMaxSize()
         )
 
-        Column(modifier = Modifier.fillMaxWidth(0.55f)) {
-            Spacer(modifier = Modifier.height(108.dp))
-            Column(
-                modifier = Modifier.padding(start = childPadding.start)
-            ) {
-                MovieLargeTitle(movieTitle = movieDetails.name)
-
-                Column(
-                    modifier = Modifier.alpha(0.75f)
-                ) {
-                    MovieDescription(description = movieDetails.description ?: "")
-                    DotSeparatedRow(
-                        modifier = Modifier.padding(top = 20.dp),
-                        texts = listOfNotNull(
-                            movieDetails.year,
-                            movieDetails.duration,
-                            movieDetails.rating?.let { "⭐ $it" }
-                        )
-                    )
-                    DirectorScreenplayMusicRow(
-                        director = genres.firstOrNull() ?: "Unknown",
-                        screenplay = "TMDB",
-                        music = "Various"
-                    )
-                }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    PlayMovieButton(
-                        modifier = Modifier
-                            .focusRequester(playButtonFocusRequester)
-                            .onFocusChanged {
-                                if (it.isFocused) {
-                                    coroutineScope.launch { bringIntoViewRequester.bringIntoView() }
-                                }
-                            },
-                        goToMoviePlayer = onPlayMovie
-                    )
-
-                    // Add Watch Trailer button if trailer is available
-                    if (!movieDetails.trailer.isNullOrBlank()) {
-                        WatchTrailerButton(
-                            onClick = {
-                                val youtubeUrl = "https://www.youtube.com/watch?v=${movieDetails.trailer}"
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))
-                                context.startActivity(intent)
-                            }
-                        )
-                    }
-                }
-            }
+        // Play button in the center of the backdrop (Flutter style)
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(onClick = onPlayMovie),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.Filled.PlayArrow,
+                contentDescription = "Play Movie",
+                tint = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.size(60.dp)
+            )
         }
     }
-}
-
-@Composable
-private fun PlayMovieButton(
-    modifier: Modifier = Modifier,
-    goToMoviePlayer: () -> Unit
-) {
-    Button(
-        onClick = goToMoviePlayer,
-        modifier = modifier.padding(top = 24.dp),
-        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-        shape = ButtonDefaults.shape(shape = JetStreamButtonShape)
-    ) {
-        Icon(
-            imageVector = Icons.Outlined.PlayArrow,
-            contentDescription = null
-        )
-        Spacer(Modifier.size(8.dp))
-        Text(
-            text = "Play",
-            style = MaterialTheme.typography.titleSmall
-        )
-    }
-}
-
-@Composable
-private fun WatchTrailerButton(
-    onClick: () -> Unit
-) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier.padding(top = 24.dp),
-        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
-        shape = ButtonDefaults.shape(shape = JetStreamButtonShape)
-    ) {
-        Text(
-            text = "Watch Trailer",
-            style = MaterialTheme.typography.titleSmall
-        )
-        Spacer(Modifier.size(4.dp))
-        Icon(
-            imageVector = Icons.Filled.PlayArrow,
-            contentDescription = "Watch Trailer"
-        )
-    }
-}
-
-@Composable
-private fun DirectorScreenplayMusicRow(
-    director: String,
-    screenplay: String,
-    music: String
-) {
-    Row(modifier = Modifier.padding(top = 32.dp)) {
-        TitleValueText(
-            modifier = Modifier
-                .padding(end = 32.dp)
-                .weight(1f),
-            title = "Genre",
-            value = director
-        )
-
-        TitleValueText(
-            modifier = Modifier
-                .padding(end = 32.dp)
-                .weight(1f),
-            title = "Source",
-            value = screenplay
-        )
-
-        TitleValueText(
-            modifier = Modifier.weight(1f),
-            title = "Audio",
-            value = music
-        )
-    }
-}
-
-@Composable
-private fun MovieDescription(description: String) {
-    Text(
-        text = description,
-        style = MaterialTheme.typography.titleSmall.copy(
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Normal
-        ),
-        modifier = Modifier.padding(top = 8.dp),
-        maxLines = 2
-    )
-}
-
-@Composable
-private fun MovieLargeTitle(movieTitle: String) {
-    Text(
-        text = movieTitle,
-        style = MaterialTheme.typography.displayMedium.copy(
-            fontWeight = FontWeight.Bold
-        ),
-        maxLines = 1
-    )
 }
 
 @Composable
@@ -480,7 +378,7 @@ private fun MovieImageWithGradients(
     movieDetails: Movie,
     backdropUrl: String?,
     modifier: Modifier = Modifier,
-    gradientColor: Color = MaterialTheme.colorScheme.surface,
+    gradientColor: Color = Color.Black.copy(alpha = 0.7f), // Dark gradient for Netflix feel
 ) {
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current).data(backdropUrl ?: movieDetails.coverUrl)
@@ -489,24 +387,12 @@ private fun MovieImageWithGradients(
         contentScale = ContentScale.Crop,
         modifier = modifier.drawWithContent {
             drawContent()
+            // Gradient overlay for better text visibility (top transparent to bottom black)
             drawRect(
                 Brush.verticalGradient(
                     colors = listOf(Color.Transparent, gradientColor),
-                    startY = 600f
-                )
-            )
-            drawRect(
-                Brush.horizontalGradient(
-                    colors = listOf(gradientColor, Color.Transparent),
-                    endX = 1000f,
-                    startX = 300f
-                )
-            )
-            drawRect(
-                Brush.linearGradient(
-                    colors = listOf(gradientColor, Color.Transparent),
-                    start = Offset(x = 500f, y = 500f),
-                    end = Offset(x = 1000f, y = 0f)
+                    startY = size.height * 0.5f,
+                    endY = size.height
                 )
             )
         }
@@ -514,86 +400,290 @@ private fun MovieImageWithGradients(
 }
 
 @Composable
-private fun CastAndCrewList(cast: List<Cast>) {
-    val childPadding = rememberChildPadding()
+private fun MovieLargeTitle(movieTitle: String) {
+    Text(
+        text = movieTitle.uppercase(),
+        style = MaterialTheme.typography.headlineLarge.copy(
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 2.sp
+        ),
+        color = Color.White,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+    )
+}
 
-    Column(
-        modifier = Modifier.padding(top = childPadding.top),
+@Composable
+private fun MetadataRow(
+    movieDetails: Movie,
+    onMyListToggle: () -> Unit,
+    onDownload: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
+        // Year
+        movieDetails.year?.let { year ->
+            Text(
+                text = year,
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.Gray
+            )
+        }
+
+        // Duration
+        movieDetails.duration?.let { duration ->
+            Text(
+                text = duration,
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.Gray
+            )
+        }
+
+        // Rating (Using a basic text representation for now)
+        movieDetails.rating?.let { rating ->
+            Text(
+                text = "⭐ ${String.format("%.1f", rating.toDoubleOrNull() ?: 0.0)}",
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.Gray
+            )
+        }
+
+        // HD Tag
+        Box(
+            modifier = Modifier
+                .border(1.dp, Color.Gray, RoundedCornerShape(2.dp))
+                .padding(horizontal = 4.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = "HD",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // My List Toggle (Placeholder logic)
+        IconButton(onClick = onMyListToggle) {
+            Icon(
+                imageVector = if (movieDetails.myList == 1) Icons.Filled.Check else Icons.Filled.Add,
+                contentDescription = "My List",
+                tint = Color.White
+            )
+        }
+
+        // Download Button
+        IconButton(onClick = onDownload) {
+            Icon(
+                imageVector = Icons.Filled.CloudDownload,
+                contentDescription = "Download",
+                tint = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+private fun PlayMovieButtonPill(
+    modifier: Modifier = Modifier,
+    goToMoviePlayer: () -> Unit
+) {
+    // This is the big, grey, pill-shaped play button (same style as Flutter's ElevatedButton)
+    Button(
+        onClick = goToMoviePlayer,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.LightGray.copy(alpha = 0.3f),
+            contentColor = Color.White
+        ),
+        shape = RoundedCornerShape(50) // Pill shape
+    ) {
+        Icon(
+            imageVector = Icons.Filled.PlayArrow,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(Modifier.size(8.dp))
         Text(
-            text = "Cast & Crew",
-            style = MaterialTheme.typography.titleMedium.copy(
-                fontSize = 18.sp
-            ),
-            modifier = Modifier.padding(start = childPadding.start)
+            text = "PLAY",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+    }
+}
+
+@Composable
+private fun WatchTrailerButtonPill(
+    trailerUrl: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    Button(
+        onClick = {
+            val youtubeUrl = "https://www.youtube.com/watch?v=$trailerUrl"
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))
+            context.startActivity(intent)
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.LightGray.copy(alpha = 0.1f), // Slightly darker/less prominent than Play
+            contentColor = Color.White
+        ),
+        shape = RoundedCornerShape(50) // Pill shape
+    ) {
+        Icon(
+            imageVector = Icons.Filled.PlayArrow,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = "WATCH TRAILER",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+    }
+}
+
+@Composable
+private fun MovieOverview(
+    description: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = "Overview",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            color = Color.White
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.LightGray,
+            maxLines = 3, // Simplified as per mobile pattern
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun CastAndCrewList(cast: List<Cast>, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.padding(start = MobilePadding)) {
+        Text(
+            text = "Top Cast", // Changed title to match Flutter
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 12.dp)
         )
         LazyRow(
-            modifier = Modifier
-                .padding(top = 16.dp),
-            contentPadding = PaddingValues(start = childPadding.start)
+            contentPadding = PaddingValues(end = MobilePadding),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(cast, key = { "${it.name}-${it.character}" }) {
-                CastAndCrewItem(it, modifier = Modifier.width(144.dp))
+            items(cast.take(10), key = { "${it.name}-${it.character}" }) {
+                CastAndCrewItem(it, modifier = Modifier.width(80.dp)) // Smaller width to match Flutter
+            }
+            // Add 'See All' if there are more than 10 cast members (Flutter logic)
+            if (cast.size > 10) {
+                item {
+                    SeeAllCastButton(onClick = { /* TODO: Implement navigation to AllActorsScreen */ })
+                }
             }
         }
     }
 }
 
 @Composable
+private fun SeeAllCastButton(onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(80.dp)
+            .height(144.dp) // Adjusted height to match list item height
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(60.dp)
+                .clip(CircleShape)
+                .background(Color.Gray.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Using back arrow as a directional icon
+                contentDescription = "See All Cast",
+                tint = Color.White
+            )
+        }
+        Text(
+            text = "See All",
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+    }
+}
+
+
+@Composable
 private fun CastAndCrewItem(
     castMember: Cast,
     modifier: Modifier = Modifier,
 ) {
+    // Using standard M3 card for mobile appearance
     Card(
+        onClick = {},
         modifier = modifier
-            .padding(end = 20.dp, bottom = 16.dp)
             .aspectRatio(1 / 1.8f),
-        shape = CardDefaults.shape(shape = JetStreamCardShape),
-        scale = CardDefaults.scale(focusedScale = 1f),
-        border = CardDefaults.border(
-            focusedBorder = Border(
-                border = BorderStroke(
-                    width = JetStreamBorderWidth,
-                    color = MaterialTheme.colorScheme.onSurface
-                ),
-                shape = JetStreamCardShape
-            )
-        ),
-        onClick = {}
+        shape = RoundedCornerShape(4.dp), // Small radius
+        colors = CardDefaults.cardColors(containerColor = Color.DarkGray.copy(alpha = 0.5f))
     ) {
-        Column {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .fillMaxHeight(0.725f)
+                    .weight(0.725f) // Using weight instead of fillMaxHeight
             ) {
                 AsyncImage(
                     model = castMember.profilePath?.let { TMDBService.getPosterUrl(it) },
                     contentDescription = castMember.name,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)),
                     contentScale = ContentScale.Crop
                 )
             }
-            Text(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .padding(horizontal = 12.dp),
-                text = castMember.name,
-                maxLines = 1,
-                style = MaterialTheme.typography.labelMedium,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = castMember.character,
-                maxLines = 1,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .alpha(0.75f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                overflow = TextOverflow.Ellipsis
-            )
+                    .weight(0.275f)
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = castMember.name,
+                    maxLines = 1,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), // Smaller text
+                    color = Color.White,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = castMember.character,
+                    maxLines = 1,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -602,31 +692,29 @@ private fun CastAndCrewItem(
 private fun MoviesRow(
     title: String,
     movies: List<Movie>,
-    onMovieSelected: (Movie) -> Unit
+    onMovieSelected: (Movie) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val childPadding = rememberChildPadding()
-    
-    Column(modifier = Modifier.padding(top = childPadding.top)) {
+    Column(modifier = modifier.padding(start = MobilePadding)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(start = childPadding.start, bottom = 16.dp)
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 12.dp)
         )
         LazyRow(
-            contentPadding = PaddingValues(start = childPadding.start),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(end = MobilePadding),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(movies) { movie ->
                 MovieCard(
                     movie = movie,
                     tmdbImageProvider = TMDBImageProvider.getInstance(),
                     onClick = { onMovieSelected(movie) },
-                    modifier = Modifier.width(150.dp),
+                    modifier = Modifier.width(110.dp), // Smaller card width
                     showTitle = true
                 )
             }
         }
     }
 }
-
-private val BottomDividerPadding = PaddingValues(vertical = 48.dp)

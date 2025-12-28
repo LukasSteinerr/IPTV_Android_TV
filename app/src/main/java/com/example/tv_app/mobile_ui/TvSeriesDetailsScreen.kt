@@ -16,33 +16,30 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CloudDownload
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.foundation.border
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.RadioButton
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import androidx.compose.ui.platform.LocalContext // Added for LocalContext
 import com.example.tv_app.model.TvSeries
 import com.example.tv_app.model.TvEpisode
 import com.example.tv_app.model.Cast
@@ -51,22 +48,15 @@ import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.presentation.common.TvSeriesCard
 import com.example.tv_app.presentation.components.TitleValueText
+import com.example.tv_app.mobile_ui.DotSeparatedRow
 import kotlinx.coroutines.launch
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.sp
-import coil.request.ImageRequest
 import android.content.Intent
 import android.net.Uri
-import androidx.compose.foundation.clickable
+import com.example.tv_app.viewmodel.PlaylistViewModel
+import androidx.compose.ui.text.style.TextAlign
+
+// Define constant for fixed mobile padding
+private val MobilePadding = 16.dp
 
 @Composable
 fun TvSeriesDetailsScreen(
@@ -94,11 +84,9 @@ fun TvSeriesDetailsScreen(
     var backdropUrl by remember { mutableStateOf<String?>(null) }
     var selectedSeason by remember { mutableStateOf(0) }
     var showSeasonSelector by remember { mutableStateOf(false) }
-    // var isInMyList by remember { mutableStateOf(tvSeries.myList == 1) } // Unused for now
 
     val coroutineScope = rememberCoroutineScope()
     val tmdbService = remember { TMDBService() }
-    val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
     val lazyListState = rememberLazyListState()
 
     // Scroll to top when tv series changes (similar series selected)
@@ -131,7 +119,8 @@ fun TvSeriesDetailsScreen(
                     details?.let {
                         tvSeriesDetails = tvSeries.copy(
                             description = details.optString("overview", tvSeries.description ?: ""),
-                            rating = details.optDouble("vote_average", 0.0).toString()
+                            rating = details.optDouble("vote_average", 0.0).toString(),
+                            youtubeTrailer = details.optString("youtube_trailer", tvSeries.youtubeTrailer)
                         )
                         genres = tmdbService.parseGenres(details)
                         val images = tmdbService.getTvSeriesImages(tmdbId, details)
@@ -149,9 +138,7 @@ fun TvSeriesDetailsScreen(
                     episodes = playlistService.getTvSeriesEpisodes(
                         tvSeries = tvSeries,
                         playlist = pl,
-                        onProgress = { progress ->
-                            // Could update a state variable to show progress if needed
-                        }
+                        onProgress = { /* progress */ }
                     )
                 } ?: run {
                     episodes = emptyList()
@@ -166,9 +153,7 @@ fun TvSeriesDetailsScreen(
                     episodes = playlistService.getTvSeriesEpisodes(
                         tvSeries = tvSeries,
                         playlist = pl,
-                        onProgress = { progress ->
-                            // Could update a state variable to show progress if needed
-                        }
+                        onProgress = { /* progress */ }
                     )
                 } ?: run {
                     episodes = emptyList()
@@ -200,6 +185,11 @@ fun TvSeriesDetailsScreen(
     }
 
     val displayTvSeries = tvSeriesDetails ?: tvSeries
+    
+    // Get the first episode of the selected season to suggest as the main "Play" action
+    val firstEpisodeToPlay = remember(currentSeasonEpisodes) {
+        currentSeasonEpisodes.firstOrNull()
+    }
 
     when {
         isLoading -> {
@@ -232,6 +222,7 @@ fun TvSeriesDetailsScreen(
                 onBackPressed = onBackPressed,
                 onTvSeriesSelected = onTvSeriesSelected,
                 onEpisodeSelected = onEpisodeSelected,
+                firstEpisodeToPlay = firstEpisodeToPlay,
                 lazyListState = lazyListState,
                 modifier = modifier
                     .fillMaxSize()
@@ -259,95 +250,181 @@ private fun Details(
     onBackPressed: () -> Unit,
     onTvSeriesSelected: (TvSeries) -> Unit,
     onEpisodeSelected: (TvEpisode) -> Unit,
+    firstEpisodeToPlay: TvEpisode?,
     lazyListState: LazyListState,
     modifier: Modifier = Modifier,
 ) {
-    val childPadding = 16.dp // Fixed padding for mobile
-
     BackHandler(onBack = onBackPressed)
-    LazyColumn(
-        state = lazyListState,
-        contentPadding = PaddingValues(bottom = 16.dp), // Reduced bottom padding for mobile
-        modifier = modifier,
-    ) {
-        item {
-            TvSeriesDetailsHeader(
-                tvSeriesDetails = tvSeriesDetails,
-                backdropUrl = backdropUrl,
-                episodes = episodes,
-                allEpisodes = allEpisodes,
+    Box(modifier = modifier.background(Color.Black)) {
+        LazyColumn(
+            state = lazyListState,
+            contentPadding = PaddingValues(bottom = 16.dp),
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            // 1. Header with backdrop and play icon overlay
+            item {
+                TvSeriesDetailsHeader(
+                    tvSeriesDetails = tvSeriesDetails,
+                    backdropUrl = backdropUrl,
+                    onPlayEpisode = { firstEpisodeToPlay?.let(onEpisodeSelected) }
+                )
+            }
+
+            // 2. Title and Metadata
+            item {
+                Column(
+                    modifier = Modifier.padding(horizontal = MobilePadding)
+                ) {
+                    TvSeriesLargeTitle(tvSeriesTitle = tvSeriesDetails.name)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    MetadataRow(
+                        tvSeriesDetails = tvSeriesDetails,
+                        onMyListToggle = { /* TODO: Implement MyList toggle logic */ },
+                        onDownload = { /* TODO: Implement Download logic for first episode/whole series? */ }
+                    )
+                }
+            }
+            
+            // 3. Play Button (Pill shaped)
+            item {
+                PlayEpisodeButtonPill(
+                    episode = firstEpisodeToPlay,
+                    goToPlayer = { firstEpisodeToPlay?.let(onEpisodeSelected) },
+                    modifier = Modifier.padding(horizontal = MobilePadding, vertical = 24.dp)
+                )
+            }
+            
+            // 4. Watch Trailer Button (if available)
+            if (!tvSeriesDetails.youtubeTrailer.isNullOrBlank()) {
+                item {
+                    WatchTrailerButtonPill(
+                        trailerUrl = tvSeriesDetails.youtubeTrailer!!,
+                        modifier = Modifier
+                            .padding(horizontal = MobilePadding)
+                            .padding(bottom = 24.dp)
+                    )
+                }
+            }
+
+            // 5. Overview/Synopsis
+            item {
+                TvSeriesOverview(
+                    description = tvSeriesDetails.description ?: "No description available.",
+                    modifier = Modifier.padding(horizontal = MobilePadding)
+                )
+            }
+
+            // 6. Season Selector
+            if (availableSeasons.isNotEmpty()) {
+                item {
+                    Column(modifier = Modifier.padding(horizontal = MobilePadding, vertical = 24.dp)) {
+                        SeasonSelectorButton(
+                            selectedSeason = selectedSeason,
+                            onShowSeasonSelector = onShowSeasonSelector,
+                            modifier = Modifier.height(48.dp)
+                        )
+                    }
+                }
+            }
+
+            // 7. Episodes List (vertical scrollable list)
+            if (episodes.isNotEmpty()) {
+                items(episodes, key = { it.id }) { episode ->
+                    EpisodeListItem(
+                        episode = episode,
+                        onEpisodeSelected = onEpisodeSelected,
+                        onDownload = { /* TODO: Implement single episode download logic */ },
+                        modifier = Modifier.padding(horizontal = MobilePadding, vertical = 8.dp)
+                    )
+                }
+            }
+
+
+            // 8. Cast and Crew List
+            item {
+                CastAndCrewList(
+                    cast = cast,
+                    modifier = Modifier.padding(top = 24.dp, bottom = 24.dp)
+                )
+            }
+
+            // 9. Similar TV Series
+            if (similarTvSeries.isNotEmpty()) {
+                item {
+                    TvSeriesRow(
+                        title = "More Like This",
+                        tvSeriesList = similarTvSeries,
+                        onTvSeriesSelected = onTvSeriesSelected,
+                        modifier = Modifier.padding(bottom = 24.dp)
+                    )
+                }
+            }
+
+            // 10. Footer details (simplified to the Flutter version's metadata footer)
+            item {
+                Column(
+                    modifier = Modifier.padding(horizontal = MobilePadding)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .padding(vertical = 24.dp)
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .alpha(0.15f)
+                            .background(MaterialTheme.colorScheme.onSurface)
+                    )
+
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        TitleValueText(
+                            title = "Year",
+                            value = tvSeriesDetails.year ?: "Unknown"
+                        )
+                        TitleValueText(
+                            title = "Rating",
+                            value = tvSeriesDetails.rating?.let { "⭐ $it" } ?: "N/A"
+                        )
+                        TitleValueText(
+                            title = "Genre",
+                            value = genres.firstOrNull() ?: "Unknown"
+                        )
+                    }
+                }
+            }
+        }
+
+        // Close button absolute positioning (Flutter style)
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopEnd)
+                .padding(top = 24.dp, end = MobilePadding)
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(Color.Black.copy(alpha = 0.5f))
+                .clickable(onClick = onBackPressed),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Using back arrow as a close icon replacement
+                contentDescription = "Close",
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+        
+        // Season Selector Dialog
+        if (showSeasonSelector && availableSeasons.size > 1) {
+            SeasonSelectorDialog(
                 availableSeasons = availableSeasons,
                 selectedSeason = selectedSeason,
-                onSeasonSelected = onSeasonSelected,
-                onShowSeasonSelector = onShowSeasonSelector,
-                onHideSeasonSelector = onHideSeasonSelector,
-                showSeasonSelector = showSeasonSelector,
-                genres = genres
+                onSeasonSelected = { season ->
+                    onSeasonSelected(season)
+                    onHideSeasonSelector()
+                },
+                onDismiss = onHideSeasonSelector
             )
-        }
-
-        if (episodes.isNotEmpty()) {
-            item {
-                EpisodesRow(
-                    episodes = episodes,
-                    onEpisodeSelected = onEpisodeSelected
-                )
-            }
-        }
-
-        item {
-            CastAndCrewList(
-                cast = cast
-            )
-        }
-
-        if (similarTvSeries.isNotEmpty()) {
-            item {
-                TvSeriesRow(
-                    title = "Similar to ${tvSeriesDetails.name}",
-                    tvSeriesList = similarTvSeries,
-                    onTvSeriesSelected = onTvSeriesSelected
-                )
-            }
-        }
-
-        item {
-            Box(
-                modifier = Modifier
-                    .padding(horizontal = childPadding)
-                    .padding(vertical = 48.dp) // Replaced BottomDividerPadding
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .alpha(0.15f)
-                    .background(MaterialTheme.colorScheme.onSurface)
-            )
-        }
-
-        item {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = childPadding, vertical = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // Display details vertically for mobile
-                TitleValueText(
-                    title = "Year",
-                    value = tvSeriesDetails.year ?: "Unknown"
-                )
-                TitleValueText(
-                    title = "Episodes",
-                    value = if (episodes.isNotEmpty()) "${episodes.size} Episodes" else "Unknown"
-                )
-                TitleValueText(
-                    title = "Rating",
-                    value = tvSeriesDetails.rating?.let { "⭐ $it" } ?: "N/A"
-                )
-                TitleValueText(
-                    title = "Genre",
-                    value = genres.firstOrNull() ?: "Unknown"
-                )
-            }
         }
     }
 }
@@ -356,125 +433,36 @@ private fun Details(
 private fun TvSeriesDetailsHeader(
     tvSeriesDetails: TvSeries,
     backdropUrl: String?,
-    episodes: List<TvEpisode>,
-    allEpisodes: List<TvEpisode>,
-    availableSeasons: List<Int>,
-    selectedSeason: Int,
-    onSeasonSelected: (Int) -> Unit,
-    onShowSeasonSelector: () -> Unit,
-    onHideSeasonSelector: () -> Unit,
-    showSeasonSelector: Boolean,
-    genres: List<String>
+    onPlayEpisode: () -> Unit
 ) {
-    val childPadding = 16.dp // Fixed padding for mobile
-    val context = LocalContext.current
+    val headerHeight = 250.dp // Reduced height for mobile look
 
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
+            .height(headerHeight)
     ) {
+        TvSeriesImageWithGradients(
+            tvSeriesDetails = tvSeriesDetails,
+            backdropUrl = backdropUrl,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // Play button in the center of the backdrop (Flutter style)
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(250.dp) // Reduced height for mobile
+                .fillMaxSize()
+                .clickable(onClick = onPlayEpisode),
+            contentAlignment = Alignment.Center
         ) {
-            TvSeriesImageWithGradients(
-                tvSeriesDetails = tvSeriesDetails,
-                backdropUrl = backdropUrl,
-                modifier = Modifier.fillMaxSize()
+            Icon(
+                imageVector = Icons.Filled.PlayArrow,
+                contentDescription = "Play Episode",
+                tint = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.size(60.dp)
             )
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(childPadding),
-                verticalArrangement = Arrangement.Bottom
-            ) {
-                TvSeriesLargeTitle(tvSeriesTitle = tvSeriesDetails.name)
-
-                Column(
-                    modifier = Modifier.alpha(0.75f)
-                ) {
-                    TvSeriesDescription(description = tvSeriesDetails.description ?: "")
-                    DotSeparatedRow(
-                        modifier = Modifier.padding(top = 8.dp),
-                        texts = listOfNotNull(
-                            tvSeriesDetails.year,
-                            if (episodes.isNotEmpty()) "${episodes.size} Episodes" else null,
-                            tvSeriesDetails.rating?.let { "⭐ $it" }
-                        )
-                    )
-                }
-                
-                if (allEpisodes.isNotEmpty()) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                        modifier = Modifier.padding(top = 16.dp)
-                    ) {
-                        SeasonSelectorButton(
-                            selectedSeason = selectedSeason,
-                            onShowSeasonSelector = onShowSeasonSelector,
-                            modifier = Modifier.height(48.dp)
-                        )
-                        
-                        // Add Watch Trailer button if youtubeTrailer is available
-                        if (!tvSeriesDetails.youtubeTrailer.isNullOrBlank()) {
-                            WatchTrailerButton(
-                                onClick = {
-                                    val youtubeUrl = "https://www.youtube.com/watch?v=${tvSeriesDetails.youtubeTrailer}"
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))
-                                    context.startActivity(intent)
-                                },
-                                modifier = Modifier.height(48.dp)
-                            )
-                        }
-                    }
-                    
-                    if (showSeasonSelector && availableSeasons.size > 1) {
-                        SeasonSelectorDialog(
-                            availableSeasons = availableSeasons,
-                            selectedSeason = selectedSeason,
-                            onSeasonSelected = { season ->
-                                onSeasonSelected(season)
-                                onHideSeasonSelector()
-                            },
-                            onDismiss = onHideSeasonSelector
-                        )
-                    }
-                }
-            }
         }
     }
-    // DirectorScreenplayMusicRow is removed/simplified into the details section below
-}
-
-
-// DirectorScreenplayMusicRow is removed/simplified into the details section below
-
-@Composable
-private fun TvSeriesDescription(description: String) {
-    Text(
-        text = description,
-        style = MaterialTheme.typography.titleSmall.copy(
-            fontSize = 15.sp,
-            fontWeight = FontWeight.Normal
-        ),
-        modifier = Modifier.padding(top = 8.dp),
-        maxLines = 2
-    )
-}
-
-@Composable
-private fun TvSeriesLargeTitle(tvSeriesTitle: String) {
-    Text(
-        text = tvSeriesTitle,
-        style = MaterialTheme.typography.headlineLarge.copy(
-            fontWeight = FontWeight.Bold
-        ),
-        color = Color.White,
-        maxLines = 1
-    )
 }
 
 @Composable
@@ -482,7 +470,7 @@ private fun TvSeriesImageWithGradients(
     tvSeriesDetails: TvSeries,
     backdropUrl: String?,
     modifier: Modifier = Modifier,
-    gradientColor: Color = MaterialTheme.colorScheme.surface,
+    gradientColor: Color = Color.Black.copy(alpha = 0.7f), // Dark gradient for Netflix feel
 ) {
     AsyncImage(
         model = ImageRequest.Builder(LocalContext.current).data(backdropUrl ?: tvSeriesDetails.coverUrl)
@@ -491,10 +479,10 @@ private fun TvSeriesImageWithGradients(
         contentScale = ContentScale.Crop,
         modifier = modifier.drawWithContent {
             drawContent()
-            // Simplified gradient for mobile readability
+            // Gradient overlay for better text visibility (top transparent to bottom black)
             drawRect(
                 Brush.verticalGradient(
-                    colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.7f)),
+                    colors = listOf(Color.Transparent, gradientColor),
                     startY = size.height * 0.5f,
                     endY = size.height
                 )
@@ -504,211 +492,173 @@ private fun TvSeriesImageWithGradients(
 }
 
 @Composable
-private fun CastAndCrewList(cast: List<Cast>) {
-    val childPadding = 16.dp
-
-    Column(
-        modifier = Modifier.padding(top = childPadding),
-    ) {
-        Text(
-            text = "Cast & Crew",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(start = childPadding)
-        )
-        LazyRow(
-            modifier = Modifier
-                .padding(top = 12.dp),
-            contentPadding = PaddingValues(horizontal = childPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(cast, key = { "${it.name}-${it.character}" }) {
-                CastAndCrewItem(it, modifier = Modifier.width(100.dp)) // Smaller card size for mobile
-            }
-        }
-    }
-}
-
-@Composable
-private fun CastAndCrewItem(
-    castMember: Cast,
-    modifier: Modifier = Modifier,
-) {
-    Card(
-        onClick = {},
-        modifier = modifier
-            .aspectRatio(1 / 1.8f),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
-    ) {
-        Column {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.725f)
-            ) {
-                AsyncImage(
-                    model = castMember.profilePath?.let { TMDBService.getPosterUrl(it) },
-                    contentDescription = castMember.name,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            }
-            Text(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 10.dp)
-                    .padding(horizontal = 12.dp),
-                text = castMember.name,
-                maxLines = 1,
-                style = MaterialTheme.typography.labelMedium,
-                overflow = TextOverflow.Ellipsis
-            )
-            Text(
-                text = castMember.character,
-                maxLines = 1,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .alpha(0.75f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-private fun EpisodesRow(
-    episodes: List<TvEpisode>,
-    onEpisodeSelected: (TvEpisode) -> Unit
-) {
-    val childPadding = 16.dp
-    
-    Column(modifier = Modifier.padding(top = childPadding)) {
-        Text(
-            text = "Season ${episodes.firstOrNull()?.seasonNumber ?: 1} Episodes",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
-        )
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = childPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(episodes) { episode ->
-                EpisodeCard(
-                    episode = episode,
-                    onClick = { onEpisodeSelected(episode) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun EpisodeCard(
-    episode: TvEpisode,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.1f)
+private fun TvSeriesLargeTitle(tvSeriesTitle: String) {
+    Text(
+        text = tvSeriesTitle.uppercase(),
+        style = MaterialTheme.typography.headlineLarge.copy(
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 2.sp
         ),
-        modifier = Modifier.width(200.dp) // Smaller card size for mobile
+        color = Color.White,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun MetadataRow(
+    tvSeriesDetails: TvSeries,
+    onMyListToggle: () -> Unit,
+    onDownload: () -> Unit
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column {
-            // Episode image with play button overlay
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(112.dp) // Approx 16:9 aspect ratio for 200dp width
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(episode.coverUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = "Episode ${episode.episodeNumber} thumbnail",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                
-                // Play button overlay
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            Brush.radialGradient(
-                                colors = listOf(
-                                    Color.Black.copy(alpha = 0.3f),
-                                    Color.Transparent
-                                )
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = "Play Episode",
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp) // Smaller icon
-                    )
-                }
-            }
-            
-            Column(
-                modifier = Modifier.padding(12.dp) // Reduced padding
-            ) {
-                Text(
-                    text = "E${episode.episodeNumber}: ${episode.name.ifEmpty { episode.title }}",
-                    style = MaterialTheme.typography.titleSmall.copy(
-                        fontWeight = FontWeight.Bold
-                    ),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                episode.duration?.let { duration ->
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = duration,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                    )
-                }
-            }
+        // Year
+        tvSeriesDetails.year?.let { year ->
+            Text(
+                text = year,
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.Gray
+            )
+        }
+
+        // Rating
+        tvSeriesDetails.rating?.let { rating ->
+            Text(
+                text = "⭐ ${String.format("%.1f", rating.toDoubleOrNull() ?: 0.0)}",
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.Gray
+            )
+        }
+
+        // HD Tag
+        Box(
+            modifier = Modifier
+                .border(1.dp, Color.Gray, RoundedCornerShape(2.dp))
+                .padding(horizontal = 4.dp, vertical = 2.dp)
+        ) {
+            Text(
+                text = "HD",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.Gray
+            )
+        }
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        // My List Toggle (Placeholder logic)
+        IconButton(onClick = onMyListToggle) {
+            Icon(
+                imageVector = if (tvSeriesDetails.myList == 1) Icons.Filled.Check else Icons.Filled.Add,
+                contentDescription = "My List",
+                tint = Color.White
+            )
+        }
+
+        // Download Button
+        IconButton(onClick = onDownload) {
+            Icon(
+                imageVector = Icons.Filled.CloudDownload,
+                contentDescription = "Download",
+                tint = Color.White
+            )
         }
     }
 }
 
 @Composable
-private fun TvSeriesRow(
-    title: String,
-    tvSeriesList: List<TvSeries>,
-    onTvSeriesSelected: (TvSeries) -> Unit
+private fun PlayEpisodeButtonPill(
+    episode: TvEpisode?,
+    modifier: Modifier = Modifier,
+    goToPlayer: () -> Unit
 ) {
-    val childPadding = 16.dp
+    val buttonText = if (episode != null) {
+        "PLAY S${episode.seasonNumber} E${episode.episodeNumber}"
+    } else {
+        "PLAY"
+    }
     
-    Column(modifier = Modifier.padding(top = childPadding)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 12.dp)
+    Button(
+        onClick = goToPlayer,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.LightGray.copy(alpha = 0.3f),
+            contentColor = Color.White
+        ),
+        shape = RoundedCornerShape(50), // Pill shape
+        enabled = episode != null
+    ) {
+        Icon(
+            imageVector = Icons.Filled.PlayArrow,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp)
         )
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = childPadding),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(tvSeriesList) { tvSeries ->
-                TvSeriesCard(
-                    tvSeries = tvSeries,
-                    tmdbImageProvider = TMDBImageProvider.getInstance(),
-                    onClick = { onTvSeriesSelected(tvSeries) },
-                    modifier = Modifier.width(120.dp), // Smaller card size for mobile
-                    showTitle = true
-                )
-            }
-        }
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = buttonText,
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+    }
+}
+
+@Composable
+private fun WatchTrailerButtonPill(
+    trailerUrl: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    Button(
+        onClick = {
+            val youtubeUrl = "https://www.youtube.com/watch?v=$trailerUrl"
+            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeUrl))
+            context.startActivity(intent)
+        },
+        modifier = modifier
+            .fillMaxWidth()
+            .height(50.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.LightGray.copy(alpha = 0.1f), // Slightly darker/less prominent than Play
+            contentColor = Color.White
+        ),
+        shape = RoundedCornerShape(50) // Pill shape
+    ) {
+        Icon(
+            imageVector = Icons.Filled.PlayArrow,
+            contentDescription = null,
+            modifier = Modifier.size(24.dp)
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = "WATCH TRAILER",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+        )
+    }
+}
+
+@Composable
+private fun TvSeriesOverview(
+    description: String,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(
+            text = "Overview",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            color = Color.White
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = Color.LightGray,
+            maxLines = 3, // Simplified as per mobile pattern
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -720,17 +670,17 @@ private fun SeasonSelectorButton(
 ) {
     Button(
         onClick = onShowSeasonSelector,
-        modifier = modifier,
+        modifier = modifier.width(180.dp), // Fixed width for visibility
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         shape = RoundedCornerShape(8.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurface
+            containerColor = Color.DarkGray.copy(alpha = 0.5f),
+            contentColor = Color.White
         )
     ) {
         Text(
             text = "Season $selectedSeason",
-            style = MaterialTheme.typography.titleSmall
+            style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold)
         )
         Spacer(Modifier.size(4.dp))
         Icon(
@@ -802,29 +752,232 @@ private fun SeasonSelectorDialog(
 }
 
 @Composable
-private fun WatchTrailerButton(
-    onClick: () -> Unit,
+private fun EpisodeListItem(
+    episode: TvEpisode,
+    onEpisodeSelected: (TvEpisode) -> Unit,
+    onDownload: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Button(
-        onClick = onClick,
-        modifier = modifier,
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(8.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-            contentColor = MaterialTheme.colorScheme.onSurface
-        )
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable { onEpisodeSelected(episode) }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.Top,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // Episode number (Flutter style used only card/image, adding number for clarity)
         Text(
-            text = "Trailer",
-            style = MaterialTheme.typography.titleSmall
+            text = "${episode.episodeNumber}",
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+            color = Color.White,
+            modifier = Modifier.align(Alignment.CenterVertically).width(24.dp)
         )
-        Spacer(Modifier.size(4.dp))
-        Icon(
-            imageVector = Icons.Filled.PlayArrow,
-            contentDescription = "Watch Trailer",
-            modifier = Modifier.size(20.dp)
+
+        // Episode thumbnail with play icon
+        Box(
+            modifier = Modifier
+                .width(120.dp)
+                .height(68.dp) // Approx 16:9 ratio
+                .clip(RoundedCornerShape(4.dp))
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current).data(episode.coverUrl).crossfade(true).build(),
+                contentDescription = "Episode ${episode.episodeNumber} thumbnail",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            // Play button overlay
+            Box(
+                modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.2f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlayArrow,
+                    contentDescription = "Play Episode",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+        }
+        
+        // Episode details
+        Column(
+            modifier = Modifier.weight(1f).align(Alignment.CenterVertically)
+        ) {
+            Text(
+                text = episode.name.ifEmpty { episode.title },
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold),
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            episode.duration?.let { duration ->
+                Text(
+                    text = duration,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+        }
+
+        // Download icon
+        IconButton(
+            onClick = onDownload,
+            modifier = Modifier.align(Alignment.CenterVertically)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.CloudDownload,
+                contentDescription = "Download Episode",
+                tint = Color.White
+            )
+        }
+    }
+}
+
+@Composable
+private fun CastAndCrewList(cast: List<Cast>, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.padding(start = MobilePadding)) {
+        Text(
+            text = "Top Cast",
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 12.dp)
         )
+        LazyRow(
+            contentPadding = PaddingValues(end = MobilePadding),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(cast.take(10), key = { "${it.name}-${it.character}" }) {
+                CastAndCrewItem(it, modifier = Modifier.width(80.dp))
+            }
+            // Add 'See All' if there are more than 10 cast members
+            if (cast.size > 10) {
+                item {
+                    SeeAllCastButton(onClick = { /* TODO: Implement navigation to AllActorsScreen */ })
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SeeAllCastButton(onClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .width(80.dp)
+            .height(144.dp)
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(60.dp)
+                .clip(CircleShape)
+                .background(Color.Gray.copy(alpha = 0.5f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack, // Using back arrow as a directional icon
+                contentDescription = "See All Cast",
+                tint = Color.White
+            )
+        }
+        Text(
+            text = "See All",
+            style = MaterialTheme.typography.labelMedium,
+            color = Color.White,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+    }
+}
+
+
+@Composable
+private fun CastAndCrewItem(
+    castMember: Cast,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        onClick = {},
+        modifier = modifier
+            .aspectRatio(1 / 1.8f),
+        shape = RoundedCornerShape(4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.DarkGray.copy(alpha = 0.5f))
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.725f)
+            ) {
+                AsyncImage(
+                    model = castMember.profilePath?.let { TMDBService.getPosterUrl(it) },
+                    contentDescription = castMember.name,
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp)),
+                    contentScale = ContentScale.Crop
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.275f)
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    text = castMember.name,
+                    maxLines = 1,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    color = Color.White,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = castMember.character,
+                    maxLines = 1,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.Center
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun TvSeriesRow(
+    title: String,
+    tvSeriesList: List<TvSeries>,
+    onTvSeriesSelected: (TvSeries) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier.padding(start = MobilePadding)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+            color = Color.White,
+            modifier = Modifier.padding(bottom = 12.dp)
+        )
+        LazyRow(
+            contentPadding = PaddingValues(end = MobilePadding),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(tvSeriesList) { tvSeries ->
+                TvSeriesCard(
+                    tvSeries = tvSeries,
+                    tmdbImageProvider = TMDBImageProvider.getInstance(),
+                    onClick = { onTvSeriesSelected(tvSeries) },
+                    modifier = Modifier.width(110.dp),
+                    showTitle = true
+                )
+            }
+        }
     }
 }
