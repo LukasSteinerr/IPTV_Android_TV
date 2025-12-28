@@ -220,6 +220,7 @@ fun TimeSlider(
     onRefresh: (() -> Unit)?
 ) {
     val haptic = LocalHapticFeedback.current
+    val interactionLastHour = remember { mutableIntStateOf(-1) }
 
     Column {
         onRefresh?.let {
@@ -258,7 +259,11 @@ fun TimeSlider(
                 }
                 .pointerInput(Unit) {
                     detectVerticalDragGestures(
-                        onDragStart = { onInteractionStart() },
+                        onDragStart = {
+                            onInteractionStart()
+                            // Initialize last hour at drag start
+                            interactionLastHour.intValue = Calendar.getInstance().apply { timeInMillis = selectedTime }.get(Calendar.HOUR_OF_DAY)
+                        },
                         onDragEnd = { onInteractionEnd() },
                         onDragCancel = { onInteractionEnd() },
                         onVerticalDrag = { change, _ ->
@@ -268,11 +273,15 @@ fun TimeSlider(
                             val displayHoursOrder = (0..23).map { (it + 5) % 24 }
                             val newSelectedHour = displayHoursOrder[touchedIndex]
 
-                            val newCal = Calendar.getInstance().apply { timeInMillis = selectedTime }
-                            if (newCal.get(Calendar.HOUR_OF_DAY) != newSelectedHour) {
+                            if (interactionLastHour.intValue != newSelectedHour) {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                
+                                val newCal = Calendar.getInstance().apply { timeInMillis = selectedTime }
                                 newCal.set(Calendar.HOUR_OF_DAY, newSelectedHour)
                                 onTimeChange(newCal.timeInMillis)
+                                
+                                // Update the anchor hour
+                                interactionLastHour.intValue = newSelectedHour
                             }
                         }
                     )
