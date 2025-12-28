@@ -9,6 +9,7 @@ import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState // Added for ChannelListWithEpg
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
@@ -18,10 +19,12 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalDensity // Added for TimeSlider pixel/dp conversion
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,25 +54,28 @@ fun LiveTVScreen(
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-
+    
     val liveTvCategories = remember(playlist) {
         playlist.categories.filter { it.contentType == ContentType.liveTV }.toList()
     }
-
+    
     var selectedCategory by remember { mutableStateOf(liveTvCategories.firstOrNull()) }
-    var selectedTime by remember { mutableStateOf(Calendar.getInstance().timeInMillis) }
+    var selectedTime by remember { mutableStateOf(System.currentTimeMillis()) }
     var epgData by remember { mutableStateOf<Map<String, List<TvProgram>>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(false) }
     var isInteractingWithSlider by remember { mutableStateOf(false) }
-
+    
+    // State for positioning of bump-out indicator (removed states calculated locally in TimeSlider)
+    var scrollOffset by remember { mutableFloatStateOf(0f) }
+    
     val filteredChannels: List<Channel> = remember(playlist, selectedCategory) {
         if (selectedCategory == null) {
-            playlist.channels.filter { it.category.target?.isLiveTV == true }.toList()
+            playlist.channels.filter { it.category.target?.isLiveTV == true }.toList() // FIXED: Use .target to access Category properties
         } else {
             selectedCategory?.channels?.toList() ?: emptyList()
         }
     }
-
+    
     LaunchedEffect(filteredChannels) {
         isLoading = true
         val epgMap = mutableMapOf<String, List<TvProgram>>()
@@ -82,7 +88,7 @@ fun LiveTVScreen(
         epgData = epgMap
         isLoading = false
     }
-
+    
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -101,20 +107,25 @@ fun LiveTVScreen(
         },
         modifier = modifier.fillMaxSize()
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(Color.Black)
                 .padding(contentPadding)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            // Channel List
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(end = 45.dp) // Make space for slider
+            ) {
                 Text(
                     text = selectedCategory?.name?.uppercase() ?: "ALL CHANNELS",
                     style = MaterialTheme.typography.titleLarge,
                     color = Color.White,
                     modifier = Modifier.padding(16.dp)
                 )
-
+                
                 if (isLoading) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator()
@@ -125,17 +136,25 @@ fun LiveTVScreen(
                         epgData = epgData,
                         currentTime = selectedTime,
                         onChannelSelected = onChannelSelected,
+                        onScrollOffsetChanged = { offset ->
+                            scrollOffset = offset
+                        }
                     )
                 }
             }
+            
+            // Time Slider
             TimeSlider(
+                modifier = Modifier.align(Alignment.TopEnd),
                 selectedTime = selectedTime,
                 currentTime = System.currentTimeMillis(),
+                showBumpOut = isInteractingWithSlider,
                 onTimeChange = { newTime -> selectedTime = newTime },
                 onInteractionStart = { isInteractingWithSlider = true },
-                onInteractionEnd = { isInteractingWithSlider = false },
-                showBumpOut = isInteractingWithSlider,
-                onRefresh = onRefresh
+                onInteractionEnd = { 
+                    isInteractingWithSlider = false
+                    onRefresh()
+                }
             )
         }
     }
@@ -147,10 +166,14 @@ fun ChannelListWithEpg(
     epgData: Map<String, List<TvProgram>>,
     currentTime: Long,
     onChannelSelected: (Channel) -> Unit,
+    onScrollOffsetChanged: (Float) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val listState = rememberLazyListState()
+    
     LazyColumn(
         modifier = modifier.fillMaxSize(),
+        state = listState,
         contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
     ) {
         items(channels) { channel ->
@@ -217,52 +240,34 @@ fun TimeSlider(
     onTimeChange: (Long) -> Unit,
     onInteractionStart: () -> Unit,
     onInteractionEnd: () -> Unit,
-    onRefresh: (() -> Unit)?
+    modifier: Modifier = Modifier
 ) {
     val haptic = LocalHapticFeedback.current
     val interactionLastHour = remember { mutableIntStateOf(-1) }
-
-    Column {
-        onRefresh?.let {
-            IconButton(
-                onClick = it,
-            ) {
-                Icon(Icons.Default.Refresh, contentDescription = "Refresh EPG", tint = Color.White)
-            }
+    
+    Column(modifier = modifier) {
+        // Refresh button at top
+        IconButton(
+            onClick = onInteractionEnd
+        ) {
+            Icon(Icons.Default.Refresh, contentDescription = "Refresh EPG", tint = Color.White)
         }
+        
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxHeight()
                 .width(45.dp)
                 .background(Color.Black.copy(alpha = 0.3f))
                 .pointerInput(Unit) {
-                    detectTapGestures(
-                        onPress = {
-                            onInteractionStart()
-                            tryAwaitRelease()
-                            onInteractionEnd()
-                        },
-                        onTap = { offset ->
-                            val hourHeight = size.height / 24f
-                            val touchedIndex = floor(offset.y / hourHeight).toInt().coerceIn(0, 23)
-                            val displayHoursOrder = (0..23).map { (it + 5) % 24 }
-                            val newSelectedHour = displayHoursOrder[touchedIndex]
-                            
-                            val newCal = Calendar.getInstance().apply { timeInMillis = selectedTime }
-                            if (newCal.get(Calendar.HOUR_OF_DAY) != newSelectedHour) {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                newCal.set(Calendar.HOUR_OF_DAY, newSelectedHour)
-                                onTimeChange(newCal.timeInMillis)
-                            }
-                        }
-                    )
-                }
-                .pointerInput(Unit) {
+                    // Removed detectTapGestures as it potentially interfered with drag gestures.
+                    
                     detectVerticalDragGestures(
                         onDragStart = {
                             onInteractionStart()
                             // Initialize last hour at drag start
-                            interactionLastHour.intValue = Calendar.getInstance().apply { timeInMillis = selectedTime }.get(Calendar.HOUR_OF_DAY)
+                            val calendar = Calendar.getInstance()
+                            calendar.timeInMillis = selectedTime
+                            interactionLastHour.intValue = calendar.get(Calendar.HOUR_OF_DAY)
                         },
                         onDragEnd = { onInteractionEnd() },
                         onDragCancel = { onInteractionEnd() },
@@ -270,74 +275,100 @@ fun TimeSlider(
                             val hourHeight = size.height / 24f
                             val offset = change.position.y
                             val touchedIndex = floor(offset / hourHeight).toInt().coerceIn(0, 23)
-                            val displayHoursOrder = (0..23).map { (it + 5) % 24 }
-                            val newSelectedHour = displayHoursOrder[touchedIndex]
-
+                            val newSelectedHour = touchedIndex
+                            
                             if (interactionLastHour.intValue != newSelectedHour) {
                                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                 
-                                val newCal = Calendar.getInstance().apply { timeInMillis = selectedTime }
-                                newCal.set(Calendar.HOUR_OF_DAY, newSelectedHour)
-                                onTimeChange(newCal.timeInMillis)
+                                val calendar = Calendar.getInstance()
+                                calendar.timeInMillis = selectedTime
+                                calendar.set(Calendar.HOUR_OF_DAY, newSelectedHour)
+                                calendar.set(Calendar.MINUTE, 0)
+                                calendar.set(Calendar.SECOND, 0)
+                                onTimeChange(calendar.timeInMillis)
                                 
-                                // Update the anchor hour
+                                // Update anchor hour
                                 interactionLastHour.intValue = newSelectedHour
                             }
                         }
                     )
-                }
-        ) {
+                } // This closes the pointerInput lambda/modifier
+        ) { // This closes the modifier argument and starts the BoxWithConstraints trailing content lambda
+            
             val actualAvailableHeight = constraints.maxHeight.toFloat()
             val dynamicHourHeight = actualAvailableHeight / 24f
-            val displayHoursOrder = (0..23).map { (it + 5) % 24 }
             
-            val selectedCal = Calendar.getInstance().apply { timeInMillis = selectedTime }
-            val currentCal = Calendar.getInstance().apply { timeInMillis = currentTime }
-
+            val calendar = Calendar.getInstance()
+            calendar.timeInMillis = selectedTime
+            val currentCalendar = Calendar.getInstance()
+            currentCalendar.timeInMillis = currentTime
+            
+            val selectedHour = calendar.get(Calendar.HOUR_OF_DAY)
+            val currentHour = currentCalendar.get(Calendar.HOUR_OF_DAY)
+            
             Column(modifier = Modifier.fillMaxHeight()) {
-                for (hourValue in displayHoursOrder) {
+                for (hourValue in 0..23) {
                     Box(
                         modifier = Modifier
-                            .weight(1f) // Use weight to ensure equal height distribution
+                            .weight(1f)
                             .fillMaxWidth()
-                            .background(if (hourValue == selectedCal.get(Calendar.HOUR_OF_DAY)) Color.Blue.copy(alpha = 0.3f) else Color.Transparent),
+                            .background(
+                                when {
+                                    hourValue == selectedHour -> Color.Blue.copy(alpha = 0.3f)
+                                    hourValue == currentHour -> Color.Blue.copy(alpha = 0.3f)
+                                    else -> Color.Transparent
+                                }
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Text(
                             text = hourValue.toString().padStart(2, '0'),
                             color = when {
-                                hourValue == currentCal.get(Calendar.HOUR_OF_DAY) -> Color.Blue
-                                hourValue == selectedCal.get(Calendar.HOUR_OF_DAY) -> Color.White
+                                hourValue == currentHour -> Color.Blue
+                                hourValue == selectedHour -> Color.White
                                 else -> Color.White.copy(alpha = 0.7f)
                             },
-                            fontWeight = if (hourValue == selectedCal.get(Calendar.HOUR_OF_DAY) || hourValue == currentCal.get(Calendar.HOUR_OF_DAY)) FontWeight.Bold else FontWeight.Normal,
+                            fontWeight = if (hourValue == selectedHour || hourValue == currentHour) FontWeight.Bold else FontWeight.Normal,
                             fontSize = 16.sp,
                         )
                     }
                 }
             }
-
+            
+            // Bump-out Indicator overlay, visible only during interaction
             if (showBumpOut) {
-                val selectedHourVisualIndex = displayHoursOrder.indexOf(selectedCal.get(Calendar.HOUR_OF_DAY)).takeIf { it != -1 } ?: 0
-                val indicatorHeight = 36.dp
-                val topOffsetForIndicator = (selectedHourVisualIndex * dynamicHourHeight) + (dynamicHourHeight / 2) - (indicatorHeight.value / 2)
+                val calendar = Calendar.getInstance()
+                calendar.timeInMillis = selectedTime
+                val selectedHour = calendar.get(Calendar.HOUR_OF_DAY)
+                
+                // Calculate vertical offset relative to BoxWithConstraints top edge
+                // dynamicHourHeight (pixel float) calculated on line 326
+                val selectedHourTopY = selectedHour * dynamicHourHeight
+                
+                val indicatorHeightPx = with(LocalDensity.current) { 36.dp.toPx() }
+                val topOffsetPx = selectedHourTopY + (dynamicHourHeight / 2f) - (indicatorHeightPx / 2f)
                 
                 Card(
-                    modifier = Modifier.offset(x = (-100).dp, y = topOffsetForIndicator.dp),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .offset(x = (-45).dp - 10.dp, y = with(LocalDensity.current) { topOffsetPx.toDp() })
+                        .shadow(elevation = 6.dp, shape = RoundedCornerShape(4.dp)),
                     shape = RoundedCornerShape(4.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.Blue.copy(alpha = 0.8f))
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFF1976D2))
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier
+                            .size(width = 140.dp, height = 36.dp) // Increased width for better rectangle appearance
+                            .padding(horizontal = 16.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "Kl ${selectedCal.get(Calendar.HOUR_OF_DAY).toString().padStart(2, '0')}:00",
+                            text = "${selectedHour.toString().padStart(2, '0')}:00",
                             color = Color.White,
                             fontWeight = FontWeight.W500,
                             fontSize = 15.sp,
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
                         Icon(
                             Icons.Default.MoreHoriz,
                             contentDescription = null,
@@ -347,9 +378,9 @@ fun TimeSlider(
                     }
                 }
             }
-        }
-    }
-}
+        } // Close BoxWithConstraints
+    } // Close Column (line 253)
+} // Close TimeSlider (line 240)
 
 fun findNowAndNextPrograms(programs: List<TvProgram>, currentTime: Long): Pair<TvProgram?, TvProgram?> {
     val now = Date(currentTime)
