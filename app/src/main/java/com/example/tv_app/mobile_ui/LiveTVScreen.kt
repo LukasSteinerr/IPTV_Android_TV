@@ -1,30 +1,41 @@
+@file:OptIn(ExperimentalMaterial3Api::class)
+
 package com.example.tv_app.mobile_ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.MoreHoriz
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.ExperimentalTvMaterial3Api
-import androidx.tv.material3.MaterialTheme as TvMaterialTheme
-import androidx.tv.material3.Text
-import com.example.tv_app.model.Playlist
-import com.example.tv_app.repository.PlaylistService
+import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.tv_app.model.Channel
+import com.example.tv_app.model.Category
+import com.example.tv_app.model.Playlist
+import com.example.tv_app.model.ContentType
+import com.example.tv_app.model.TvProgram
+import com.example.tv_app.repository.PlaylistService
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.math.floor
 
 @Composable
 fun LiveTVScreen(
@@ -35,21 +46,360 @@ fun LiveTVScreen(
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
     selectedTab: Int,
-    onTabSelected: (Int) -> Unit
+    onTabSelected: (Int) -> Unit,
+    onRefresh: () -> Unit = {}
 ) {
-    
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black)
-            .padding(top = contentPadding.calculateTopPadding())
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
+    val liveTvCategories = remember(playlist) {
+        playlist.categories.filter { it.contentType == ContentType.liveTV }.toList()
+    }
+
+    var selectedCategory by remember { mutableStateOf(liveTvCategories.firstOrNull()) }
+    var selectedTime by remember { mutableStateOf(Calendar.getInstance().timeInMillis) }
+    var epgData by remember { mutableStateOf<Map<String, List<TvProgram>>>(emptyMap()) }
+    var isLoading by remember { mutableStateOf(false) }
+    var isInteractingWithSlider by remember { mutableStateOf(false) }
+
+    val filteredChannels: List<Channel> = remember(playlist, selectedCategory) {
+        if (selectedCategory == null) {
+            playlist.channels.filter { it.category.target?.isLiveTV == true }.toList()
+        } else {
+            selectedCategory?.channels?.toList() ?: emptyList()
+        }
+    }
+
+    LaunchedEffect(filteredChannels) {
+        isLoading = true
+        val epgMap = mutableMapOf<String, List<TvProgram>>()
+        for (channel in filteredChannels) {
+            if (!channel.epgId.isNullOrEmpty()) {
+                val programs = playlistService.getEpgProgramsForChannel(channel)
+                epgMap[channel.epgId!!] = programs
+            }
+        }
+        epgData = epgMap
+        isLoading = false
+    }
+
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            CategoryDrawer(
+                categories = liveTvCategories,
+                selectedCategory = selectedCategory,
+                onCategorySelected = { category ->
+                    selectedCategory = category
+                    scope.launch { drawerState.close() }
+                },
+                onAllChannelsSelected = {
+                    selectedCategory = null
+                    scope.launch { drawerState.close() }
+                }
+            )
+        },
+        modifier = modifier.fillMaxSize()
     ) {
-        // Live TV content - EPG Guide
-        EpgGuide(
-            playlist = playlist,
-            playlistService = playlistService,
-            onChannelSelected = onChannelSelected,
-            modifier = Modifier.fillMaxSize()
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .padding(contentPadding)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = selectedCategory?.name?.uppercase() ?: "ALL CHANNELS",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = Color.White,
+                    modifier = Modifier.padding(16.dp)
+                )
+
+                if (isLoading) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                } else {
+                    ChannelListWithEpg(
+                        channels = filteredChannels,
+                        epgData = epgData,
+                        currentTime = selectedTime,
+                        onChannelSelected = onChannelSelected,
+                    )
+                }
+            }
+            TimeSlider(
+                selectedTime = selectedTime,
+                currentTime = System.currentTimeMillis(),
+                onTimeChange = { newTime -> selectedTime = newTime },
+                onInteractionStart = { isInteractingWithSlider = true },
+                onInteractionEnd = { isInteractingWithSlider = false },
+                showBumpOut = isInteractingWithSlider,
+                onRefresh = onRefresh
+            )
+        }
+    }
+}
+
+@Composable
+fun ChannelListWithEpg(
+    channels: List<Channel>,
+    epgData: Map<String, List<TvProgram>>,
+    currentTime: Long,
+    onChannelSelected: (Channel) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyColumn(
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
+    ) {
+        items(channels) { channel ->
+            val programs = epgData[channel.epgId] ?: emptyList()
+            val nowAndNext = findNowAndNextPrograms(programs, currentTime)
+            ChannelListItemWithEpg(
+                channel = channel,
+                nowProgram = nowAndNext.first,
+                nextProgram = nowAndNext.second,
+                onClick = { onChannelSelected(channel) }
+            )
+            Divider(color = Color.Gray.copy(alpha = 0.3f), thickness = 1.dp)
+        }
+    }
+}
+
+@Composable
+fun ChannelListItemWithEpg(
+    channel: Channel,
+    nowProgram: TvProgram?,
+    nextProgram: TvProgram?,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp, horizontal = 8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = channel.logoUrl,
+            contentDescription = channel.name,
+            modifier = Modifier
+                .size(48.dp)
+                .padding(end = 12.dp)
         )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(text = channel.name, color = Color.White, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Now: ${nowProgram?.title ?: "No information"}",
+                color = Color.LightGray,
+                fontSize = 14.sp
+            )
+            Text(
+                text = "Next: ${nextProgram?.title ?: "No information"}",
+                color = Color.Gray,
+                fontSize = 12.sp
+            )
+        }
+        Icon(
+            imageVector = Icons.Default.ChevronRight,
+            contentDescription = "View Channel",
+            tint = Color.Gray
+        )
+    }
+}
+
+@Composable
+fun TimeSlider(
+    selectedTime: Long,
+    currentTime: Long,
+    showBumpOut: Boolean,
+    onTimeChange: (Long) -> Unit,
+    onInteractionStart: () -> Unit,
+    onInteractionEnd: () -> Unit,
+    onRefresh: (() -> Unit)?
+) {
+    val haptic = LocalHapticFeedback.current
+
+    Column {
+        onRefresh?.let {
+            IconButton(
+                onClick = it,
+            ) {
+                Icon(Icons.Default.Refresh, contentDescription = "Refresh EPG", tint = Color.White)
+            }
+        }
+        BoxWithConstraints(
+            modifier = Modifier
+                .fillMaxHeight()
+                .width(45.dp)
+                .background(Color.Black.copy(alpha = 0.3f))
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onPress = {
+                            onInteractionStart()
+                            tryAwaitRelease()
+                            onInteractionEnd()
+                        },
+                        onTap = { offset ->
+                            val hourHeight = size.height / 24f
+                            val touchedIndex = floor(offset.y / hourHeight).toInt().coerceIn(0, 23)
+                            val displayHoursOrder = (0..23).map { (it + 5) % 24 }
+                            val newSelectedHour = displayHoursOrder[touchedIndex]
+                            
+                            val newCal = Calendar.getInstance().apply { timeInMillis = selectedTime }
+                            if (newCal.get(Calendar.HOUR_OF_DAY) != newSelectedHour) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                newCal.set(Calendar.HOUR_OF_DAY, newSelectedHour)
+                                onTimeChange(newCal.timeInMillis)
+                            }
+                        }
+                    )
+                }
+                .pointerInput(Unit) {
+                    detectVerticalDragGestures(
+                        onDragStart = { onInteractionStart() },
+                        onDragEnd = { onInteractionEnd() },
+                        onDragCancel = { onInteractionEnd() },
+                        onVerticalDrag = { change, _ ->
+                            val hourHeight = size.height / 24f
+                            val offset = change.position.y
+                            val touchedIndex = floor(offset / hourHeight).toInt().coerceIn(0, 23)
+                            val displayHoursOrder = (0..23).map { (it + 5) % 24 }
+                            val newSelectedHour = displayHoursOrder[touchedIndex]
+
+                            val newCal = Calendar.getInstance().apply { timeInMillis = selectedTime }
+                            if (newCal.get(Calendar.HOUR_OF_DAY) != newSelectedHour) {
+                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                newCal.set(Calendar.HOUR_OF_DAY, newSelectedHour)
+                                onTimeChange(newCal.timeInMillis)
+                            }
+                        }
+                    )
+                }
+        ) {
+            val actualAvailableHeight = constraints.maxHeight.toFloat()
+            val dynamicHourHeight = actualAvailableHeight / 24f
+            val displayHoursOrder = (0..23).map { (it + 5) % 24 }
+            
+            val selectedCal = Calendar.getInstance().apply { timeInMillis = selectedTime }
+            val currentCal = Calendar.getInstance().apply { timeInMillis = currentTime }
+
+            Column(modifier = Modifier.fillMaxHeight()) {
+                for (hourValue in displayHoursOrder) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f) // Use weight to ensure equal height distribution
+                            .fillMaxWidth()
+                            .background(if (hourValue == selectedCal.get(Calendar.HOUR_OF_DAY)) Color.Blue.copy(alpha = 0.3f) else Color.Transparent),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = hourValue.toString().padStart(2, '0'),
+                            color = when {
+                                hourValue == currentCal.get(Calendar.HOUR_OF_DAY) -> Color.Blue
+                                hourValue == selectedCal.get(Calendar.HOUR_OF_DAY) -> Color.White
+                                else -> Color.White.copy(alpha = 0.7f)
+                            },
+                            fontWeight = if (hourValue == selectedCal.get(Calendar.HOUR_OF_DAY) || hourValue == currentCal.get(Calendar.HOUR_OF_DAY)) FontWeight.Bold else FontWeight.Normal,
+                            fontSize = 16.sp,
+                        )
+                    }
+                }
+            }
+
+            if (showBumpOut) {
+                val selectedHourVisualIndex = displayHoursOrder.indexOf(selectedCal.get(Calendar.HOUR_OF_DAY)).takeIf { it != -1 } ?: 0
+                val indicatorHeight = 36.dp
+                val topOffsetForIndicator = (selectedHourVisualIndex * dynamicHourHeight) + (dynamicHourHeight / 2) - (indicatorHeight.value / 2)
+                
+                Card(
+                    modifier = Modifier.offset(x = (-100).dp, y = topOffsetForIndicator.dp),
+                    shape = RoundedCornerShape(4.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.Blue.copy(alpha = 0.8f))
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Kl ${selectedCal.get(Calendar.HOUR_OF_DAY).toString().padStart(2, '0')}:00",
+                            color = Color.White,
+                            fontWeight = FontWeight.W500,
+                            fontSize = 15.sp,
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Icon(
+                            Icons.Default.MoreHoriz,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun findNowAndNextPrograms(programs: List<TvProgram>, currentTime: Long): Pair<TvProgram?, TvProgram?> {
+    val now = Date(currentTime)
+    val sortedPrograms = programs.sortedBy { it.startTime }
+    val nowProgram = sortedPrograms.find { program ->
+        val start = program.startTime
+        val stop = program.stopTime
+        start != null && stop != null && now.after(start) && now.before(stop)
+    }
+    val nextProgram = sortedPrograms.find { program ->
+        val start = program.startTime
+        start != null && nowProgram?.stopTime != null && start.after(nowProgram.stopTime)
+    }
+    return Pair(nowProgram, nextProgram)
+}
+
+@Composable
+fun CategoryDrawer(
+    categories: List<Category>,
+    selectedCategory: Category?,
+    onCategorySelected: (Category) -> Unit,
+    onAllChannelsSelected: () -> Unit
+) {
+    ModalDrawerSheet(
+        modifier = Modifier.width(300.dp),
+        drawerContainerColor = Color.Black.copy(alpha = 0.95f)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "LIVE TV CATEGORIES",
+                style = MaterialTheme.typography.titleMedium,
+                color = Color.White,
+                modifier = Modifier.padding(vertical = 16.dp)
+            )
+            NavigationDrawerItem(
+                label = { Text("All Channels", color = if (selectedCategory == null) Color.Yellow else Color.White) },
+                selected = selectedCategory == null,
+                onClick = onAllChannelsSelected,
+                modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                colors = NavigationDrawerItemDefaults.colors(
+                    unselectedContainerColor = Color.Transparent,
+                    selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                )
+            )
+            Divider(color = Color.Gray)
+            LazyColumn {
+                items(categories) { category ->
+                    NavigationDrawerItem(
+                        label = { Text(category.name, color = if (category == selectedCategory) Color.Yellow else Color.White) },
+                        selected = category == selectedCategory,
+                        onClick = { onCategorySelected(category) },
+                        modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding),
+                        colors = NavigationDrawerItemDefaults.colors(
+                            unselectedContainerColor = Color.Transparent,
+                            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                        )
+                    )
+                }
+            }
+        }
     }
 }
