@@ -157,9 +157,9 @@ fun MovieCategoryRow(
         ) {
             Text(
                 text = title,
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
+                color = Color(0X8AFFFFFF),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Light,
                 modifier = Modifier.weight(1f),
                 maxLines = 1,
                 overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
