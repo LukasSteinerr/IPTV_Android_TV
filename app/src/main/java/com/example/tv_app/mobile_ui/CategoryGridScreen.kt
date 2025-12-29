@@ -7,11 +7,15 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -31,7 +35,9 @@ import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.presentation.common.MovieCard
 import com.example.tv_app.presentation.common.TvSeriesCard
 import kotlinx.coroutines.launch
+import androidx.compose.material3.ExperimentalMaterial3Api
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryGridScreen(
     categoryId: Long,
@@ -67,81 +73,76 @@ fun CategoryGridScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.Black)
-    ) {
-        if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 120.dp),
-                contentPadding = PaddingValues(
-                    top = contentPadding.calculateTopPadding() + 80.dp, // Add Scaffold's top padding (Status Bar) + Custom TopBar height (approx 80.dp)
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = categoryName,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = Color.Black.copy(alpha = 0.9f),
+                    titleContentColor = Color.White,
+                    navigationIconContentColor = Color.White
                 ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(contentList) { content ->
-                    if (isMovie) {
-                        val movie = content as Movie
-                        MovieCard(
-                            movie = movie,
-                            tmdbImageProvider = tmdbImageProvider,
-                            onClick = { onMovieSelected(movie) }
-                        )
-                    } else {
-                        val series = content as TvSeries
-                        TvSeriesCard(
-                            tvSeries = series,
-                            tmdbImageProvider = tmdbImageProvider,
-                            onClick = { onShowSelected(series) }
-                        )
+                modifier = Modifier.background(Color.Black)
+            )
+        },
+        containerColor = Color.Black
+    ) { innerPadding ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+        ) {
+            if (isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(contentList) { content ->
+                        if (isMovie) {
+                            val movie = content as Movie
+                            MovieCard(
+                                movie = movie,
+                                tmdbImageProvider = tmdbImageProvider,
+                                onClick = { onMovieSelected(movie) }
+                            )
+                        } else {
+                            val series = content as TvSeries
+                            TvSeriesCard(
+                                tvSeries = series,
+                                tmdbImageProvider = tmdbImageProvider,
+                                onClick = { onShowSelected(series) }
+                            )
+                        }
                     }
                 }
             }
         }
-
-        // Custom App Bar for Category Grid Screen (since Scaffold is in HomeScreen)
-        TopBar(title = categoryName, onNavigateBack = onNavigateBack)
-    }
-}
-
-@Composable
-private fun TopBar(title: String, onNavigateBack: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .background(Color.Black.copy(alpha = 0.9f))
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        IconButton(onClick = onNavigateBack) {
-            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = Color.White)
-        }
-        Text(
-            text = title,
-            color = Color.White,
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 16.dp), // Add padding to not touch the end of the screen
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
     }
 }
