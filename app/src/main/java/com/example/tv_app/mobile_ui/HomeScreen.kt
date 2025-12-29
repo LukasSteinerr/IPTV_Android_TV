@@ -2,13 +2,16 @@ package com.example.tv_app.mobile_ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.lazy.rememberLazyListState
 import com.example.tv_app.model.Category
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.graphics.Color
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.repository.PlaylistService
 
@@ -25,6 +28,17 @@ fun HomeScreen(
     var showSearch by remember { mutableStateOf(false) }
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
     var selectedCategoryName by remember { mutableStateOf<String?>(null) }
+    val lazyListState = rememberLazyListState()
+    val isScrolled = remember {
+        derivedStateOf {
+            lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
+        }
+    }
+    val appBarColor = if (selectedTab == 0 && !isScrolled.value) {
+        Color.Transparent
+    } else {
+        Color.Black.copy(alpha = 0.9f)
+    }
     
     val onCategorySelected = remember {
         { id: Long, name: String ->
@@ -46,7 +60,8 @@ fun HomeScreen(
                 FixedPrimaryAppBar(
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it },
-                    onSearchClick = { showSearch = true }
+                    onSearchClick = { showSearch = true },
+                    backgroundColor = appBarColor
                 )
             }
         }
@@ -79,7 +94,8 @@ fun HomeScreen(
                     contentPadding = contentPadding,
                     onSeeAllClick = onCategorySelected,
                     selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
+                    onTabSelected = { selectedTab = it },
+                    lazyListState = lazyListState
                 )
                 1 -> ShowsScreen(
                     playlist = playlist,

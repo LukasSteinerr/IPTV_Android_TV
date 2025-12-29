@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
@@ -38,7 +39,8 @@ fun MoviePageScreen(
     contentPadding: PaddingValues,
     onSeeAllClick: (Long, String) -> Unit,
     selectedTab: Int,
-    onTabSelected: (Int) -> Unit
+    onTabSelected: (Int) -> Unit,
+    lazyListState: LazyListState
 ) {
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var featuredMovies by remember { mutableStateOf<List<Movie>>(emptyList()) }
@@ -99,6 +101,7 @@ fun MoviePageScreen(
             }
         } else {
             LazyColumn(
+                state = lazyListState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     top = contentPadding.calculateTopPadding(),

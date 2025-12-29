@@ -28,14 +28,15 @@ import androidx.compose.ui.unit.sp
 fun FixedPrimaryAppBar(
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
-    onSearchClick: () -> Unit
+    onSearchClick: () -> Unit,
+    backgroundColor: Color = Color.Black.copy(alpha = 0.9f)
 ) {
     val tabs = listOf("Movies", "TV Shows", "Live TV")
-    
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.Black.copy(alpha = 0.9f))
+            .background(backgroundColor)
             .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top)) // Apply padding for status bar
             .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
