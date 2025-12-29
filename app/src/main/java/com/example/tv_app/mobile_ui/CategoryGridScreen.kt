@@ -35,6 +35,7 @@ import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.presentation.common.MovieCard
 import com.example.tv_app.presentation.common.TvSeriesCard
 import kotlinx.coroutines.launch
+import androidx.activity.compose.BackHandler
 import androidx.compose.material3.ExperimentalMaterial3Api
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,6 +50,7 @@ fun CategoryGridScreen(
     contentPadding: PaddingValues,
     isMovie: Boolean
 ) {
+    BackHandler(onBack = onNavigateBack)
     var contentList by remember { mutableStateOf<List<Any>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
 
