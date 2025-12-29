@@ -3,7 +3,6 @@ package com.example.tv_app.presentation.common
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -15,9 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -29,11 +26,61 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import com.example.tv_app.model.Movie
 import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.ui.theme.JetStreamCardShape
 import androidx.compose.ui.graphics.Color
+
+// New Composable to handle image loading logic, closely mirroring Flutter's TMDBImage
+@Composable
+fun TMDBPosterImage(
+    tmdbId: String?,
+    fallbackUrl: String?,
+    tmdbImageProvider: TMDBImageProvider,
+    contentDescription: String,
+    modifier: Modifier = Modifier
+) {
+    var posterUrl by remember(tmdbId, fallbackUrl) { mutableStateOf<String?>(null) }
+    
+    // Asynchronously fetch the high-res URL if a TMDB ID exists
+    LaunchedEffect(tmdbId, fallbackUrl) {
+        // 1. Attempt to get poster URL (which handles local fallback)
+        var resultUrl = tmdbImageProvider.getPosterUrl(tmdbId, fallbackUrl)
+
+        // 2. If result is null (meaning TMDB poster failed AND local poster/backdrop URL in Movie model was null),
+        //    try fetching the backdrop URL directly from TMDB as a final visual fallback.
+        if (resultUrl.isNullOrEmpty() && !tmdbId.isNullOrEmpty()) {
+            resultUrl = tmdbImageProvider.getBackdropUrl(tmdbId)
+        }
+        
+        posterUrl = resultUrl
+    }
+
+    // Use SubcomposeAsyncImage to handle asynchronous loading states
+    val imageModel = posterUrl ?: fallbackUrl
+    SubcomposeAsyncImage(
+        model = imageModel,
+        contentDescription = contentDescription,
+        modifier = modifier.clip(JetStreamCardShape),
+        contentScale = ContentScale.Crop,
+        loading = {
+            // Show the skeletal loading screen while the image is loading (Coil's loading or initial URL fetch)
+            NetflixStyleLoading(
+                modifier = Modifier.fillMaxSize(),
+                borderRadius = 8.dp
+            )
+        },
+        error = {
+            // Show the fallback placeholder on image loading error or invalid URL
+            ImageFallbackPlaceholder(
+                modifier = Modifier.fillMaxSize(),
+                borderRadius = 8.dp
+            )
+        }
+    )
+}
+
 
 @Composable
 fun MovieCard(
@@ -43,26 +90,26 @@ fun MovieCard(
     modifier: Modifier = Modifier,
     showTitle: Boolean = true
 ) {
-    var posterUrl by remember { mutableStateOf<String?>(null) }
-    
-    LaunchedEffect(movie.tmdbId) {
-        posterUrl = tmdbImageProvider.getPosterUrl(movie.tmdbId, movie.posterUrl)
-    }
-
-    Column(modifier = modifier.clickable(onClick = onClick)) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
         Card(
             shape = JetStreamCardShape,
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             elevation = CardDefaults.cardElevation(0.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(10.5f / 16f) // Maintain aspect ratio of a movie poster (approx. 0.656)
         ) {
-            AsyncImage(
-                model = posterUrl ?: movie.posterUrl,
+            TMDBPosterImage(
+                tmdbId = movie.tmdbId,
+                // Use posterUrl first, then backdropUrl if posterUrl is null
+                fallbackUrl = movie.posterUrl ?: movie.backdropUrl ?: movie.coverUrl,
+                tmdbImageProvider = tmdbImageProvider,
                 contentDescription = movie.name,
-                modifier = Modifier
-                    .aspectRatio(10.5f / 16f)
-                    .clip(JetStreamCardShape),
-                contentScale = ContentScale.Crop
+                modifier = Modifier.fillMaxSize()
             )
         }
 

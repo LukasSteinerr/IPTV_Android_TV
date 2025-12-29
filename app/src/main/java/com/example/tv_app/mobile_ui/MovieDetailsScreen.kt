@@ -380,9 +380,15 @@ private fun MovieImageWithGradients(
     modifier: Modifier = Modifier,
     gradientColor: Color = Color.Black.copy(alpha = 0.7f), // Dark gradient for Netflix feel
 ) {
+    val imageModel = backdropUrl ?: movieDetails.coverUrl
+    val imageSource = when {
+        !backdropUrl.isNullOrEmpty() -> "TMDB Backdrop"
+        !movieDetails.coverUrl.isNullOrEmpty() -> "Local CoverURL"
+        else -> "None"
+    }
+
     AsyncImage(
-        model = ImageRequest.Builder(LocalContext.current).data(backdropUrl ?: movieDetails.coverUrl)
-            .crossfade(true).build(),
+        model = ImageRequest.Builder(LocalContext.current).data(imageModel).crossfade(true).build(),
         contentDescription = "Movie poster for ${movieDetails.name}",
         contentScale = ContentScale.Crop,
         modifier = modifier.drawWithContent {
@@ -397,6 +403,40 @@ private fun MovieImageWithGradients(
             )
         }
     )
+
+    // UI Logging for debugging
+    if (!imageModel.isNullOrEmpty()) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.BottomStart
+        ) {
+            Column(
+                modifier = Modifier
+                    .background(Color.Black.copy(alpha = 0.5f), RoundedCornerShape(4.dp))
+                    .padding(4.dp)
+            ) {
+                Text(
+                    text = "TMDB ID: ${movieDetails.tmdbId ?: "N/A"}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Yellow
+                )
+                Text(
+                    text = "Source: $imageSource",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Yellow,
+                )
+                Text(
+                    text = "Backdrop URL: $imageModel",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Yellow,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        }
+    }
 }
 
 @Composable

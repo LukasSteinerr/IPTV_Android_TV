@@ -67,7 +67,7 @@ class TMDBImageProvider private constructor() {
 
             posterUrl ?: fallbackUrl
         } catch (e: Exception) {
-            Log.e("TMDBImageProvider", "Error getting movie poster for TMDB ID: $tmdbId", e)
+            Log.e("TMDBImageProvider", "Error getting movie poster for TMDB ID: $tmdbId. Returning fallback: $fallbackUrl", e)
             // On error, return fallback
             fallbackUrl
         }
@@ -142,7 +142,7 @@ class TMDBImageProvider private constructor() {
 
             posterUrl ?: fallbackUrl
         } catch (e: Exception) {
-            Log.e("TMDBImageProvider", "Error getting TV series poster for TMDB ID: $tmdbId", e)
+            Log.e("TMDBImageProvider", "Error getting TV series poster for TMDB ID: $tmdbId. Returning fallback: $fallbackUrl", e)
             // On error, return fallback
             fallbackUrl
         }
