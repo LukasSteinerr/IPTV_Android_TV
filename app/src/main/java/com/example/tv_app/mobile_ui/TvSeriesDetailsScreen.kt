@@ -6,6 +6,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -395,11 +398,15 @@ private fun Details(
             }
         }
 
-        // Close button absolute positioning (Flutter style)
+        // Calculate dynamic top padding for the transparent app bar area
+        val statusBarsHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+        val appBarPadding = statusBarsHeight + 8.dp // Status bar height + small vertical offset
+
+        // Close button (Transparent App Bar Style)
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .padding(top = 24.dp, end = MobilePadding)
+                .padding(top = appBarPadding, end = MobilePadding)
                 .size(32.dp)
                 .clip(CircleShape)
                 .background(Color.Black.copy(alpha = 0.5f))

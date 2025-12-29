@@ -38,9 +38,10 @@ fun ShowsScreen(
     contentPadding: PaddingValues,
     onSeeAllClick: (Long, String) -> Unit,
     selectedTab: Int,
-    onTabSelected: (Int) -> Unit
+    onTabSelected: (Int) -> Unit,
+    lazyListState: androidx.compose.foundation.lazy.LazyListState
 ) {
-    var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
+   var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var featuredTvSeries by remember { mutableStateOf<List<TvSeries>>(emptyList()) }
     var tvSeriesByCategory by remember { mutableStateOf<Map<Long, List<TvSeries>>>(emptyMap()) }
     var isLoading by remember { mutableStateOf(true) }
@@ -99,6 +100,7 @@ fun ShowsScreen(
             }
         } else {
             LazyColumn(
+                state = lazyListState,
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
                     top = contentPadding.calculateTopPadding(),

@@ -34,7 +34,7 @@ fun HomeScreen(
             lazyListState.firstVisibleItemIndex > 0 || lazyListState.firstVisibleItemScrollOffset > 0
         }
     }
-    val appBarColor = if (selectedTab == 0 && !isScrolled.value) {
+    val appBarColor = if ((selectedTab == 0 || selectedTab == 1) && !isScrolled.value) {
         Color.Transparent
     } else {
         Color.Black.copy(alpha = 0.9f)
@@ -105,7 +105,8 @@ fun HomeScreen(
                     contentPadding = contentPadding,
                     onSeeAllClick = onCategorySelected,
                     selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
+                    onTabSelected = { selectedTab = it },
+                    lazyListState = lazyListState
                 )
                 2 -> LiveTVScreen(
                     playlist = playlist,

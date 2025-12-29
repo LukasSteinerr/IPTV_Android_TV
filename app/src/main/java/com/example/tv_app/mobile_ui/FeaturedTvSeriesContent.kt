@@ -15,7 +15,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.asPaddingValues
 import coil.compose.rememberAsyncImagePainter
 import com.example.tv_app.model.TvSeries
 import com.example.tv_app.repository.TMDBImageProvider
@@ -28,6 +32,19 @@ fun FeaturedTvSeriesContent(
     onDetailsTapped: (TvSeries) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Calculate the total height of the top area: status bar + standard AppBar height (56.dp).
+    val statusBarsHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    val totalExtension = statusBarsHeight + 56.dp
+    
+    val layoutModifier = Modifier.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+
+        // Reduce the reported height by totalExtension to prevent pushing down siblings
+        layout(placeable.width, placeable.height - totalExtension.roundToPx()) {
+            placeable.placeRelative(0, 0)
+        }
+    }
+
     val pagerState = rememberPagerState(pageCount = { tvSeries.size })
     val coroutineScope = rememberCoroutineScope()
     
@@ -43,9 +60,17 @@ fun FeaturedTvSeriesContent(
 
     PaletteBackedContent(
         imageUrl = currentImageUrl,
-        modifier = modifier
+        // Apply the layout modifier first to shrink the perceived height of this composable in parent layout
+        // Then pull the PaletteBackedContent up to occupy the space behind the app bar and status bar.
+        // This makes the outer box taller, covering the new area, without affecting sibling layout positions.
+        modifier = modifier.then(layoutModifier).offset(y = -totalExtension)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            // Push the inner content down to maintain its original visual position relative to the screen content area.
+            // We use padding to push down by the total extension amount.
+            modifier = Modifier.padding(top = totalExtension)
+        ) {
             HorizontalPager(
                 state = pagerState,
                 contentPadding = PaddingValues(horizontal = 32.dp),
