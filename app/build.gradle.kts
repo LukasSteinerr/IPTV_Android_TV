@@ -13,7 +13,7 @@ android {
 
     defaultConfig {
         applicationId = "com.example.tv_app"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
@@ -100,7 +100,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.6.0")
     implementation("com.google.accompanist:accompanist-pager:0.23.1")
     implementation("com.google.accompanist:accompanist-pager-indicators:0.23.1")
-    
+    implementation("dev.chrisbanes.haze:haze-jetpack-compose:0.4.1")
+
     // Android TV Program Guide
     implementation("com.github.LukasSteinerr:Android_TV_EPG:main")
     implementation("io.reactivex.rxjava3:rxjava:3.1.5")

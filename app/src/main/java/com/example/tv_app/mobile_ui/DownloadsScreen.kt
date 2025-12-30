@@ -13,7 +13,7 @@ import androidx.compose.ui.graphics.Color
 @Composable
 fun DownloadsScreen(modifier: Modifier = Modifier) {
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(Color.Black),
         contentAlignment = Alignment.Center

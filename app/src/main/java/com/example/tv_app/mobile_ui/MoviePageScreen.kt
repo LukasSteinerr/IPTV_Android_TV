@@ -26,6 +26,8 @@ import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
 import kotlinx.coroutines.launch
 import com.example.tv_app.presentation.common.MovieCard
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -40,7 +42,8 @@ fun MoviePageScreen(
     onSeeAllClick: (Long, String) -> Unit,
     selectedTab: Int,
     onTabSelected: (Int) -> Unit,
-    lazyListState: LazyListState
+    lazyListState: LazyListState,
+    hazeState: HazeState
 ) {
     var categories by remember { mutableStateOf<List<Category>>(emptyList()) }
     var featuredMovies by remember { mutableStateOf<List<Movie>>(emptyList()) }
@@ -102,10 +105,15 @@ fun MoviePageScreen(
         } else {
             LazyColumn(
                 state = lazyListState,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().haze(
+                    hazeState,
+                    backgroundColor = MaterialTheme.colorScheme.background,
+                    tint = Color.Black.copy(alpha = .2f),
+                    blurRadius = 30.dp,
+                ),
                 contentPadding = PaddingValues(
                     top = contentPadding.calculateTopPadding(),
-                    bottom = 108.dp
+                    bottom = contentPadding.calculateBottomPadding()
                 ),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {

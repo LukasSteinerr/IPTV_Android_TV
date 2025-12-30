@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.repository.PlaylistService
+import dev.chrisbanes.haze.HazeState
 
 @Composable
 fun HomeScreen(
@@ -22,7 +23,9 @@ fun HomeScreen(
     onMovieSelected: (com.example.tv_app.model.Movie) -> Unit,
     onShowSelected: (com.example.tv_app.model.TvSeries) -> Unit,
     onChannelSelected: (com.example.tv_app.model.Channel) -> Unit,
-    onBackPressed: () -> Unit
+    onBackPressed: () -> Unit,
+    hazeState: HazeState,
+    contentPadding: PaddingValues
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     var showSearch by remember { mutableStateOf(false) }
@@ -95,7 +98,8 @@ fun HomeScreen(
                     onSeeAllClick = onCategorySelected,
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it },
-                    lazyListState = lazyListState
+                    lazyListState = lazyListState,
+                    hazeState = hazeState
                 )
                 1 -> ShowsScreen(
                     playlist = playlist,
@@ -106,7 +110,8 @@ fun HomeScreen(
                     onSeeAllClick = onCategorySelected,
                     selectedTab = selectedTab,
                     onTabSelected = { selectedTab = it },
-                    lazyListState = lazyListState
+                    lazyListState = lazyListState,
+                    hazeState = hazeState
                 )
                 2 -> LiveTVScreen(
                     playlist = playlist,

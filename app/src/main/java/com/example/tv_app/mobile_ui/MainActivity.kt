@@ -7,8 +7,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material.icons.Icons
@@ -36,6 +34,8 @@ import io.objectbox.Box
 import android.util.Log
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
 
 class MainActivity : FragmentActivity() {
 
@@ -93,6 +93,7 @@ fun MobileAppNavigation() {
     
     // Create a shared ViewModel for the video player
     val videoPlayerViewModel = remember { VideoPlayerViewModel() }
+    val hazeState = remember { HazeState() }
 
     val showBottomBar = when (currentScreen) {
         MobileScreen.Home, MobileScreen.Downloads, MobileScreen.MyList, MobileScreen.Settings -> true
@@ -102,9 +103,11 @@ fun MobileAppNavigation() {
     Scaffold(
         bottomBar = {
             if (showBottomBar) {
-                BottomNavigationBar(currentScreen = currentScreen) {
-                    currentScreen = it
-                }
+                GlassmorphicBottomNavigationBar(
+                    currentScreen = currentScreen,
+                    onScreenSelected = { currentScreen = it },
+                    hazeState = hazeState
+                )
             }
         }
     ) { paddingValues ->
@@ -150,18 +153,20 @@ fun MobileAppNavigation() {
                         },
                         onBackPressed = {
                             currentScreen = MobileScreen.MyPlaylists
-                        }
+                        },
+                        hazeState = hazeState,
+                        contentPadding = paddingValues
                     )
                 }
             }
             MobileScreen.Downloads -> {
-                DownloadsScreen(modifier = Modifier.padding(paddingValues))
+                DownloadsScreen()
             }
             MobileScreen.MyList -> {
-                MyListScreen(modifier = Modifier.padding(paddingValues))
+                MyListScreen()
             }
             MobileScreen.Settings -> {
-                SettingsScreen(modifier = Modifier.padding(paddingValues))
+                SettingsScreen()
             }
             MobileScreen.MovieDetails -> {
                 selectedMovie?.let { movie ->
@@ -227,42 +232,6 @@ fun MobileAppNavigation() {
     }
 }
 
-@Composable
-fun BottomNavigationBar(currentScreen: MobileScreen, onScreenSelected: (MobileScreen) -> Unit) {
-    NavigationBar(
-        containerColor = Color(0xFF121212), // Dark background matching the image
-        contentColor = Color.White
-    ) {
-        val navItems = listOf(
-            MobileScreen.Home,
-            MobileScreen.Downloads,
-            MobileScreen.MyList,
-            MobileScreen.Settings
-        )
-
-        navItems.forEach { screen ->
-            val isSelected = currentScreen == screen
-            NavigationBarItem(
-                icon = {
-                    Icon(
-                        imageVector = when (screen) {
-                            MobileScreen.Home -> if (isSelected) Icons.Filled.Home else Icons.Outlined.Home
-                            MobileScreen.Downloads -> if (isSelected) Icons.Filled.Download else Icons.Outlined.Download
-                            MobileScreen.MyList -> if (isSelected) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder
-                            MobileScreen.Settings -> if (isSelected) Icons.Filled.Settings else Icons.Outlined.Settings
-                            else -> Icons.Filled.Home
-                        },
-                        contentDescription = screen.javaClass.simpleName,
-                        tint = Color.White // All icons are white
-                    )
-                },
-                label = { /* Removed label to match the icon-only style in the image */ },
-                selected = isSelected,
-                onClick = { onScreenSelected(screen) }
-            )
-        }
-    }
-}
 
 sealed class MobileScreen {
     object MyPlaylists : MobileScreen()
