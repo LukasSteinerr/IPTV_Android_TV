@@ -67,7 +67,7 @@ fun GlassmorphicBottomNavigationBar(
     Box(
         modifier = Modifier
             .navigationBarsPadding() // Use this first to ensure space is carved out
-            .padding(horizontal = 1.dp) // Apply horizontal padding, reduced to cover more space
+            .padding(horizontal = 0.dp) // Apply horizontal padding, reduced to cover more space
             .padding(vertical = 0.dp) // Apply internal vertical padding, increased to move the bar down
             .fillMaxWidth()
             .height(64.dp)
