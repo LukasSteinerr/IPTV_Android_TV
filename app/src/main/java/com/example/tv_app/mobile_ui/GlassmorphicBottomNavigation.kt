@@ -66,23 +66,10 @@ fun GlassmorphicBottomNavigationBar(
 
     Box(
         modifier = Modifier
-            .navigationBarsPadding() // Use this first to ensure space is carved out
-            .padding(horizontal = 0.dp) // Apply horizontal padding, reduced to cover more space
-            .padding(vertical = 0.dp) // Apply internal vertical padding, increased to move the bar down
             .fillMaxWidth()
+            .background(Color.Black) // Solid black background
+            .navigationBarsPadding() // Apply navigation bar padding
             .height(64.dp)
-            .background(Color.Black.copy(alpha = 0.8f), shape = RectangleShape) // Darker background, rectangular shape
-            .hazeChild(state = hazeState, shape = RectangleShape) // Re-introduce haze for frosting effect, rectangular shape
-            .border(
-                width = Dp.Hairline,
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = .8f),
-                        Color.White.copy(alpha = .2f),
-                    ),
-                ),
-                shape = RectangleShape
-            )
     ) {
         val animatedSelectedTabIndex by animateFloatAsState(
             targetValue = selectedTabIndex.toFloat(),
