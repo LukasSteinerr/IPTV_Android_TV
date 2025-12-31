@@ -359,7 +359,7 @@ fun TimeSlider(
             ) {
                 Row(
                     modifier = Modifier
-                        .size(width = 100.dp, height = 36.dp) // User's desired width
+                        .size(width = 100.dp, height = 30.dp) // User's desired width
                         .padding(horizontal = 16.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
