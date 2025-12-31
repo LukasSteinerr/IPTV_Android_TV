@@ -84,6 +84,7 @@ class MainActivity : FragmentActivity() {
 @Composable
 fun MobileAppNavigation() {
     var currentScreen by remember { mutableStateOf<MobileScreen>(MobileScreen.MyPlaylists) }
+    var playlistRefreshKey by remember { mutableStateOf(0) }
     var selectedPlaylist by remember { mutableStateOf<Playlist?>(null) }
     var selectedMovie by remember { mutableStateOf<Movie?>(null) }
     var selectedTvSeries by remember { mutableStateOf<TvSeries?>(null) }
@@ -114,6 +115,7 @@ fun MobileAppNavigation() {
         when (currentScreen) {
             MobileScreen.MyPlaylists -> {
                 MyPlaylistsScreen(
+                    refreshKey = playlistRefreshKey,
                     playlistService = playlistService,
                     onNavigateToAddPlaylist = {
                         currentScreen = MobileScreen.AddPlaylist
@@ -130,6 +132,10 @@ fun MobileAppNavigation() {
                 AddPlaylistScreen(
                     playlistService = playlistService,
                     onPlaylistAdded = {
+                        playlistRefreshKey++
+                        currentScreen = MobileScreen.MyPlaylists
+                    },
+                    onNavigateUp = {
                         currentScreen = MobileScreen.MyPlaylists
                     },
                     modifier = Modifier.padding(paddingValues)

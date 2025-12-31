@@ -580,9 +580,7 @@ fun Step4_Processing(
             verticalArrangement = Arrangement.Center
         ) {
             if (isLoading) {
-                CircularProgressIndicator(
-                    color = Color.White,
-                    strokeWidth = 4.dp,
+                com.example.tv_app.presentation.components.LoadingIndicator(
                     modifier = Modifier.size(64.dp)
                 )
                 Spacer(modifier = Modifier.height(32.dp))

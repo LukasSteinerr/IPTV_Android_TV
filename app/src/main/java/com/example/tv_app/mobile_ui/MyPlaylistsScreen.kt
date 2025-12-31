@@ -1,42 +1,41 @@
 package com.example.tv_app.mobile_ui
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.outlined.Folder
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
-import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
+import androidx.compose.ui.unit.sp
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.repository.PlaylistService
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
-import androidx.compose.material3.MaterialTheme
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyPlaylistsScreen(
+    refreshKey: Int,
     playlistService: PlaylistService,
     onNavigateToAddPlaylist: () -> Unit,
     onPlaylistSelected: (Playlist) -> Unit = {},
@@ -47,24 +46,14 @@ fun MyPlaylistsScreen(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var playlistToDelete by remember { mutableStateOf<Playlist?>(null) }
 
-    val addButtonFocusRequester = remember { FocusRequester() }
     val coroutineScope = rememberCoroutineScope()
 
-    // Load playlists when the screen is first displayed
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshKey) {
         try {
             playlists = playlistService.getAllPlaylists()
         } catch (e: Exception) {
-            // Handle error
         } finally {
             isLoading = false
-        }
-    }
-
-    // Focus management
-    LaunchedEffect(playlists) {
-        if (playlists.isEmpty()) {
-            addButtonFocusRequester.requestFocus()
         }
     }
 
@@ -72,19 +61,19 @@ fun MyPlaylistsScreen(
         modifier = modifier
             .fillMaxSize()
             .background(
-                androidx.compose.ui.graphics.Brush.radialGradient(
+                Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF1A1F2E),
-                        Color(0xFF0F1419)
-                    ),
-                    radius = 1200f
+                        Color(0xFF0A0A0A),
+                        Color(0xFF121212),
+                        Color(0xFF0A0A0A)
+                    )
                 )
             )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 48.dp, vertical = 32.dp)
+                .padding(horizontal = 24.dp, vertical = 24.dp)
         ) {
             // Header
             Row(
@@ -98,79 +87,76 @@ fun MyPlaylistsScreen(
                     Text(
                         text = "My Playlists",
                         color = Color.White,
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Light,
+                            letterSpacing = 0.5.sp
                         )
                     )
                     Text(
-                        text = "${playlists.size} playlist${if (playlists.size != 1) "s" else ""} available",
-                        color = Color.White.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.bodyMedium
+                        text = "${playlists.size} playlist${if (playlists.size != 1) "s" else ""}",
+                        color = Color.White.copy(alpha = 0.5f),
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            letterSpacing = 1.sp
+                        )
                     )
                 }
 
-                Button(
+                // Minimal add button
+                IconButton(
                     onClick = onNavigateToAddPlaylist,
-                    // Removed focusRequester for mobile optimization
-                    // modifier = Modifier.focusRequester(addButtonFocusRequester),
-                    modifier = Modifier,
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(Color.White.copy(alpha = 0.05f))
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = null,
+                        contentDescription = "Add Playlist",
+                        tint = Color.White,
                         modifier = Modifier.size(20.dp)
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = "Add Playlist")
                 }
             }
 
             // Content area
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(
-                        color = MaterialTheme.colorScheme.primary,
-                        strokeWidth = 4.dp,
-                        modifier = Modifier.size(64.dp)
-                    )
-                }
-            } else if (playlists.isEmpty()) {
-                EmptyPlaylistsState(
-                    onAddPlaylist = onNavigateToAddPlaylist
-                )
-            } else {
-                LazyVerticalGrid(
-                    columns = GridCells.Adaptive(minSize = 280.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    contentPadding = PaddingValues(bottom = 32.dp)
-                ) {
-                    items(playlists) { playlist ->
-                        PlaylistCard(
-                            playlist = playlist,
-                            onClick = { onPlaylistSelected(playlist) },
-                            onDelete = {
-                                playlistToDelete = playlist
-                                showDeleteDialog = true
-                            }
+            when {
+                isLoading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = Color.White.copy(alpha = 0.3f),
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(40.dp)
                         )
+                    }
+                }
+                playlists.isEmpty() -> {
+                    EmptyPlaylistsStateModern()
+                }
+                else -> {
+                    LazyColumn(
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        contentPadding = PaddingValues(bottom = 24.dp)
+                    ) {
+                        items(playlists) { playlist ->
+                            PlaylistCardModern(
+                                playlist = playlist,
+                                onClick = { onPlaylistSelected(playlist) },
+                                onDelete = {
+                                    playlistToDelete = playlist
+                                    showDeleteDialog = true
+                                }
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // Delete confirmation dialog
         if (showDeleteDialog && playlistToDelete != null) {
-            DeletePlaylistDialog(
+            DeletePlaylistDialogModern(
                 playlist = playlistToDelete!!,
                 onConfirm = {
                     val playlistId = playlistToDelete!!.id
@@ -182,7 +168,6 @@ fun MyPlaylistsScreen(
                             playlistService.deletePlaylist(playlistId)
                             playlists = playlistService.getAllPlaylists()
                         } catch (e: Exception) {
-                            // Handle error - could add error state here
                         }
                     }
                 },
@@ -196,99 +181,102 @@ fun MyPlaylistsScreen(
 }
 
 @Composable
-fun PlaylistCard(
+fun PlaylistCardModern(
     playlist: Playlist,
     onClick: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dateFormatter = remember { SimpleDateFormat("MMM dd, yyyy", Locale.getDefault()) }
-    
+
     Card(
         onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(160.dp),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = Color.Black.copy(alpha = 0.4f),
+            containerColor = Color.White.copy(alpha = 0.03f),
             contentColor = Color.White
         ),
-        shape = RoundedCornerShape(16.dp),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.2f))
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.08f))
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            Column(
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Playlist icon
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.SpaceBetween
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Color.White.copy(alpha = 0.05f)),
+                contentAlignment = Alignment.Center
             ) {
-                Column {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = playlist.name,
-                                color = Color.White,
-                                style = MaterialTheme.typography.titleMedium.copy(
-                                    fontWeight = FontWeight.SemiBold
-                                ),
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            
-                            Spacer(modifier = Modifier.height(4.dp))
-                            
-                            Text(
-                                text = playlist.typeName,
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelMedium.copy(
-                                    fontWeight = FontWeight.Medium
-                                )
-                            )
-                        }
-                        
-                        IconButton(
-                            onClick = onDelete,
-                            modifier = Modifier.size(32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Delete,
-                                contentDescription = "Delete playlist",
-                                tint = Color.White.copy(alpha = 0.7f),
-                                modifier = Modifier.size(16.dp)
-                            )
-                        }
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Outlined.Folder,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier.size(24.dp)
+                )
+            }
 
-                Column {
+            Spacer(modifier = Modifier.width(16.dp))
+
+            // Playlist info
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(
+                    text = playlist.name,
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
-                        text = "Last updated: ${dateFormatter.format(playlist.lastUpdated)}",
-                        color = Color.White.copy(alpha = 0.6f),
+                        text = playlist.typeName,
+                        color = Color.White.copy(alpha = 0.5f),
                         style = MaterialTheme.typography.bodySmall
                     )
-                    
-                    if (playlist.isXtream) {
-                        Text(
-                            text = "Username: ${playlist.username ?: "N/A"}",
-                            color = Color.White.copy(alpha = 0.6f),
-                            style = MaterialTheme.typography.bodySmall
-                        )
-                    }
+                    Text(
+                        text = " • ",
+                        color = Color.White.copy(alpha = 0.3f)
+                    )
+                    Text(
+                        text = dateFormatter.format(playlist.lastUpdated),
+                        color = Color.White.copy(alpha = 0.5f),
+                        style = MaterialTheme.typography.bodySmall
+                    )
                 }
+            }
+
+            // Delete button
+            IconButton(
+                onClick = onDelete,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "Delete playlist",
+                    tint = Color.White.copy(alpha = 0.4f),
+                    modifier = Modifier.size(18.dp)
+                )
             }
         }
     }
 }
 
 @Composable
-fun EmptyPlaylistsState(
-    onAddPlaylist: () -> Unit
-) {
+fun EmptyPlaylistsStateModern() {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -297,82 +285,85 @@ fun EmptyPlaylistsState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            // Minimal icon
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.White.copy(alpha = 0.03f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Folder,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.3f),
+                    modifier = Modifier.size(40.dp)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
             Text(
-                text = "📺",
-                style = MaterialTheme.typography.displayLarge,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
-            
-            Text(
-                text = "No Playlists Yet",
+                text = "No Playlists Found",
                 color = Color.White,
-                style = MaterialTheme.typography.headlineMedium.copy(
-                    fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Light
                 ),
                 textAlign = TextAlign.Center
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
-            
+
             Text(
-                text = "Add your first playlist to get started watching your favorite channels",
-                color = Color.White.copy(alpha = 0.7f),
-                style = MaterialTheme.typography.bodyLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.width(300.dp) // Reduced width for mobile
+                text = "Use the '+' button in the top right to add your first playlist.",
+                color = Color.White.copy(alpha = 0.5f),
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center
             )
-            
-            Spacer(modifier = Modifier.height(32.dp))
-            
-            Button(
-                onClick = onAddPlaylist,
-                shape = RoundedCornerShape(8.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
-                ),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(text = "Add First Playlist")
-            }
+            // Removed the add button as per user request
         }
     }
 }
 
 @Composable
-fun DeletePlaylistDialog(
+fun DeletePlaylistDialogModern(
     playlist: Playlist,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color(0xFF1A1A1A),
         title = {
             Text(
                 text = "Delete Playlist",
-                style = MaterialTheme.typography.headlineSmall
+                color = Color.White,
+                style = MaterialTheme.typography.titleLarge
             )
         },
         text = {
             Text(
-                text = "Are you sure you want to delete \"${playlist.name}\"? This action cannot be undone.",
+                text = "Are you sure you want to delete \"${playlist.name}\"?",
+                color = Color.White.copy(alpha = 0.7f),
                 style = MaterialTheme.typography.bodyMedium
             )
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text("Delete")
+            TextButton(
+                onClick = onConfirm
+            ) {
+                Text(
+                    text = "Delete",
+                    color = Color(0xFFEF4444)
+                )
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(
+                    text = "Cancel",
+                    color = Color.White.copy(alpha = 0.7f)
+                )
             }
         }
     )
@@ -380,9 +371,10 @@ fun DeletePlaylistDialog(
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewMyPlaylistsScreenEmpty() {
+fun PreviewMyPlaylistsScreenEmptyModern() {
     MaterialTheme {
         MyPlaylistsScreen(
+            refreshKey = 0,
             playlistService = PlaylistService(),
             onNavigateToAddPlaylist = {},
             onPlaylistSelected = {}
