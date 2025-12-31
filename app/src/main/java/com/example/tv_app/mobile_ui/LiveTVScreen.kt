@@ -143,7 +143,7 @@ fun LiveTVScreen(
                 }
             }
             
-            // Time Slider
+            // Time Slider - positioned from top (appbar) to bottom (before navbar)
             TimeSlider(
                 modifier = Modifier.align(Alignment.TopEnd),
                 selectedTime = selectedTime,
@@ -151,7 +151,7 @@ fun LiveTVScreen(
                 showBumpOut = isInteractingWithSlider,
                 onTimeChange = { newTime -> selectedTime = newTime },
                 onInteractionStart = { isInteractingWithSlider = true },
-                onInteractionEnd = { 
+                onInteractionEnd = {
                     isInteractingWithSlider = false
                     onRefresh()
                 }
@@ -247,13 +247,17 @@ fun TimeSlider(
 
     BoxWithConstraints(modifier = modifier) {
         val actualAvailableHeight = constraints.maxHeight.toFloat()
-        val dynamicHourHeight = actualAvailableHeight / 24f
+        // Account for navbar height (64.dp) to ensure slider ends before navbar
+        val navbarHeightPx = with(LocalDensity.current) { 64.dp.toPx() }
+        val availableSliderHeight = actualAvailableHeight - navbarHeightPx
+        val dynamicHourHeight = availableSliderHeight / 24f
 
         // This Column holds the visible slider bar and refresh button
+        // Height is constrained to availableSliderHeight to ensure it ends before navbar
         Column(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .fillMaxHeight()
+                .height(with(LocalDensity.current) { availableSliderHeight.toDp() })
         ) {
             IconButton(onClick = onInteractionEnd) {
                 Icon(Icons.Default.Refresh, contentDescription = "Refresh EPG", tint = Color.White)
@@ -338,7 +342,7 @@ fun TimeSlider(
             // We need to account for the refresh button's height in our offset calculation.
             // Assuming the IconButton has a default size of 48.dp.
             val refreshButtonHeightPx = with(LocalDensity.current) { 48.dp.toPx() }
-            val sliderAreaHeight = actualAvailableHeight - refreshButtonHeightPx
+            val sliderAreaHeight = availableSliderHeight - refreshButtonHeightPx
             val hourHeightInSlider = sliderAreaHeight / 24f
 
             val selectedHourTopY = hourHeightInSlider * selectedHour + refreshButtonHeightPx
