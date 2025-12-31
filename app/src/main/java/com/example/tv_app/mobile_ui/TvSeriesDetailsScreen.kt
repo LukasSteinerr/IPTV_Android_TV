@@ -261,7 +261,9 @@ private fun Details(
     Box(modifier = modifier.background(Color.Black)) {
         LazyColumn(
             state = lazyListState,
-            contentPadding = PaddingValues(bottom = 16.dp),
+            contentPadding = PaddingValues(
+                bottom = 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            ),
             modifier = Modifier.fillMaxSize(),
         ) {
             // 1. Header with backdrop and play icon overlay

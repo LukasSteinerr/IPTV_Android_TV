@@ -6,6 +6,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -196,7 +199,9 @@ private fun Details(
     Box(modifier = modifier.background(Color.Black)) { // Ensure background is black for Netflix look
         LazyColumn(
             state = lazyListState,
-            contentPadding = PaddingValues(bottom = 16.dp),
+            contentPadding = PaddingValues(
+                bottom = 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+            ),
             modifier = Modifier.fillMaxSize(),
         ) {
             // 1. Header with backdrop and play icon overlay

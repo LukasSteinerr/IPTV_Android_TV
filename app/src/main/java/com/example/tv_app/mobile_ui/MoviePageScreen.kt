@@ -116,7 +116,7 @@ fun MoviePageScreen(
                 ),
                 contentPadding = PaddingValues(
                     top = contentPadding.calculateTopPadding(),
-                    bottom = contentPadding.calculateBottomPadding() + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+                    bottom = contentPadding.calculateBottomPadding() + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 20.dp
                 ),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
