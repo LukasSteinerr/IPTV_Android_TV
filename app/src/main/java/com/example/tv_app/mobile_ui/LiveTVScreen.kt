@@ -156,6 +156,38 @@ fun LiveTVScreen(
                     onRefresh()
                 }
             )
+
+            // Drawer Notch Indicator (left side)
+            DrawerNotchIndicator(
+                modifier = Modifier.align(Alignment.CenterStart),
+                drawerState = drawerState,
+                onClick = { scope.launch { drawerState.open() } }
+            )
+        }
+    }
+}
+
+@Composable
+fun DrawerNotchIndicator(
+    drawerState: DrawerState,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    if (drawerState.isClosed) {
+        Box(
+            modifier = modifier
+                .fillMaxHeight(0.2f) // Use 20% of parent height and rely on parent's Alignment.CenterStart for vertical centering
+                .clickable(onClick = onClick)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .fillMaxHeight() // Fill the 20% height of the parent Box
+                    .background(
+                        color = Color.White.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp)
+                    )
+            )
         }
     }
 }
