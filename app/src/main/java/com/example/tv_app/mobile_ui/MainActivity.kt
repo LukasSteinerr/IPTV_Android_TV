@@ -16,6 +16,7 @@ import androidx.tv.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.tv.material3.ExperimentalTvMaterial3Api
@@ -94,7 +95,9 @@ fun MobileAppNavigation() {
     
     // Create a shared ViewModel for the video player
     val videoPlayerViewModel = remember { VideoPlayerViewModel() }
+
     val hazeState = remember { HazeState() }
+    val context = LocalContext.current
 
     val showBottomBar = when (currentScreen) {
         MobileScreen.Home, MobileScreen.Downloads, MobileScreen.MyList, MobileScreen.Settings -> true
@@ -191,6 +194,13 @@ fun MobileAppNavigation() {
                             Log.d("MainActivity", "Playing movie: ${movie.name}")
                             videoPlayerViewModel.loadMovie(movie)
                             currentScreen = MobileScreen.VideoPlayer
+                        },
+                        onDownloadMovie = { movieToDownload ->
+                            // Use a repository initialized in the activity or remember here
+                            val repo = com.example.tv_app.repository.DownloadRepository(context)
+                            repo.downloadMovie(movieToDownload)
+                            // Optionally show a toast
+                            android.widget.Toast.makeText(context, "Downloading ${movieToDownload.name}...", android.widget.Toast.LENGTH_SHORT).show()
                         },
                         modifier = Modifier.padding(paddingValues)
                     )

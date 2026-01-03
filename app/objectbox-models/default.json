@@ -475,9 +475,68 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "10:2669605815683971588",
+      "lastPropertyId": "10:200195670545614139",
+      "name": "DownloadedMovie",
+      "properties": [
+        {
+          "id": "1:7339188158006042958",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:3760700000381303892",
+          "name": "movieId",
+          "type": 6
+        },
+        {
+          "id": "3:1573424805958349264",
+          "name": "movieName",
+          "type": 9
+        },
+        {
+          "id": "4:7110655892423164009",
+          "name": "streamUrl",
+          "type": 9
+        },
+        {
+          "id": "5:3040336537902804444",
+          "name": "posterUrl",
+          "type": 9
+        },
+        {
+          "id": "6:2361953724621907570",
+          "name": "backdropUrl",
+          "type": 9
+        },
+        {
+          "id": "7:7643422328004034435",
+          "name": "downloadId",
+          "type": 6
+        },
+        {
+          "id": "8:957078112827809955",
+          "name": "status",
+          "type": 5
+        },
+        {
+          "id": "9:6929738593588240034",
+          "name": "progress",
+          "type": 5
+        },
+        {
+          "id": "10:200195670545614139",
+          "name": "localPath",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "9:4292307316068510900",
+  "lastEntityId": "10:2669605815683971588",
   "lastIndexId": "11:9119486359237475455",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
