@@ -408,10 +408,4 @@ class PlaylistService {
             syncedSimilarTvSeries
         }
     }
-
-    suspend fun updateMovie(movie: Movie) {
-        withContext(Dispatchers.IO) {
-            movieBox.put(movie)
-        }
-    }
 }

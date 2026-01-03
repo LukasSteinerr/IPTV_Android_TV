@@ -193,8 +193,8 @@ fun MovieCategoryRow(
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(horizontal = 16.dp)
-        ) { 
-            items(movies) { movie ->
+        ) {
+            items(movies, key = { it.id }) { movie ->
                 MovieCard(
                     movie = movie,
                     tmdbImageProvider = tmdbImageProvider,

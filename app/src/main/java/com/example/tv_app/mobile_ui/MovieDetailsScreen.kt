@@ -34,9 +34,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -75,6 +75,7 @@ import com.example.tv_app.model.Cast
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.MoviePalette
 import com.example.tv_app.model.MovieReviewsAndRatings
+import com.example.tv_app.model.ObjectBox
 import com.example.tv_app.presentation.common.MovieCard
 import com.example.tv_app.presentation.common.TMDBPosterImage
 import com.example.tv_app.presentation.utils.createVerticalBackgroundGradient
@@ -111,6 +112,7 @@ fun MovieDetailsScreen(
     var isLoading by remember { mutableStateOf(true) }
     var posterUrl by remember { mutableStateOf<String?>(null) }
     var backdropUrl by remember { mutableStateOf<String?>(null) }
+    var isLiked by remember(movie.id) { mutableStateOf(movie.myList == 1) }
 
     val coroutineScope = rememberCoroutineScope()
     val tmdbService = remember { TMDBService() }
@@ -265,19 +267,27 @@ fun MovieDetailsScreen(
                 cast = cast,
                 similarMovies = similarMovies,
                 genres = genres,
+                isLiked = isLiked,
                 onPlayMovie = { onPlayMovie(displayMovie) },
                 onDownloadMovie = { onDownloadMovie(displayMovie) },
-                onToggleFavorite = {
-                    val newStatus = if (displayMovie.myList == 1) 0 else 1
-                    val updatedMovie = displayMovie.copy(myList = newStatus)
-                    if (movieDetails != null) {
-                        movieDetails = updatedMovie
-                    } else {
-                        // Initialize movieDetails with the updated movie to reflect change
-                        movieDetails = updatedMovie
-                    }
+                onToggleMyList = { targetMovie ->
+                    // Immediate UI Update
+                    isLiked = !isLiked
                     coroutineScope.launch {
-                        playlistService.updateMovie(updatedMovie)
+                        val movieBox = ObjectBox.boxStore.boxFor(Movie::class.java)
+                        val dbMovie = movieBox.get(targetMovie.id)
+                        val newStatus = if (isLiked) 1 else 0
+
+                        if (dbMovie != null) {
+                            dbMovie.myList = newStatus
+                            movieBox.put(dbMovie)
+                        }
+                        // Update the transient object too to keep consistency if needed elsewhere
+                        targetMovie.myList = newStatus
+                        // If we have detailed info, update it too
+                        if (movieDetails != null) {
+                           movieDetails = movieDetails!!.copy(myList = newStatus)
+                        }
                     }
                 },
                 onBackPressed = onBackPressed,
@@ -299,10 +309,10 @@ private fun Details(
     cast: List<Cast>,
     similarMovies: List<Movie>,
     genres: List<String>,
+    isLiked: Boolean,
     onPlayMovie: () -> Unit,
-
     onDownloadMovie: () -> Unit,
-    onToggleFavorite: () -> Unit,
+    onToggleMyList: (Movie) -> Unit,
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit,
     lazyListState: LazyListState,
@@ -380,9 +390,9 @@ private fun Details(
                         onClick = onDownloadMovie
                     )
                     Spacer(modifier = Modifier.width(16.dp))
-                    FavoriteButton(
-                        isFavorite = movieDetails.myList == 1,
-                        onClick = onToggleFavorite
+                    HeartButton(
+                        isLiked = isLiked,
+                        onClick = { onToggleMyList(movieDetails) }
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -575,27 +585,26 @@ private fun DownloadButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun FavoriteButton(
-    isFavorite: Boolean,
+private fun HeartButton(
+    isLiked: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier
-            .size(40.dp),
+        modifier = modifier.size(40.dp),
         contentPadding = PaddingValues(0.dp),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = Color.White
+            containerColor = if (isLiked) Color.White else Color.Transparent,
+            contentColor = if (isLiked) Color.Black else Color.White
         ),
-        border = BorderStroke(1.dp, Color.White),
+        border = if (isLiked) null else BorderStroke(1.dp, Color.White),
         shape = CircleShape
     ) {
         Icon(
-            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-            modifier = Modifier.size(20.dp),
-            tint = Color.White
+            imageVector = if (isLiked) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+            contentDescription = if (isLiked) "Remove from My List" else "Add to My List",
+            modifier = Modifier.size(20.dp)
         )
     }
 }
