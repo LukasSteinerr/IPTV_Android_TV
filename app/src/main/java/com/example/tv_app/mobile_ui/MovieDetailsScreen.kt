@@ -35,6 +35,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -93,6 +94,7 @@ fun MovieDetailsScreen(
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit = {},
     onPlayMovie: (Movie) -> Unit = {},
+    onDownloadMovie: (Movie) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     // Force recomposition when key changes
@@ -262,6 +264,7 @@ fun MovieDetailsScreen(
                 similarMovies = similarMovies,
                 genres = genres,
                 onPlayMovie = { onPlayMovie(displayMovie) },
+                onDownloadMovie = { onDownloadMovie(displayMovie) },
                 onBackPressed = onBackPressed,
                 onMovieSelected = onMovieSelected,
                 lazyListState = lazyListState,
@@ -282,6 +285,7 @@ private fun Details(
     similarMovies: List<Movie>,
     genres: List<String>,
     onPlayMovie: () -> Unit,
+    onDownloadMovie: () -> Unit,
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit,
     lazyListState: LazyListState,
@@ -338,17 +342,28 @@ private fun Details(
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
-            // 3. Trailer Button (Bekijk trailer)
-            if (!movieDetails.trailer.isNullOrBlank()) {
-                item {
-                    WatchTrailerButton(
-                        trailerUrl = movieDetails.trailer!!,
-                        modifier = Modifier.padding(horizontal = MobilePadding)
+            // 3. Action Buttons (Trailer and Download)
+            item {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = MobilePadding),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Trailer button only shows if trailer exists
+                    if (!movieDetails.trailer.isNullOrBlank()) {
+                        WatchTrailerButton(
+                            trailerUrl = movieDetails.trailer!!,
+                            modifier = Modifier // Uses internal fillMaxWidth(0.6f) relative to this Row
+                        )
+                        Spacer(modifier = Modifier.width(16.dp))
+                    }
+                    DownloadButton(
+                        onClick = onDownloadMovie
                     )
                 }
-                item {
-                    Spacer(modifier = Modifier.height(16.dp))
-                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             // 4. Metadata (Runtime, Genres, Rating icons)
@@ -512,6 +527,27 @@ private fun WatchTrailerButton(
         Text(
             text = stringResource(id = R.string.watch_trailer),
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+        )
+    }
+}
+
+@Composable
+private fun DownloadButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier
+            .size(40.dp), // Small size, matches WatchTrailerButton height
+        contentPadding = PaddingValues(0.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = Color.White
+        ),
+        border = BorderStroke(1.dp, Color.White),
+        shape = CircleShape
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Download,
+            contentDescription = "Download movie",
+            modifier = Modifier.size(20.dp)
         )
     }
 }
