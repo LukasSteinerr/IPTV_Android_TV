@@ -178,7 +178,17 @@ fun MobileAppNavigation() {
                 )
             }
             MobileScreen.MyList -> {
-                MyListScreen()
+                MyListScreen(
+                    onMovieSelected = { movie ->
+                        selectedMovie = movie
+                        currentScreen = MobileScreen.MovieDetails
+                    },
+                    onTvSeriesSelected = { series ->
+                        selectedTvSeries = series
+                        currentScreen = MobileScreen.TvSeriesDetails
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
             }
             MobileScreen.Settings -> {
                 SettingsScreen()
