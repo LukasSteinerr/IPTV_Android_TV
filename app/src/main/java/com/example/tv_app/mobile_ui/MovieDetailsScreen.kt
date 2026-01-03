@@ -36,6 +36,8 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -265,6 +267,19 @@ fun MovieDetailsScreen(
                 genres = genres,
                 onPlayMovie = { onPlayMovie(displayMovie) },
                 onDownloadMovie = { onDownloadMovie(displayMovie) },
+                onToggleFavorite = {
+                    val newStatus = if (displayMovie.myList == 1) 0 else 1
+                    val updatedMovie = displayMovie.copy(myList = newStatus)
+                    if (movieDetails != null) {
+                        movieDetails = updatedMovie
+                    } else {
+                        // Initialize movieDetails with the updated movie to reflect change
+                        movieDetails = updatedMovie
+                    }
+                    coroutineScope.launch {
+                        playlistService.updateMovie(updatedMovie)
+                    }
+                },
                 onBackPressed = onBackPressed,
                 onMovieSelected = onMovieSelected,
                 lazyListState = lazyListState,
@@ -285,7 +300,9 @@ private fun Details(
     similarMovies: List<Movie>,
     genres: List<String>,
     onPlayMovie: () -> Unit,
+
     onDownloadMovie: () -> Unit,
+    onToggleFavorite: () -> Unit,
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit,
     lazyListState: LazyListState,
@@ -361,6 +378,11 @@ private fun Details(
                     }
                     DownloadButton(
                         onClick = onDownloadMovie
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    FavoriteButton(
+                        isFavorite = movieDetails.myList == 1,
+                        onClick = onToggleFavorite
                     )
                 }
                 Spacer(modifier = Modifier.height(16.dp))
@@ -548,6 +570,32 @@ private fun DownloadButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
             imageVector = Icons.Filled.Download,
             contentDescription = "Download movie",
             modifier = Modifier.size(20.dp)
+        )
+    }
+}
+
+@Composable
+private fun FavoriteButton(
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier
+            .size(40.dp),
+        contentPadding = PaddingValues(0.dp),
+        colors = ButtonDefaults.outlinedButtonColors(
+            contentColor = Color.White
+        ),
+        border = BorderStroke(1.dp, Color.White),
+        shape = CircleShape
+    ) {
+        Icon(
+            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+            contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+            modifier = Modifier.size(20.dp),
+            tint = Color.White
         )
     }
 }
