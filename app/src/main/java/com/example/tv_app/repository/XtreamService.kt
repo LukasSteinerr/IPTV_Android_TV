@@ -318,6 +318,64 @@ class XtreamService(private val epgParserService: EpgParserService) {
         return "${uri.scheme}://${uri.host}:${uri.port}"
     }
 
+    /**
+     * Fetches and updates VOD movie info from the player API.
+     * Used when a movie doesn't have a TMDB ID.
+     * @param baseUrl The base URL of the Xtream service
+     * @param username The username for authentication
+     * @param password The password for authentication
+     * @param movie The Movie object to update
+     * @return The updated Movie object, or null if fetching failed.
+     */
+    suspend fun updateMovieVodInfo(baseUrl: String, username: String, password: String, movie: Movie): Movie? {
+        val vodId = movie.streamId
+        if (vodId == null) return null
+
+        return try {
+            val url = "$baseUrl/player_api.php?username=$username&password=$password&action=get_vod_info&vod_id=$vodId"
+            val response: HttpResponse = client.get(url)
+            val content = response.bodyAsText()
+            android.util.Log.d("XtreamService", "Raw VOD Info response for vod_id $vodId: $content")
+            val jsonObject = Json.parseToJsonElement(content).jsonObject
+            
+            // The details are nested under the "info" key
+            val infoObject = jsonObject["info"]?.jsonObject ?: jsonObject
+            
+            // Update Movie fields directly from the response
+            val fetchedDescription = infoObject["plot"]?.jsonPrimitive?.content
+                ?: infoObject["description"]?.jsonPrimitive?.content
+            
+            android.util.Log.d("XtreamService", "VOD Info fetched description for ${movie.name}: $fetchedDescription")
+
+            movie.description = fetchedDescription
+            movie.backdropUrl = infoObject["backdrop_path"]?.jsonPrimitive?.content
+            
+            // Use movie_image as coverUrl/posterUrl for consistency
+            val movieImage = infoObject["movie_image"]?.jsonPrimitive?.content
+            movie.coverUrl = movieImage ?: movie.coverUrl
+            movie.posterUrl = movieImage ?: movie.posterUrl
+            
+            movie.rating = infoObject["rating"]?.jsonPrimitive?.content
+            movie.duration = infoObject["duration"]?.jsonPrimitive?.content
+            movie.year = infoObject["releasedate"]?.jsonPrimitive?.content
+            movie.trailer = infoObject["trailer"]?.jsonPrimitive?.content
+            
+            // Extract and map cast list to the new castList field
+            val castList = mutableListOf<String>()
+            infoObject["cast"]?.jsonPrimitive?.content?.split(",")?.forEach { name ->
+                castList.add(name.trim())
+            }
+            if (castList.isNotEmpty()) {
+                movie.castList = castList
+            }
+
+            movie
+        } catch (e: Exception) {
+            android.util.Log.e("XtreamService", "Failed to fetch VOD info for vod_id: $vodId", e)
+            null
+        }
+    }
+
     suspend fun fetchAndStoreEpgData(
         baseUrl: String,
         user: String,

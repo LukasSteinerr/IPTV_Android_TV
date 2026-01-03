@@ -26,6 +26,8 @@ data class Movie(
     var myList: Int? = null,
     var isFeatured: Boolean = false
 ) {
+    var castList: List<String>? = null
+
     @Transient
     var cast: List<Cast>? = null
 

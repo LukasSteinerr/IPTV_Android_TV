@@ -75,9 +75,11 @@ import com.example.tv_app.model.MovieReviewsAndRatings
 import com.example.tv_app.presentation.common.MovieCard
 import com.example.tv_app.presentation.common.TMDBPosterImage
 import com.example.tv_app.presentation.utils.createVerticalBackgroundGradient
+import com.example.tv_app.repository.EpgParserService
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.repository.TMDBService
+import com.example.tv_app.repository.XtreamService
 import kotlinx.coroutines.launch
 
 // Define constant for fixed mobile padding
@@ -87,7 +89,7 @@ private val MobilePadding = 16.dp
 fun MovieDetailsScreen(
     key: Int = 0, // Key to force recomposition
     movie: Movie,
-    @Suppress("UNUSED_PARAMETER") playlistService: PlaylistService,
+    playlistService: PlaylistService,
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit = {},
     onPlayMovie: (Movie) -> Unit = {},
@@ -108,6 +110,7 @@ fun MovieDetailsScreen(
 
     val coroutineScope = rememberCoroutineScope()
     val tmdbService = remember { TMDBService() }
+    val xtreamService = remember { XtreamService(EpgParserService()) }
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
     val lazyListState = rememberLazyListState()
 
@@ -118,12 +121,40 @@ fun MovieDetailsScreen(
         }
     }
 
-    LaunchedEffect(movie.tmdbId) {
+    LaunchedEffect(movie.tmdbId, movie.streamId) {
         isLoading = true
         coroutineScope.launch {
-            if (movie.tmdbId == null) {
-                movieDetails = movie
-                backdropUrl = movie.backdropUrl ?: movie.posterUrl
+            if (movie.tmdbId.isNullOrBlank() || movie.tmdbId == "0") {
+                // No TMDB ID - Fetch VOD info from Xtream API using stream_id and persist it locally
+                val playlist = movie.playlist.target
+                if (playlist != null) {
+                    android.util.Log.d("MovieDetailsScreen", "Playlist found: ${playlist.name}. Attempting VOD info fetch.")
+                    try {
+                        val updatedMovie = playlistService.updateMovieInfo(movie, playlist)
+                        
+                        movieDetails = updatedMovie
+                        
+                        // Update local state from the now-persisted fields
+                        posterUrl = updatedMovie.posterUrl ?: updatedMovie.coverUrl
+                        backdropUrl = updatedMovie.backdropUrl ?: updatedMovie.posterUrl
+
+                        // Map persistent castList to transient Cast model for UI display
+                        cast = updatedMovie.castList?.map { name ->
+                            Cast(name = name, profilePath = null, character = "")
+                        } ?: emptyList()
+                        
+                        android.util.Log.d("MovieDetailsScreen", "VOD Info fetch successful. New description length: ${updatedMovie.description?.length}")
+
+                    } catch (e: Exception) {
+                        android.util.Log.e("MovieDetailsScreen", "VOD Info fetch failed for ${movie.streamId}", e)
+                        movieDetails = movie
+                        backdropUrl = movie.backdropUrl ?: movie.posterUrl
+                    }
+                } else {
+                    android.util.Log.e("MovieDetailsScreen", "Error: Playlist is null for movie ${movie.name}")
+                    movieDetails = movie
+                    backdropUrl = movie.backdropUrl ?: movie.posterUrl
+                }
                 isLoading = false
                 return@launch
             }
@@ -293,6 +324,14 @@ private fun Details(
                     text = movieDetails.name,
                     style = MaterialTheme.typography.headlineLarge,
                     color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = MobilePadding)
+                )
+                // Display stream ID for debugging purposes
+                Text(
+                    text = "Stream ID: ${movieDetails.streamId}",
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                    color = Color.Red,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = MobilePadding)
                 )

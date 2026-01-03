@@ -87,7 +87,7 @@
     },
     {
       "id": "4:3527522455076738074",
-      "lastPropertyId": "20:2814210229635274732",
+      "lastPropertyId": "21:6542645177140845024",
       "name": "Movie",
       "properties": [
         {
@@ -196,6 +196,11 @@
           "type": 11,
           "flags": 520,
           "relationTarget": "Playlist"
+        },
+        {
+          "id": "21:6542645177140845024",
+          "name": "castList",
+          "type": 30
         }
       ],
       "relations": []

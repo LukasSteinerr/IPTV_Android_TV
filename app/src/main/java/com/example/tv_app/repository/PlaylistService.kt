@@ -338,6 +338,29 @@ class PlaylistService {
             )
         }
     }
+    
+    /**
+     * Fetches VOD info for a movie without a TMDB ID and updates the local movie object.
+     * @param movie The movie to update.
+     * @param playlist The associated playlist for connection details.
+     * @return The updated Movie object, or the original if update failed.
+     */
+    suspend fun updateMovieInfo(movie: Movie, playlist: Playlist): Movie {
+        return withContext(Dispatchers.IO) {
+            val baseUrl = xtreamService.getBaseUrl(playlist.url)
+            val username = playlist.username ?: ""
+            val password = playlist.password ?: ""
+
+            val updatedMovie = xtreamService.updateMovieVodInfo(baseUrl, username, password, movie)
+
+            if (updatedMovie != null) {
+                movieBox.put(updatedMovie)
+                return@withContext updatedMovie
+            } else {
+                return@withContext movie
+            }
+        }
+    }
 
     suspend fun crossReferenceSimilarMovies(similarMovies: List<Movie>): List<Movie> {
         return withContext(Dispatchers.IO) {
