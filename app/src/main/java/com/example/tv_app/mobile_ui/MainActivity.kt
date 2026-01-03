@@ -16,7 +16,6 @@ import androidx.tv.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.tv.material3.ExperimentalTvMaterial3Api
@@ -95,9 +94,7 @@ fun MobileAppNavigation() {
     
     // Create a shared ViewModel for the video player
     val videoPlayerViewModel = remember { VideoPlayerViewModel() }
-
     val hazeState = remember { HazeState() }
-    val context = LocalContext.current
 
     val showBottomBar = when (currentScreen) {
         MobileScreen.Home, MobileScreen.Downloads, MobileScreen.MyList, MobileScreen.Settings -> true
@@ -169,7 +166,16 @@ fun MobileAppNavigation() {
                 }
             }
             MobileScreen.Downloads -> {
-                DownloadsScreen()
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val downloadRepository = remember { com.example.tv_app.repository.DownloadRepository(context) }
+                DownloadsScreen(
+                    downloadRepository = downloadRepository,
+                    onPlayMovie = { downloadedMovie ->
+                        // TODO: Implement local playback
+                        // For now we can maybe map it back to a Movie object or use a separate player launcher
+                        Log.d("MainActivity", "Play local: ${downloadedMovie.localPath}")
+                    }
+                )
             }
             MobileScreen.MyList -> {
                 MyListScreen()
@@ -178,6 +184,9 @@ fun MobileAppNavigation() {
                 SettingsScreen()
             }
             MobileScreen.MovieDetails -> {
+                val context = androidx.compose.ui.platform.LocalContext.current
+                val downloadRepository = remember { com.example.tv_app.repository.DownloadRepository(context) }
+                
                 selectedMovie?.let { movie ->
                     MovieDetailsScreen(
                         key = movieDetailsKey, // Force recomposition when key changes
@@ -195,12 +204,9 @@ fun MobileAppNavigation() {
                             videoPlayerViewModel.loadMovie(movie)
                             currentScreen = MobileScreen.VideoPlayer
                         },
-                        onDownloadMovie = { movieToDownload ->
-                            // Use a repository initialized in the activity or remember here
-                            val repo = com.example.tv_app.repository.DownloadRepository(context)
-                            repo.downloadMovie(movieToDownload)
-                            // Optionally show a toast
-                            android.widget.Toast.makeText(context, "Downloading ${movieToDownload.name}...", android.widget.Toast.LENGTH_SHORT).show()
+                        onDownloadMovie = { movie ->
+                            downloadRepository.downloadMovie(movie)
+                            // Optional: Show toast or feedback
                         },
                         modifier = Modifier.padding(paddingValues)
                     )

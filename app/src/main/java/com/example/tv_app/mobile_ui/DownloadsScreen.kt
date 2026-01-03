@@ -1,12 +1,13 @@
 package com.example.tv_app.mobile_ui
 
-import android.app.DownloadManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -15,121 +16,90 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DownloadDone
+import androidx.compose.material.icons.filled.Downloading
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import coil.request.ImageRequest
 import com.example.tv_app.model.DownloadedMovie
 import com.example.tv_app.repository.DownloadRepository
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import com.example.tv_app.repository.TMDBService
 
 @Composable
-fun DownloadsScreen(modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val downloadRepository = remember { DownloadRepository(context) }
-    var downloads by remember { mutableStateOf(emptyList<DownloadedMovie>()) }
-    var downloadStates by remember { mutableStateOf(mapOf<Long, Pair<Int, Int>>()) }
-    val coroutineScope = rememberCoroutineScope()
-
-    LaunchedEffect(Unit) {
-        while(true) {
-            val currentDownloads = downloadRepository.getAllDownloads()
-            downloads = currentDownloads
-            
-            val states = mutableMapOf<Long, Pair<Int, Int>>()
-            currentDownloads.forEach { movie ->
-                 val status = downloadRepository.getDownloadStatus(movie.downloadId)
-                 val progress = downloadRepository.updateDownloadAuth(movie.downloadId)
-                 states[movie.downloadId] = status to progress
-                 
-                 // If status is successful, ensure progress is 100
-                 if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                     states[movie.downloadId] = status to 100
-                 }
-            }
-            downloadStates = states
-            delay(1000)
-        }
-    }
+fun DownloadsScreen(
+    downloadRepository: DownloadRepository,
+    onPlayMovie: (DownloadedMovie) -> Unit = {}
+) {
+    val downloads by downloadRepository.getAllDownloadsFlow().collectAsState(initial = emptyList())
 
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black)
+            .background(Color.Black) // Dark background
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            Text(
-                text = "Downloads",
-                style = MaterialTheme.typography.headlineLarge,
-                color = Color.White,
-                modifier = Modifier
-                    .padding(16.dp)
-                    .padding(top = 16.dp)
-            )
-
-            if (downloads.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
+        if (downloads.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Icon(
+                        imageVector = Icons.Filled.Downloading,
+                        contentDescription = null,
+                        tint = Color.Gray,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "No downloads yet",
-                        color = Color.Gray,
-                        style = MaterialTheme.typography.bodyLarge
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.Gray
                     )
                 }
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(downloads, key = { it.id }) { movie ->
-                        val state = downloadStates[movie.downloadId] ?: (DownloadManager.STATUS_PENDING to 0)
-                        DownloadItem(
-                            movie = movie,
-                            status = state.first,
-                            progress = state.second,
-                            onDelete = {
-                                downloadRepository.removeDownload(movie.downloadId)
-                                // Force refresh immediately provided by the loop next tick, 
-                                // but we can also manually trigger or wait.
-                                // For better UX, remove from list immediately?
-                                // The loop updates `downloads` every second, so it might lag a bit.
-                                // Let's just update local list for instant feedback
-                                downloads = downloads.filter { it.downloadId != movie.downloadId }
-                            }
-                        )
-                    }
+            }
+        } else {
+            LazyColumn(
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxSize()
+            ) {
+                item {
+                    Text(
+                        text = "Downloads",
+                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.White,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+                }
+
+                items(downloads, key = { it.id }) { download ->
+                    DownloadItem(
+                        download = download,
+                        onPause = { downloadRepository.pauseDownload(download.id) },
+                        onResume = { downloadRepository.resumeDownload(download.id) },
+                        onDelete = { downloadRepository.deleteDownload(download.id) },
+                        onPlay = { onPlayMovie(download) }
+                    )
                 }
             }
         }
@@ -138,114 +108,91 @@ fun DownloadsScreen(modifier: Modifier = Modifier) {
 
 @Composable
 fun DownloadItem(
-    movie: DownloadedMovie,
-    status: Int,
-    progress: Int,
-    onDelete: () -> Unit
+    download: DownloadedMovie,
+    onPause: () -> Unit,
+    onResume: () -> Unit,
+    onDelete: () -> Unit,
+    onPlay: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(100.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.DarkGray.copy(alpha = 0.5f))
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Backdrop Image (Left)
-            Box(
+            // Backdrop Image
+            AsyncImage(
+                model = download.backdropUrl?.let { TMDBService.getBackdropUrl(it) } ?: download.posterUrl?.let { TMDBService.getPosterUrl(it) },
+                contentDescription = download.movieName,
+                contentScale = ContentScale.Crop,
                 modifier = Modifier
-                    .width(160.dp)
-                    .fillMaxSize()
-            ) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(movie.backdropUrl ?: movie.posterUrl)
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                
-                // Overlay for better text visibility if needed, or play button if ready
-                if (status == DownloadManager.STATUS_SUCCESSFUL) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.3f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Play",
-                            tint = Color.White,
-                            modifier = Modifier.size(32.dp)
-                        )
-                    }
-                }
-            }
+                    .width(100.dp)
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.DarkGray)
+            )
 
-            // Content (Right)
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Info & Progress
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = movie.movieName,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    text = download.movieName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                
+                Spacer(modifier = Modifier.height(8.dp))
 
-                when (status) {
-                    DownloadManager.STATUS_RUNNING -> {
-                         Row(
-                             verticalAlignment = Alignment.CenterVertically,
-                             horizontalArrangement = Arrangement.spacedBy(8.dp)
-                         ) {
+                when (download.status) {
+                    DownloadedMovie.STATUS_DOWNLOADING, DownloadedMovie.STATUS_PAUSED -> {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
                              LinearProgressIndicator(
-                                 progress = { progress / 100f },
-                                 modifier = Modifier.weight(1f).height(4.dp),
-                                 color = MaterialTheme.colorScheme.primary,
-                                 trackColor = Color.Gray.copy(alpha = 0.5f),
-                             )
-                             Text(
-                                 text = "$progress%",
-                                 style = MaterialTheme.typography.labelSmall,
-                                 color = Color.LightGray
-                             )
-                         }
+                                progress = { download.progress / 100f },
+                                modifier = Modifier.weight(1f).height(4.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                trackColor = Color.Gray.copy(alpha = 0.3f),
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = "${download.progress}%",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.Gray
+                            )
+                        }
+                         Spacer(modifier = Modifier.height(4.dp))
+                         Text(
+                             text = if(download.status == DownloadedMovie.STATUS_PAUSED) "Paused" else "Downloading...",
+                             style = MaterialTheme.typography.labelSmall,
+                             color = if(download.status == DownloadedMovie.STATUS_PAUSED) Color.Yellow else Color.Green
+                         )
                     }
-                    DownloadManager.STATUS_PENDING -> {
-                        Text(
-                            text = "Waiting...",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Gray
-                        )
+                    DownloadedMovie.STATUS_COMPLETED -> {
+                         Text(
+                             text = "Completed",
+                             style = MaterialTheme.typography.labelSmall,
+                             color = Color.Green
+                         )
                     }
-                    DownloadManager.STATUS_SUCCESSFUL -> {
-                        Text(
-                            text = "Downloaded",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Green
-                        )
-                    }
-                    DownloadManager.STATUS_FAILED -> {
+                    DownloadedMovie.STATUS_FAILED -> {
                         Text(
                             text = "Failed",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.Red
                         )
                     }
-                    else -> {
-                         Text(
-                            text = "Paused",
+                     else -> {
+                        Text(
+                            text = "Pending",
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.Gray
                         )
@@ -253,13 +200,41 @@ fun DownloadItem(
                 }
             }
 
-            // Delete Button
-            IconButton(onClick = onDelete) {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = Color.Gray
-                )
+            // Actions
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (download.status == DownloadedMovie.STATUS_COMPLETED) {
+                    IconButton(onClick = onPlay) {
+                        Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = "Play",
+                            tint = Color.White
+                        )
+                    }
+                } else if (download.status == DownloadedMovie.STATUS_DOWNLOADING) {
+                    IconButton(onClick = onPause) {
+                        Icon(
+                            imageVector = Icons.Filled.Pause,
+                            contentDescription = "Pause",
+                            tint = Color.White
+                        )
+                    }
+                } else if (download.status == DownloadedMovie.STATUS_PAUSED || download.status == DownloadedMovie.STATUS_FAILED) {
+                     IconButton(onClick = onResume) {
+                        Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = "Resume",
+                            tint = Color.White
+                        )
+                    }
+                }
+
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Delete",
+                        tint = Color.Red.copy(alpha = 0.7f)
+                    )
+                }
             }
         }
     }
