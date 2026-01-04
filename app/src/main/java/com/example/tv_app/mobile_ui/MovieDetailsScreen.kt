@@ -322,11 +322,12 @@ private fun Details(
 ) {
     BackHandler(onBack = onBackPressed)
 
-    // Use the dynamic gradient for the main screen background
+    // Set a solid black background color for the entire screen.
+    // The palette-based gradient will be applied internally to the header content so it scrolls away.
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(brush = createVerticalBackgroundGradient(moviePalette))
+            .background(Color.Black)
     ) {
         // Main scrollable content
         LazyColumn(
@@ -337,75 +338,77 @@ private fun Details(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally // Center movie poster
         ) {
-            // 1. Movie Poster Card
             item {
-                MoviePosterCard(
-                    movie = movieDetails,
-                    tmdbImageProvider = tmdbImageProvider,
-                    modifier = Modifier
-                        .padding(top = 80.dp, bottom = 16.dp)
-                        .width(160.dp) // Set width to match image ratio
-                        .aspectRatio(1f / 1.5f) // Portrait aspect ratio
-                )
-            }
-
-            // 2. Title
-            item {
-                Text(
-                    text = movieDetails.name,
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = MobilePadding)
-                )
-                // Display stream ID for debugging purposes
-                Text(
-                    text = "Stream ID: ${movieDetails.streamId}",
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                    color = Color.Red,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = MobilePadding)
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-            }
-
-            // 3. Action Buttons (Trailer and Download)
-            item {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = MobilePadding),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
+                        // Apply the palette gradient to the top content area so it scrolls away
+                        .background(brush = createVerticalBackgroundGradient(moviePalette)),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Trailer button only shows if trailer exists
-                    if (!movieDetails.trailer.isNullOrBlank()) {
-                        WatchTrailerButton(
-                            trailerUrl = movieDetails.trailer!!,
-                            modifier = Modifier // Uses internal fillMaxWidth(0.6f) relative to this Row
+                    // 1. Movie Poster Card
+                    MoviePosterCard(
+                        movie = movieDetails,
+                        tmdbImageProvider = tmdbImageProvider,
+                        modifier = Modifier
+                            .padding(top = 80.dp, bottom = 16.dp)
+                            .width(160.dp) // Set width to match image ratio
+                            .aspectRatio(1f / 1.5f) // Portrait aspect ratio
+                    )
+
+                    // 2. Title
+                    Text(
+                        text = movieDetails.name,
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = MobilePadding)
+                    )
+                    // Display stream ID for debugging purposes
+                    Text(
+                        text = "Stream ID: ${movieDetails.streamId}",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = MobilePadding)
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 3. Action Buttons (Trailer and Download)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = MobilePadding),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Trailer button only shows if trailer exists
+                        if (!movieDetails.trailer.isNullOrBlank()) {
+                            WatchTrailerButton(
+                                trailerUrl = movieDetails.trailer!!,
+                                modifier = Modifier // Uses internal fillMaxWidth(0.6f) relative to this Row
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                        }
+                        DownloadButton(
+                            onClick = onDownloadMovie
                         )
                         Spacer(modifier = Modifier.width(16.dp))
+                        HeartButton(
+                            isLiked = isLiked,
+                            onClick = { onToggleMyList(movieDetails) }
+                        )
                     }
-                    DownloadButton(
-                        onClick = onDownloadMovie
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    HeartButton(
-                        isLiked = isLiked,
-                        onClick = { onToggleMyList(movieDetails) }
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. Metadata (Runtime, Genres, Rating icons)
-            item {
-                MetadataRowSmall(
-                    movieDetails = movieDetails,
-                    genres = genres,
-                    modifier = Modifier.padding(horizontal = MobilePadding)
-                )
-                Spacer(modifier = Modifier.height(24.dp))
+                    // 4. Metadata (Runtime, Genres, Rating icons)
+                    MetadataRowSmall(
+                        movieDetails = movieDetails,
+                        genres = genres,
+                        modifier = Modifier.padding(horizontal = MobilePadding)
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
 
             // 5. Overview/Synopsis Title (Het verhaal)

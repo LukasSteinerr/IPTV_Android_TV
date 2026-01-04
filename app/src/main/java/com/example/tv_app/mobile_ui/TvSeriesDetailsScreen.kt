@@ -314,10 +314,12 @@ private fun Details(
     val coroutineScope = rememberCoroutineScope()
     var isLiked by remember(tvSeriesDetails.id) { mutableStateOf(tvSeriesDetails.myList == 1) }
 
+    // Set a solid black background color for the entire screen.
+    // The palette-based gradient will be applied internally to the header content so it scrolls away.
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(brush = createVerticalBackgroundGradient(moviePalette))
+            .background(Color.Black)
     ) {
         LazyColumn(
             state = lazyListState,
@@ -327,90 +329,92 @@ private fun Details(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. Poster Card
             item {
-                MoviePosterCard(
-                    tmdbId = tvSeriesDetails.tmdbId,
-                    posterUrl = posterUrl ?: tvSeriesDetails.coverUrl,
-                    name = tvSeriesDetails.name,
-                    tmdbImageProvider = tmdbImageProvider,
+                Column(
                     modifier = Modifier
-                        .padding(top = 80.dp, bottom = 16.dp)
-                        .width(160.dp)
-                        .aspectRatio(1f / 1.5f)
-                )
-            }
+                        .fillMaxWidth()
+                        // Apply the palette gradient to the top content area so it scrolls away
+                        .background(brush = createVerticalBackgroundGradient(moviePalette)),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // 1. Poster Card
+                    MoviePosterCard(
+                        tmdbId = tvSeriesDetails.tmdbId,
+                        posterUrl = posterUrl ?: tvSeriesDetails.coverUrl,
+                        name = tvSeriesDetails.name,
+                        tmdbImageProvider = tmdbImageProvider,
+                        modifier = Modifier
+                            .padding(top = 80.dp, bottom = 16.dp)
+                            .width(160.dp)
+                            .aspectRatio(1f / 1.5f)
+                    )
 
-            // 2. Title
-            item {
-                Text(
-                    text = tvSeriesDetails.name,
-                    style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold),
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = MobilePadding)
-                )
-                // Display series ID for debugging purposes
-                tvSeriesDetails.seriesId?.let { seriesId ->
+                    // 2. Title
                     Text(
-                        text = "Series ID: $seriesId",
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color.Red,
+                        text = tvSeriesDetails.name,
+                        style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.ExtraBold),
+                        color = Color.White,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.padding(horizontal = MobilePadding)
                     )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                    // Display series ID for debugging purposes
+                    tvSeriesDetails.seriesId?.let { seriesId ->
+                        Text(
+                            text = "Series ID: $seriesId",
+                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                            color = Color.Red,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = MobilePadding)
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            // 3. Action Buttons
-            item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = MobilePadding),
-                    horizontalArrangement = Arrangement.Center,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (!tvSeriesDetails.youtubeTrailer.isNullOrBlank()) {
-                        WatchTrailerButton(
-                            trailerUrl = tvSeriesDetails.youtubeTrailer!!,
-                            modifier = Modifier
+                    // 3. Action Buttons
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = MobilePadding),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (!tvSeriesDetails.youtubeTrailer.isNullOrBlank()) {
+                            WatchTrailerButton(
+                                trailerUrl = tvSeriesDetails.youtubeTrailer!!,
+                                modifier = Modifier
+                            )
+                            Spacer(modifier = Modifier.width(16.dp))
+                        }
+                        DownloadButton(
+                            onClick = { /* TODO */ }
                         )
                         Spacer(modifier = Modifier.width(16.dp))
-                    }
-                    DownloadButton(
-                        onClick = { /* TODO */ }
-                    )
-                    Spacer(modifier = Modifier.width(16.dp))
-                    HeartButton(
-                        isLiked = isLiked,
-                        onClick = {
-                            isLiked = !isLiked
-                            coroutineScope.launch {
-                                val box = ObjectBox.boxStore.boxFor(TvSeries::class.java)
-                                val dbSeries = box.get(tvSeriesDetails.id)
-                                val newStatus = if (isLiked) 1 else 0
-                                if (dbSeries != null) {
-                                    dbSeries.myList = newStatus
-                                    box.put(dbSeries)
+                        HeartButton(
+                            isLiked = isLiked,
+                            onClick = {
+                                isLiked = !isLiked
+                                coroutineScope.launch {
+                                    val box = ObjectBox.boxStore.boxFor(TvSeries::class.java)
+                                    val dbSeries = box.get(tvSeriesDetails.id)
+                                    val newStatus = if (isLiked) 1 else 0
+                                    if (dbSeries != null) {
+                                        dbSeries.myList = newStatus
+                                        box.put(dbSeries)
+                                    }
+                                    tvSeriesDetails.myList = newStatus
                                 }
-                                tvSeriesDetails.myList = newStatus
                             }
-                        }
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
 
-            // 4. Metadata
-            item {
-                MetadataRowSmall(
-                    tvSeriesDetails = tvSeriesDetails,
-                    genres = genres,
-                    modifier = Modifier.padding(horizontal = MobilePadding)
-                )
-                Spacer(modifier = Modifier.height(24.dp))
+                    // 4. Metadata
+                    MetadataRowSmall(
+                        tvSeriesDetails = tvSeriesDetails,
+                        genres = genres,
+                        modifier = Modifier.padding(horizontal = MobilePadding)
+                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                }
             }
 
             // 5. Overview Section
