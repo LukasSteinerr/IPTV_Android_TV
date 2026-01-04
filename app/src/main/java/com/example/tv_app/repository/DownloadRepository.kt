@@ -93,10 +93,37 @@ class DownloadRepository(private val context: Context) {
                     // Start monitoring this download
                     monitorDownload(download.id, dmId)
                 } else {
-                    // Download not found in DownloadManager, mark as failed
-                    Log.w(TAG, "Download not found in DownloadManager: ${download.movieName}")
-                    download.status = DownloadedMovie.STATUS_FAILED
-                    downloadBox.put(download)
+                    // Download not found in DownloadManager
+                    // Check if we have partial progress - if so, auto-resume with Range header
+                    if (download.downloadedBytes > 0 && download.totalBytes > 0 && download.downloadedBytes < download.totalBytes) {
+                        Log.d(TAG, "Download ${download.movieName} has partial progress (${download.downloadedBytes}/${download.totalBytes}), auto-resuming...")
+                        val file = File(download.localPath ?: "")
+                        if (file.exists() && file.length() >= download.downloadedBytes) {
+                            // Truncate file to match saved progress if needed
+                            if (file.length() > download.downloadedBytes) {
+                                try {
+                                    java.io.RandomAccessFile(file, "rw").use { raf ->
+                                        raf.setLength(download.downloadedBytes)
+                                    }
+                                    Log.d(TAG, "Truncated file to ${download.downloadedBytes} bytes")
+                                } catch (e: Exception) {
+                                    Log.e(TAG, "Failed to truncate file: ${e.message}")
+                                }
+                            }
+                            // Resume with Range header
+                            resumeWithRangeHeader(download.id, download, file, download.downloadedBytes)
+                        } else {
+                            // File doesn't exist or is too small, mark as paused so user can retry
+                            Log.w(TAG, "Partial file missing or corrupted for: ${download.movieName}")
+                            download.status = DownloadedMovie.STATUS_PAUSED
+                            downloadBox.put(download)
+                        }
+                    } else {
+                        // No progress, mark as failed
+                        Log.w(TAG, "Download not found in DownloadManager and no progress: ${download.movieName}")
+                        download.status = DownloadedMovie.STATUS_FAILED
+                        downloadBox.put(download)
+                    }
                 }
             }
         }
