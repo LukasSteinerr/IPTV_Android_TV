@@ -131,7 +131,6 @@ fun MyListScreen(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black) // Base background
-            .windowInsetsPadding(androidx.compose.foundation.layout.WindowInsets.displayCutout)
     ) {
         // 1. Header & Filters
         Column(
