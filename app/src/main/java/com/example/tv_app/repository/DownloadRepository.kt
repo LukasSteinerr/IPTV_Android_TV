@@ -39,11 +39,68 @@ class DownloadRepository(private val context: Context) {
         private const val PROGRESS_CHECK_INTERVAL = 1000L // Check progress every second
     }
 
+    init {
+        // Restore active downloads when repository is created
+        restoreActiveDownloads()
+    }
+
     private val _downloadUpdates = MutableSharedFlow<DownloadedMovie>(
         replay = 1,
         onBufferOverflow = BufferOverflow.DROP_OLDEST
     )
     val downloadUpdates = _downloadUpdates.asSharedFlow()
+    
+    private fun restoreActiveDownloads() {
+        scope.launch {
+            // Get all downloads that are in DOWNLOADING status
+            val activeDownloads = downloadBox.query()
+                .equal(com.example.tv_app.model.DownloadedMovie_.status, DownloadedMovie.STATUS_DOWNLOADING.toLong())
+                .build()
+                .find()
+            
+            Log.d(TAG, "Restoring ${activeDownloads.size} active downloads")
+            
+            // Query DownloadManager for all downloads
+            val query = DownloadManager.Query()
+            query.setFilterByStatus(
+                DownloadManager.STATUS_RUNNING or 
+                DownloadManager.STATUS_PENDING or 
+                DownloadManager.STATUS_PAUSED
+            )
+            
+            val cursor = downloadManager.query(query)
+            val downloadManagerIds = mutableMapOf<String, Long>()
+            
+            if (cursor != null && cursor.moveToFirst()) {
+                val titleIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TITLE)
+                val idIndex = cursor.getColumnIndex(DownloadManager.COLUMN_ID)
+                
+                do {
+                    val title = cursor.getString(titleIndex)
+                    val dmId = cursor.getLong(idIndex)
+                    downloadManagerIds[title] = dmId
+                } while (cursor.moveToNext())
+                
+                cursor.close()
+            }
+            
+            // Match our downloads with DownloadManager downloads
+            for (download in activeDownloads) {
+                val dmId = downloadManagerIds[download.movieName]
+                if (dmId != null) {
+                    activeJobs[download.id] = dmId
+                    Log.d(TAG, "Restored download: ${download.movieName} with DM ID: $dmId")
+                    // Start monitoring this download
+                    monitorDownload(download.id, dmId)
+                } else {
+                    // Download not found in DownloadManager, mark as failed
+                    Log.w(TAG, "Download not found in DownloadManager: ${download.movieName}")
+                    download.status = DownloadedMovie.STATUS_FAILED
+                    downloadBox.put(download)
+                }
+            }
+        }
+    }
 
     fun getAllDownloadsFlow(): kotlinx.coroutines.flow.Flow<List<DownloadedMovie>> {
          return downloadBox.query().build().flow()
@@ -154,7 +211,17 @@ class DownloadRepository(private val context: Context) {
             while (!isComplete) {
                 delay(PROGRESS_CHECK_INTERVAL)
                 
-                val download = downloadBox[downloadId] ?: break
+                // Check if this download was removed from active jobs (paused/deleted)
+                if (!activeJobs.containsKey(downloadId)) {
+                    Log.d(TAG, "Download $downloadId removed from active jobs, stopping monitor")
+                    break
+                }
+                
+                val download = downloadBox[downloadId]
+                if (download == null) {
+                    Log.w(TAG, "Download $downloadId not found in database, stopping monitor")
+                    break
+                }
                 
                 val query = DownloadManager.Query().setFilterById(downloadManagerId)
                 val cursor: Cursor? = downloadManager.query(query)
@@ -217,14 +284,12 @@ class DownloadRepository(private val context: Context) {
                     cursor.close()
                 } else {
                     // Download not found in DownloadManager
-                    download.status = DownloadedMovie.STATUS_FAILED
-                    downloadBox.put(download)
-                    _downloadUpdates.emit(download)
-                    activeJobs.remove(downloadId)
+                    // Just stop monitoring - don't change status as it may have been paused
+                    Log.d(TAG, "Download $downloadId not found in DownloadManager, stopping monitor")
                     isComplete = true
-                    Log.e(TAG, "Download not found in DownloadManager")
                 }
             }
+            Log.d(TAG, "Monitor stopped for download $downloadId")
         }
     }
     
@@ -244,19 +309,81 @@ class DownloadRepository(private val context: Context) {
     }
 
     fun pauseDownload(id: Long) {
-        val downloadManagerId = activeJobs[id] ?: return
-        // DownloadManager doesn't support pause, so we cancel it
-        downloadManager.remove(downloadManagerId)
-        val download = downloadBox[id] ?: return
-        download.status = DownloadedMovie.STATUS_PAUSED
-        downloadBox.put(download)
-        activeJobs.remove(id)
-        Log.d(TAG, "Download paused: ${download.movieName}")
+        Log.d(TAG, "pauseDownload called for id: $id")
+        Log.d(TAG, "Active jobs: ${activeJobs.keys}")
+        
+        val downloadManagerId = activeJobs[id]
+        if (downloadManagerId == null) {
+            Log.w(TAG, "Cannot pause: Download not found in active jobs. ID: $id")
+            
+            // Try to find it in DownloadManager by querying all downloads
+            val download = downloadBox[id]
+            if (download != null) {
+                Log.d(TAG, "Found download in DB: ${download.movieName}, status: ${download.status}")
+                
+                // Query DownloadManager for this download
+                val query = DownloadManager.Query()
+                val cursor = downloadManager.query(query)
+                
+                if (cursor != null && cursor.moveToFirst()) {
+                    val titleIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TITLE)
+                    val idIndex = cursor.getColumnIndex(DownloadManager.COLUMN_ID)
+                    val statusIndex = cursor.getColumnIndex(DownloadManager.COLUMN_STATUS)
+                    
+                    do {
+                        val title = cursor.getString(titleIndex)
+                        val dmId = cursor.getLong(idIndex)
+                        val status = cursor.getInt(statusIndex)
+                        
+                        if (title == download.movieName) {
+                            Log.d(TAG, "Found matching download in DownloadManager: $title, DM ID: $dmId, status: $status")
+                            // Add to active jobs and try again
+                            activeJobs[id] = dmId
+                            cursor.close()
+                            pauseDownload(id) // Recursive call now that we have the ID
+                            return
+                        }
+                    } while (cursor.moveToNext())
+                    
+                    cursor.close()
+                }
+                
+                Log.w(TAG, "Download not found in DownloadManager")
+            }
+            return
+        }
+        
+        // Remove from DownloadManager (this cancels the download)
+        val removed = downloadManager.remove(downloadManagerId)
+        Log.d(TAG, "DownloadManager.remove returned: $removed for DM ID: $downloadManagerId")
+        
+        val download = downloadBox[id]
+        if (download != null) {
+            download.status = DownloadedMovie.STATUS_PAUSED
+            downloadBox.put(download)
+            scope.launch {
+                _downloadUpdates.emit(download)
+            }
+            activeJobs.remove(id)
+            Log.d(TAG, "Download paused: ${download.movieName}")
+            
+            scope.launch(Dispatchers.Main) {
+                Toast.makeText(context, "Download paused: ${download.movieName}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     fun resumeDownload(id: Long) {
-        val download = downloadBox[id] ?: return
-        if (download.status == DownloadedMovie.STATUS_COMPLETED) return
+        val download = downloadBox[id]
+        if (download == null) {
+            Log.e(TAG, "Cannot resume: Download not found")
+            return
+        }
+        
+        if (download.status == DownloadedMovie.STATUS_COMPLETED) {
+            Log.d(TAG, "Download already completed")
+            return
+        }
         
         if (!isNetworkAvailable()) {
             Log.e(TAG, "Cannot resume: No network connection")
@@ -266,13 +393,30 @@ class DownloadRepository(private val context: Context) {
             return
         }
         
-        // For resume, we need to restart the download
-        // DownloadManager will handle resume automatically if the server supports it
+        // Check if already downloading
+        if (activeJobs.containsKey(id)) {
+            Log.d(TAG, "Download already in progress")
+            scope.launch(Dispatchers.Main) {
+                Toast.makeText(context, "Download already in progress", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+        
         try {
             val fileName = File(download.localPath ?: "").name
+            
+            // Note: Most IPTV servers don't support HTTP range requests (resume from middle)
+            // So we restart the download from the beginning
+            // Delete partial file if it exists
+            val file = File(download.localPath ?: "")
+            if (file.exists()) {
+                file.delete()
+                Log.d(TAG, "Deleted partial file for fresh start")
+            }
+            
             val request = DownloadManager.Request(Uri.parse(download.streamUrl))
                 .setTitle(download.movieName)
-                .setDescription("Downloading ${download.movieName}")
+                .setDescription("Resuming ${download.movieName}")
                 .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_MOVIES, fileName)
                 .setAllowedOverMetered(true)
@@ -282,13 +426,27 @@ class DownloadRepository(private val context: Context) {
             val downloadManagerId = downloadManager.enqueue(request)
             activeJobs[id] = downloadManagerId
             
+            // Reset progress since we're starting over
+            download.downloadedBytes = 0
+            download.progress = 0
             download.status = DownloadedMovie.STATUS_DOWNLOADING
             downloadBox.put(download)
+            scope.launch {
+                _downloadUpdates.emit(download)
+            }
             
-            Log.d(TAG, "Resuming download: ${download.movieName}")
+            Log.d(TAG, "Resuming download: ${download.movieName} with new DownloadManager ID: $downloadManagerId")
+            
+            scope.launch(Dispatchers.Main) {
+                Toast.makeText(context, "Restarting download: ${download.movieName}", Toast.LENGTH_SHORT).show()
+            }
+            
             monitorDownload(id, downloadManagerId)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to resume download: ${e.message}", e)
+            scope.launch(Dispatchers.Main) {
+                Toast.makeText(context, "Failed to resume: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
