@@ -82,7 +82,6 @@ class DownloadService : Service() {
         when (intent?.action) {
             ACTION_START_DOWNLOAD -> {
                 if (downloadId != -1L) {
-                    startForeground(NOTIFICATION_ID, createNotification("Preparing download..."))
                     startDownloadTask(downloadId)
                 }
             }
@@ -113,33 +112,39 @@ class DownloadService : Service() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Downloads",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_DEFAULT  // Changed from LOW to show in status bar
             ).apply {
                 description = "Download progress notifications"
-                setShowBadge(false)
+                setShowBadge(true)
+                setSound(null, null)  // No sound for progress updates
+                enableVibration(false)
             }
             notificationManager.createNotificationChannel(channel)
         }
     }
 
-    private fun createNotification(content: String, progress: Int = -1): Notification {
+    private fun createNotification(content: String, progress: Int = -1, movieName: String = ""): Notification {
         val pendingIntent = PendingIntent.getActivity(
             this,
             0,
             Intent(this, MainActivity::class.java),
-            PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
 
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("Downloading")
+            .setContentTitle(if (movieName.isNotEmpty()) movieName else "Downloading")
             .setContentText(content)
             .setSmallIcon(android.R.drawable.stat_sys_download)
             .setContentIntent(pendingIntent)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)  // Ensure visibility
+            .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)  // Show on lock screen
 
         if (progress >= 0) {
             builder.setProgress(100, progress, false)
+            builder.setSubText("$progress%")
         } else {
             builder.setProgress(0, 0, true)
         }
@@ -153,8 +158,12 @@ class DownloadService : Service() {
             return
         }
 
+        val download = downloadBox[downloadId]
+        val movieName = download?.movieName ?: "Unknown"
+        
+        startForeground(NOTIFICATION_ID, createNotification("Starting download...", -1, movieName))
+
         val job = serviceScope.launch {
-            val download = downloadBox[downloadId]
             if (download == null) {
                 Log.e(TAG, "Download $downloadId not found")
                 checkAndStopService()
@@ -254,8 +263,9 @@ class DownloadService : Service() {
 
                     // Update notification
                     val notification = createNotification(
-                        "${download.movieName} - ${download.progress}%",
-                        download.progress
+                        "Downloading... ${download.progress}%",
+                        download.progress,
+                        download.movieName
                     )
                     notificationManager.notify(NOTIFICATION_ID, notification)
 
