@@ -90,6 +90,7 @@ fun MobileAppNavigation() {
     var selectedTvSeries by remember { mutableStateOf<TvSeries?>(null) }
     var movieDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     var tvSeriesDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
+    var lastMainScreen by remember { mutableStateOf<MobileScreen>(MobileScreen.Home) }
     val playlistService = remember { PlaylistService() }
     
     // Create a shared ViewModel for the video player
@@ -148,10 +149,12 @@ fun MobileAppNavigation() {
                         playlistService = playlistService,
                         onMovieSelected = { movie ->
                             selectedMovie = movie
+                            lastMainScreen = MobileScreen.Home
                             currentScreen = MobileScreen.MovieDetails
                         },
                         onShowSelected = { show ->
                             selectedTvSeries = show
+                            lastMainScreen = MobileScreen.Home
                             currentScreen = MobileScreen.TvSeriesDetails
                         },
                         onChannelSelected = { channel ->
@@ -181,10 +184,12 @@ fun MobileAppNavigation() {
                 MyListScreen(
                     onMovieSelected = { movie ->
                         selectedMovie = movie
+                        lastMainScreen = MobileScreen.MyList
                         currentScreen = MobileScreen.MovieDetails
                     },
                     onTvSeriesSelected = { series ->
                         selectedTvSeries = series
+                        lastMainScreen = MobileScreen.MyList
                         currentScreen = MobileScreen.TvSeriesDetails
                     },
                     modifier = Modifier.padding(paddingValues)
@@ -203,7 +208,7 @@ fun MobileAppNavigation() {
                         movie = movie,
                         playlistService = playlistService,
                         onBackPressed = {
-                            currentScreen = MobileScreen.Home
+                            currentScreen = lastMainScreen
                         },
                         onMovieSelected = { newMovie ->
                             selectedMovie = newMovie
@@ -229,7 +234,7 @@ fun MobileAppNavigation() {
                         tvSeries = tvSeries,
                         playlistService = playlistService,
                         onBackPressed = {
-                            currentScreen = MobileScreen.Home
+                            currentScreen = lastMainScreen
                         },
                         onTvSeriesSelected = { newSeries ->
                             selectedTvSeries = newSeries
