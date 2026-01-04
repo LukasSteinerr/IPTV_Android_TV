@@ -353,19 +353,66 @@ class DownloadRepository(private val context: Context) {
             return
         }
         
-        // Remove from DownloadManager (this cancels the download)
-        val removed = downloadManager.remove(downloadManagerId)
-        Log.d(TAG, "DownloadManager.remove returned: $removed for DM ID: $downloadManagerId")
-        
+        // First, get the current progress before removing from DownloadManager
         val download = downloadBox[id]
         if (download != null) {
+            // Query current progress from DownloadManager before removing
+            val query = DownloadManager.Query().setFilterById(downloadManagerId)
+            val cursor = downloadManager.query(query)
+            
+            var bytesDownloaded = download.downloadedBytes
+            var bytesTotal = download.totalBytes
+            
+            if (cursor != null && cursor.moveToFirst()) {
+                val bytesDownloadedIndex = cursor.getColumnIndex(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR)
+                val bytesTotalIndex = cursor.getColumnIndex(DownloadManager.COLUMN_TOTAL_SIZE_BYTES)
+                
+                bytesDownloaded = cursor.getLong(bytesDownloadedIndex)
+                bytesTotal = cursor.getLong(bytesTotalIndex)
+                
+                cursor.close()
+            }
+            
+            // Save the progress before pausing
+            download.downloadedBytes = bytesDownloaded
+            download.totalBytes = bytesTotal
+            if (bytesTotal > 0) {
+                download.progress = ((bytesDownloaded.toDouble() / bytesTotal) * 100).toInt()
+            }
             download.status = DownloadedMovie.STATUS_PAUSED
             downloadBox.put(download)
+            
+            Log.d(TAG, "Saving progress before pause: ${download.downloadedBytes}/${download.totalBytes} bytes (${download.progress}%)")
+            
+            // Remove from active jobs immediately so UI updates
+            activeJobs.remove(id)
+            
             scope.launch {
                 _downloadUpdates.emit(download)
             }
-            activeJobs.remove(id)
-            Log.d(TAG, "Download paused: ${download.movieName}")
+            
+            // Rename file to preserve it before DownloadManager deletes it (instant operation)
+            val partialFile = File(download.localPath ?: "")
+            val tempFile = File(partialFile.parent, "${partialFile.name}.partial")
+            val dmId = downloadManagerId
+            
+            // Rename is instant (just changes file metadata, no data copy)
+            if (partialFile.exists()) {
+                val renamed = partialFile.renameTo(tempFile)
+                Log.d(TAG, "Renamed partial file to temp: $renamed, size: ${tempFile.length()}")
+            }
+            
+            // Remove from DownloadManager (this will try to delete the original file, but it's already renamed)
+            val removed = downloadManager.remove(dmId)
+            Log.d(TAG, "DownloadManager.remove returned: $removed for DM ID: $dmId")
+            
+            // Rename back to original name (also instant)
+            if (tempFile.exists()) {
+                val restored = tempFile.renameTo(partialFile)
+                Log.d(TAG, "Restored partial file: $restored, size: ${partialFile.length()}")
+            }
+            
+            Log.d(TAG, "Download paused: ${download.movieName} at ${download.downloadedBytes} bytes")
             
             scope.launch(Dispatchers.Main) {
                 Toast.makeText(context, "Download paused: ${download.movieName}", Toast.LENGTH_SHORT).show()
@@ -404,48 +451,185 @@ class DownloadRepository(private val context: Context) {
         
         try {
             val fileName = File(download.localPath ?: "").name
-            
-            // Note: Most IPTV servers don't support HTTP range requests (resume from middle)
-            // So we restart the download from the beginning
-            // Delete partial file if it exists
             val file = File(download.localPath ?: "")
-            if (file.exists()) {
-                file.delete()
-                Log.d(TAG, "Deleted partial file for fresh start")
+            val fileSize = if (file.exists()) file.length() else 0L
+            
+            // Use the saved downloadedBytes from database as the source of truth
+            // The file on disk might be from a previous download or corrupted
+            val resumeFromBytes = download.downloadedBytes
+            
+            Log.d(TAG, "Resume check - file size: $fileSize, saved progress: $resumeFromBytes, total: ${download.totalBytes}")
+            
+            // If file is larger than what we recorded, truncate it to match our progress
+            if (file.exists() && fileSize > resumeFromBytes && resumeFromBytes > 0) {
+                Log.d(TAG, "File is larger than saved progress, truncating to $resumeFromBytes bytes")
+                try {
+                    java.io.RandomAccessFile(file, "rw").use { raf ->
+                        raf.setLength(resumeFromBytes)
+                    }
+                    Log.d(TAG, "File truncated to ${file.length()} bytes")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Failed to truncate file: ${e.message}")
+                }
             }
             
-            val request = DownloadManager.Request(Uri.parse(download.streamUrl))
-                .setTitle(download.movieName)
-                .setDescription("Resuming ${download.movieName}")
-                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
-                .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_MOVIES, fileName)
-                .setAllowedOverMetered(true)
-                .setAllowedOverRoaming(true)
-                .addRequestHeader("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36")
-            
-            val downloadManagerId = downloadManager.enqueue(request)
-            activeJobs[id] = downloadManagerId
-            
-            // Reset progress since we're starting over
-            download.downloadedBytes = 0
-            download.progress = 0
-            download.status = DownloadedMovie.STATUS_DOWNLOADING
-            downloadBox.put(download)
-            scope.launch {
-                _downloadUpdates.emit(download)
+            if (resumeFromBytes > 0 && download.totalBytes > 0 && resumeFromBytes < download.totalBytes) {
+                // Use custom download with Range header for true resume
+                scope.launch {
+                    resumeWithRangeHeader(id, download, file, resumeFromBytes)
+                }
+            } else {
+                // Start fresh download if no valid progress to resume
+                Log.d(TAG, "No valid progress to resume (resumeFrom: $resumeFromBytes, total: ${download.totalBytes}), starting fresh download")
+                // Delete any existing file to start fresh
+                if (file.exists()) {
+                    file.delete()
+                }
+                startFreshDownload(id, download, fileName)
             }
-            
-            Log.d(TAG, "Resuming download: ${download.movieName} with new DownloadManager ID: $downloadManagerId")
-            
-            scope.launch(Dispatchers.Main) {
-                Toast.makeText(context, "Restarting download: ${download.movieName}", Toast.LENGTH_SHORT).show()
-            }
-            
-            monitorDownload(id, downloadManagerId)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to resume download: ${e.message}", e)
             scope.launch(Dispatchers.Main) {
                 Toast.makeText(context, "Failed to resume: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    
+    private fun startFreshDownload(id: Long, download: DownloadedMovie, fileName: String) {
+        val request = DownloadManager.Request(Uri.parse(download.streamUrl))
+            .setTitle(download.movieName)
+            .setDescription("Downloading ${download.movieName}")
+            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+            .setDestinationInExternalFilesDir(context, Environment.DIRECTORY_MOVIES, fileName)
+            .setAllowedOverMetered(true)
+            .setAllowedOverRoaming(true)
+            .addRequestHeader("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36")
+        
+        val downloadManagerId = downloadManager.enqueue(request)
+        activeJobs[id] = downloadManagerId
+        
+        download.status = DownloadedMovie.STATUS_DOWNLOADING
+        download.downloadedBytes = 0
+        download.progress = 0
+        downloadBox.put(download)
+        scope.launch {
+            _downloadUpdates.emit(download)
+        }
+        
+        Log.d(TAG, "Starting fresh download: ${download.movieName} with DownloadManager ID: $downloadManagerId")
+        
+        scope.launch(Dispatchers.Main) {
+            Toast.makeText(context, "Starting download: ${download.movieName}", Toast.LENGTH_SHORT).show()
+        }
+        
+        monitorDownload(id, downloadManagerId)
+    }
+    
+    private suspend fun resumeWithRangeHeader(id: Long, download: DownloadedMovie, file: File, resumeFromBytes: Long) {
+        withContext(Dispatchers.IO) {
+            try {
+                val url = java.net.URL(download.streamUrl)
+                val connection = url.openConnection() as java.net.HttpURLConnection
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 10) AppleWebKit/537.36")
+                connection.setRequestProperty("Range", "bytes=$resumeFromBytes-")
+                connection.connectTimeout = 30000
+                connection.readTimeout = 30000
+                
+                val responseCode = connection.responseCode
+                Log.d(TAG, "Resume response code: $responseCode")
+                
+                if (responseCode == 206 || responseCode == 200) {
+                    // Server supports range requests (206) or sent full file (200)
+                    val isPartialContent = responseCode == 206
+                    
+                    if (!isPartialContent) {
+                        // Server doesn't support range, need to start over
+                        Log.w(TAG, "Server doesn't support range requests, starting from beginning")
+                        file.delete()
+                        withContext(Dispatchers.Main) {
+                            startFreshDownload(id, download, file.name)
+                        }
+                        connection.disconnect()
+                        return@withContext
+                    }
+                    
+                    // Mark as downloading
+                    activeJobs[id] = -1L // Use -1 to indicate custom download
+                    download.status = DownloadedMovie.STATUS_DOWNLOADING
+                    downloadBox.put(download)
+                    _downloadUpdates.emit(download)
+                    
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Resuming download: ${download.movieName}", Toast.LENGTH_SHORT).show()
+                    }
+                    
+                    val inputStream = connection.inputStream
+                    val outputStream = java.io.FileOutputStream(file, true) // Append mode
+                    
+                    val buffer = ByteArray(8192)
+                    var bytesRead: Int
+                    var totalBytesDownloaded = resumeFromBytes
+                    var lastUpdateTime = System.currentTimeMillis()
+                    
+                    while (inputStream.read(buffer).also { bytesRead = it } != -1) {
+                        // Check if paused
+                        if (!activeJobs.containsKey(id)) {
+                            Log.d(TAG, "Download $id paused during resume")
+                            break
+                        }
+                        
+                        outputStream.write(buffer, 0, bytesRead)
+                        totalBytesDownloaded += bytesRead
+                        
+                        // Update progress every second
+                        val currentTime = System.currentTimeMillis()
+                        if (currentTime - lastUpdateTime >= PROGRESS_CHECK_INTERVAL) {
+                            download.downloadedBytes = totalBytesDownloaded
+                            if (download.totalBytes > 0) {
+                                download.progress = ((totalBytesDownloaded.toDouble() / download.totalBytes) * 100).toInt()
+                            }
+                            downloadBox.put(download)
+                            _downloadUpdates.emit(download)
+                            Log.d(TAG, "Download progress: ${download.progress}% ($totalBytesDownloaded/${download.totalBytes})")
+                            lastUpdateTime = currentTime
+                        }
+                    }
+                    
+                    outputStream.close()
+                    inputStream.close()
+                    connection.disconnect()
+                    
+                    // Check if completed or paused
+                    if (activeJobs.containsKey(id)) {
+                        if (totalBytesDownloaded >= download.totalBytes) {
+                            download.status = DownloadedMovie.STATUS_COMPLETED
+                            download.progress = 100
+                            download.downloadedBytes = download.totalBytes
+                            Log.d(TAG, "Download completed: ${download.movieName}")
+                            withContext(Dispatchers.Main) {
+                                Toast.makeText(context, "Download completed: ${download.movieName}", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                        activeJobs.remove(id)
+                        downloadBox.put(download)
+                        _downloadUpdates.emit(download)
+                    }
+                } else {
+                    Log.e(TAG, "Failed to resume: HTTP $responseCode")
+                    connection.disconnect()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Failed to resume download (HTTP $responseCode)", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error during resume: ${e.message}", e)
+                activeJobs.remove(id)
+                download.status = DownloadedMovie.STATUS_PAUSED
+                downloadBox.put(download)
+                _downloadUpdates.emit(download)
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(context, "Download error: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }
