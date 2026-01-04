@@ -114,125 +114,163 @@ fun DownloadItem(
     onDelete: () -> Unit,
     onPlay: () -> Unit
 ) {
-    Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFF1E1E1E)),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth()
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
+        // Poster Image (changed to 2:3 aspect ratio and smaller size)
+        AsyncImage(
+            model = download.posterUrl?.let { TMDBService.getPosterUrl(it) } ?: download.backdropUrl?.let { TMDBService.getBackdropUrl(it) },
+            contentDescription = download.movieName,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .height(96.dp) // Adjusted height
+                .aspectRatio(2f / 3f) // Typical movie poster aspect ratio
+                .clip(RoundedCornerShape(8.dp))
+                .background(Color.DarkGray)
+        )
+
+        Spacer(modifier = Modifier.width(16.dp))
+
+        // Info & Progress
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.Center
         ) {
-            // Backdrop Image
-            AsyncImage(
-                model = download.backdropUrl?.let { TMDBService.getBackdropUrl(it) } ?: download.posterUrl?.let { TMDBService.getPosterUrl(it) },
-                contentDescription = download.movieName,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .width(100.dp)
-                    .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(Color.DarkGray)
+            Text(
+                text = download.movieName,
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.width(12.dp))
+            Spacer(modifier = Modifier.height(2.dp))
 
-            // Info & Progress
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = download.movieName,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = Color.White,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+            // Metadata Row (Movie • 1h 30min)
+            // Using placeholder for Duration as it's not in DownloadedMovie model
+            DotSeparatedRow(
+                modifier = Modifier.fillMaxWidth(),
+                texts = listOf(
+                    "Movie",
+                    "1h 30min" // Placeholder for Duration
                 )
-                
-                Spacer(modifier = Modifier.height(8.dp))
+            )
 
-                when (download.status) {
-                    DownloadedMovie.STATUS_DOWNLOADING, DownloadedMovie.STATUS_PAUSED -> {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                             LinearProgressIndicator(
-                                progress = { download.progress / 100f },
-                                modifier = Modifier.weight(1f).height(4.dp),
-                                color = MaterialTheme.colorScheme.primary,
-                                trackColor = Color.Gray.copy(alpha = 0.3f),
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "${download.progress}%",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.Gray
-                            )
-                        }
-                         Spacer(modifier = Modifier.height(4.dp))
-                         Text(
-                             text = if(download.status == DownloadedMovie.STATUS_PAUSED) "Paused" else "Downloading...",
-                             style = MaterialTheme.typography.labelSmall,
-                             color = if(download.status == DownloadedMovie.STATUS_PAUSED) Color.Yellow else Color.Green
-                         )
-                    }
-                    DownloadedMovie.STATUS_COMPLETED -> {
-                         Text(
-                             text = "Completed",
-                             style = MaterialTheme.typography.labelSmall,
-                             color = Color.Green
-                         )
-                    }
-                    DownloadedMovie.STATUS_FAILED -> {
-                        Text(
-                            text = "Failed",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Red
-                        )
-                    }
-                     else -> {
-                        Text(
-                            text = "Pending",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Gray
-                        )
-                    }
+            Spacer(modifier = Modifier.height(10.dp))
+
+            // Progress Bar or Status
+            when (download.status) {
+                DownloadedMovie.STATUS_DOWNLOADING, DownloadedMovie.STATUS_PAUSED -> {
+                    // Progress Bar matching the style in the reference image
+                    LinearProgressIndicator(
+                        progress = { download.progress / 100f },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp)),
+                        color = Color.White, // Use White for the progress fill
+                        trackColor = Color.White.copy(alpha = 0.2f), // Use White for the track
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    // Display percentage as requested
+                    Text(
+                        text = "${download.progress}%",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray,
+                        modifier = Modifier.align(Alignment.End)
+                    )
+                }
+                DownloadedMovie.STATUS_COMPLETED -> {
+                    // Placeholder for completed status: show duration again or a check mark.
+                    // Based on the image, the completed item also shows a progress bar or a white line.
+                    // For simplicity and alignment with the target image (which shows a complete white line for downloaded items)
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(Color.White)
+                    )
+                }
+                DownloadedMovie.STATUS_FAILED -> {
+                    Text(
+                        text = "Download Failed",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Red
+                    )
+                }
+                else -> {
+                    // STATUS_PENDING
+                    Text(
+                        text = "Pending",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Gray
+                    )
                 }
             }
-
-            // Actions
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (download.status == DownloadedMovie.STATUS_COMPLETED) {
-                    IconButton(onClick = onPlay) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Play",
-                            tint = Color.White
-                        )
-                    }
-                } else if (download.status == DownloadedMovie.STATUS_DOWNLOADING) {
-                    IconButton(onClick = onPause) {
-                        Icon(
-                            imageVector = Icons.Filled.Pause,
-                            contentDescription = "Pause",
-                            tint = Color.White
-                        )
-                    }
-                } else if (download.status == DownloadedMovie.STATUS_PAUSED || download.status == DownloadedMovie.STATUS_FAILED) {
-                     IconButton(onClick = onResume) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "Resume",
-                            tint = Color.White
-                        )
-                    }
+        }
+        
+        // Action area (removed explicit buttons to match minimalist look, keeping implicit action space)
+        // Action area - includes Play/Pause/Resume/Retry and Delete functionality
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (download.status == DownloadedMovie.STATUS_COMPLETED) {
+                // Play and Delete
+                IconButton(onClick = onPlay, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = "Play",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
-
-                IconButton(onClick = onDelete) {
+                Spacer(modifier = Modifier.width(4.dp))
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Delete",
-                        tint = Color.Red.copy(alpha = 0.7f)
+                        tint = Color.Gray,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            } else if (download.status == DownloadedMovie.STATUS_DOWNLOADING) {
+                // Pause and Delete
+                IconButton(onClick = onPause, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.Pause,
+                        contentDescription = "Pause",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Cancel Download",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            } else if (download.status == DownloadedMovie.STATUS_PAUSED || download.status == DownloadedMovie.STATUS_FAILED) {
+                // Resume/Retry and Delete
+                IconButton(onClick = onResume, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.PlayArrow,
+                        contentDescription = if (download.status == DownloadedMovie.STATUS_PAUSED) "Resume" else "Retry",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(4.dp))
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Delete",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(24.dp)
                     )
                 }
             }
