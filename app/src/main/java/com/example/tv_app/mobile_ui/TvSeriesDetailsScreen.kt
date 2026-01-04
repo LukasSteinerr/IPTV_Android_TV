@@ -59,7 +59,7 @@ import coil.ImageLoader
 import coil.request.SuccessResult
 import com.example.tv_app.model.MoviePalette
 import com.example.tv_app.presentation.utils.createVerticalBackgroundGradient
-import com.example.tv_app.presentation.common.TMDBPosterImage
+import com.example.tv_app.presentation.common.TMDBTvPosterImage
 import com.example.tv_app.R
 import com.example.tv_app.model.ObjectBox
 import androidx.compose.material.icons.filled.Close
@@ -350,6 +350,16 @@ private fun Details(
                     textAlign = TextAlign.Center,
                     modifier = Modifier.padding(horizontal = MobilePadding)
                 )
+                // Display series ID for debugging purposes
+                tvSeriesDetails.seriesId?.let { seriesId ->
+                    Text(
+                        text = "Series ID: $seriesId",
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = Color.Red,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.padding(horizontal = MobilePadding)
+                    )
+                }
                 Spacer(modifier = Modifier.height(16.dp))
             }
 
@@ -553,7 +563,7 @@ private fun MoviePosterCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         modifier = modifier
     ) {
-        TMDBPosterImage(
+        TMDBTvPosterImage(
             tmdbId = tmdbId,
             fallbackUrl = posterUrl,
             tmdbImageProvider = tmdbImageProvider,
