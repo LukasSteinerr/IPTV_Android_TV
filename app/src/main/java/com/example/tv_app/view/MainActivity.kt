@@ -23,6 +23,8 @@ import com.example.tv_app.model.Channel
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.TvEpisode
 import com.example.tv_app.repository.PlaylistService
+import com.example.tv_app.repository.DownloadRepository
+import com.example.tv_app.utils.NotificationPermissionHelper
 import com.example.tv_app.ui.theme.TV_APPTheme
 import com.example.tv_app.presentation.screens.videoPlayer.VideoPlayerScreen
 import com.example.tv_app.presentation.screens.videoPlayer.VideoPlayerViewModel
@@ -97,6 +99,8 @@ fun TvAppNavigation() {
     var tvSeriesDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     var selectedTab by remember { mutableStateOf(0) } // Centralized tab state
     val playlistService = remember { PlaylistService() }
+    val context = LocalContext.current
+    val downloadRepository = remember { DownloadRepository(context) }
     
     // Create a shared ViewModel for the video player
     val videoPlayerViewModel = remember { VideoPlayerViewModel() }
@@ -241,6 +245,24 @@ fun TvAppNavigation() {
                         Log.d("MainActivity", "Playing movie: ${movie.name}")
                         videoPlayerViewModel.loadMovie(movie)
                         currentScreen = TvScreen.VideoPlayer
+                    },
+                    onDownloadMovie = { movie ->
+                        Log.d("MainActivity", "Download button clicked for: ${movie.name}")
+                        downloadRepository.downloadMovie(movie, object : DownloadRepository.NotificationPermissionCallback {
+                            override fun onPermissionRequired() {
+                                Log.d("MainActivity", "Notification permission required, opening settings")
+                                // Ensure we open notification settings from UI thread
+                                try {
+                                    NotificationPermissionHelper.openNotificationSettings(context)
+                                } catch (e: Exception) {
+                                    Log.e("MainActivity", "Failed to open notification settings: ${e.message}")
+                                }
+                            }
+                            
+                            override fun onPermissionGranted() {
+                                Log.d("MainActivity", "Download started successfully")
+                            }
+                        })
                     }
                 )
             }

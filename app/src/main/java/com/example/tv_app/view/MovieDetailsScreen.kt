@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.CircularProgressIndicator
@@ -70,7 +71,8 @@ fun MovieDetailsScreen(
     @Suppress("UNUSED_PARAMETER") playlistService: PlaylistService,
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit = {},
-    onPlayMovie: (Movie) -> Unit = {}
+    onPlayMovie: (Movie) -> Unit = {},
+    onDownloadMovie: (Movie) -> Unit = {}
 ) {
     // Force recomposition when key changes
     LaunchedEffect(key) {
@@ -166,6 +168,7 @@ fun MovieDetailsScreen(
                 reviewsAndRatings = reviewsAndRatings,
                 backdropUrl = backdropUrl,
                 onPlayMovie = { onPlayMovie(displayMovie) },
+                onDownloadMovie = { onDownloadMovie(displayMovie) },
                 onBackPressed = onBackPressed,
                 onMovieSelected = onMovieSelected,
                 lazyListState = lazyListState,
@@ -186,6 +189,7 @@ private fun Details(
     reviewsAndRatings: List<MovieReviewsAndRatings>,
     backdropUrl: String?,
     onPlayMovie: () -> Unit,
+    onDownloadMovie: () -> Unit,
     onBackPressed: () -> Unit,
     onMovieSelected: (Movie) -> Unit,
     lazyListState: LazyListState,
@@ -204,7 +208,8 @@ private fun Details(
                 movieDetails = movieDetails,
                 genres = genres,
                 backdropUrl = backdropUrl,
-                onPlayMovie = onPlayMovie
+                onPlayMovie = onPlayMovie,
+                onDownloadMovie = onDownloadMovie
             )
         }
 
@@ -285,7 +290,8 @@ private fun MovieDetailsHeader(
     movieDetails: Movie,
     genres: List<String>,
     backdropUrl: String?,
-    onPlayMovie: () -> Unit
+    onPlayMovie: () -> Unit,
+    onDownloadMovie: () -> Unit
 ) {
     val childPadding = rememberChildPadding()
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
@@ -350,6 +356,10 @@ private fun MovieDetailsHeader(
                         goToMoviePlayer = onPlayMovie
                     )
 
+                    DownloadButton(
+                        onClick = onDownloadMovie
+                    )
+
                     // Add Watch Trailer button if trailer is available
                     if (!movieDetails.trailer.isNullOrBlank()) {
                         WatchTrailerButton(
@@ -407,6 +417,28 @@ private fun WatchTrailerButton(
         Icon(
             imageVector = Icons.Filled.PlayArrow,
             contentDescription = "Watch Trailer"
+        )
+    }
+}
+
+@Composable
+private fun DownloadButton(
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        modifier = Modifier.padding(top = 24.dp),
+        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+        shape = ButtonDefaults.shape(shape = JetStreamButtonShape)
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Download,
+            contentDescription = null
+        )
+        Spacer(Modifier.size(8.dp))
+        Text(
+            text = "Download",
+            style = MaterialTheme.typography.titleSmall
         )
     }
 }

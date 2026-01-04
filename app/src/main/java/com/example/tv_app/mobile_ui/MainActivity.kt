@@ -27,6 +27,8 @@ import com.example.tv_app.model.Channel
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.TvEpisode
 import com.example.tv_app.repository.PlaylistService
+import com.example.tv_app.repository.DownloadRepository
+import com.example.tv_app.utils.NotificationPermissionHelper
 import com.example.tv_app.ui.theme.TV_APPTheme
 import com.example.tv_app.presentation.screens.videoPlayer.VideoPlayerScreen
 import com.example.tv_app.presentation.screens.videoPlayer.VideoPlayerViewModel
@@ -106,11 +108,11 @@ class MainActivity : FragmentActivity() {
         db.collection("testUsers")
             .add(user)
             .addOnSuccessListener { documentReference ->
-                Log.d("FirebaseTest", "DocumentSnapshot added with ID: ${documentReference.id}")
+                android.util.Log.d("FirebaseTest", "DocumentSnapshot added with ID: ${documentReference.id}")
                 // Connection successful! You can show a Toast or update UI here
             }
             .addOnFailureListener { e ->
-                Log.w("FirebaseTest", "Error adding document", e)
+                android.util.Log.w("FirebaseTest", "Error adding document", e)
                 // Connection failed. Handle the error (e.g., check for network issues, rules)
             }
     }
@@ -159,7 +161,7 @@ fun MobileAppNavigation() {
                     onPlaylistSelected = { playlist ->
                         selectedPlaylist = playlist
                         currentScreen = MobileScreen.Home
-                        Log.d("MainActivity", "Selected playlist: ${playlist.name}")
+                        android.util.Log.d("MainActivity", "Selected playlist: ${playlist.name}")
                     },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -211,7 +213,7 @@ fun MobileAppNavigation() {
                     onPlayMovie = { downloadedMovie ->
                         // TODO: Implement local playback
                         // For now we can maybe map it back to a Movie object or use a separate player launcher
-                        Log.d("MainActivity", "Play local: ${downloadedMovie.localPath}")
+                        android.util.Log.d("MainActivity", "Play local: ${downloadedMovie.localPath}")
                     }
                 )
             }
@@ -250,15 +252,29 @@ fun MobileAppNavigation() {
                             movieDetailsKey++ // Increment key to force screen refresh
                         },
                         onPlayMovie = { movie ->
-                            Log.d("MainActivity", "Playing movie: ${movie.name}")
+                            android.util.Log.d("MainActivity", "Playing movie: ${movie.name}")
                             videoPlayerViewModel.loadMovie(movie)
                             currentScreen = MobileScreen.VideoPlayer
                         },
                         onDownloadMovie = { movie ->
-                            Log.d("MainActivity", "Download button clicked for: ${movie.name}")
-                            Log.d("MainActivity", "Stream URL: ${movie.streamUrl}")
-                            Log.d("MainActivity", "Stream ID: ${movie.streamId}")
-                            downloadRepository.downloadMovie(movie)
+                            android.util.Log.d("MainActivity", "Download button clicked for: ${movie.name}")
+                            android.util.Log.d("MainActivity", "Stream URL: ${movie.streamUrl}")
+                            android.util.Log.d("MainActivity", "Stream ID: ${movie.streamId}")
+                            downloadRepository.downloadMovie(movie, object : DownloadRepository.NotificationPermissionCallback {
+                                override fun onPermissionRequired() {
+                                    android.util.Log.d("MainActivity", "Notification permission required, opening settings")
+                                    // Ensure we open notification settings from UI thread
+                                    try {
+                                        NotificationPermissionHelper.openNotificationSettings(context)
+                                    } catch (e: Exception) {
+                                        android.util.Log.e("MainActivity", "Failed to open notification settings: ${e.message}")
+                                    }
+                                }
+                                
+                                override fun onPermissionGranted() {
+                                    android.util.Log.d("MainActivity", "Download started successfully")
+                                }
+                            })
                         },
                         modifier = Modifier.padding(paddingValues)
                     )
@@ -278,7 +294,7 @@ fun MobileAppNavigation() {
                             tvSeriesDetailsKey++ // Increment key to force screen refresh
                         },
                         onEpisodeSelected = { episode ->
-                            Log.d("MainActivity", "Playing episode: ${episode.name}")
+                            android.util.Log.d("MainActivity", "Playing episode: ${episode.name}")
                             videoPlayerViewModel.loadEpisode(episode)
                             currentScreen = MobileScreen.VideoPlayer
                         },

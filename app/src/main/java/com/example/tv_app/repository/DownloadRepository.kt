@@ -11,6 +11,7 @@ import com.example.tv_app.model.DownloadedMovie
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.ObjectBox
 import com.example.tv_app.service.DownloadService
+import com.example.tv_app.utils.NotificationPermissionHelper
 import io.objectbox.Box
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +24,12 @@ class DownloadRepository(private val context: Context) {
 
     private val downloadBox: Box<DownloadedMovie> = ObjectBox.boxStore.boxFor(DownloadedMovie::class.java)
     private val scope = CoroutineScope(Dispatchers.IO)
+    
+    // Callback for notification permission requests
+    interface NotificationPermissionCallback {
+        fun onPermissionRequired()
+        fun onPermissionGranted()
+    }
     
     companion object {
         private const val TAG = "DownloadRepository"
@@ -92,13 +99,32 @@ class DownloadRepository(private val context: Context) {
 
     fun getDownload(id: Long): DownloadedMovie? = downloadBox[id]
 
-    fun downloadMovie(movie: Movie) {
+    fun downloadMovie(movie: Movie, permissionCallback: NotificationPermissionCallback? = null) {
         Log.d(TAG, "=== DOWNLOAD MOVIE CALLED ===")
         Log.d(TAG, "Movie name: ${movie.name}")
         Log.d(TAG, "Stream URL: ${movie.streamUrl}")
         Log.d(TAG, "Stream ID: ${movie.streamId}")
         
-        // Check network connectivity first
+        // Check notification permission first
+        val hasPermission = NotificationPermissionHelper.hasNotificationPermission(context)
+        Log.d(TAG, "Notification permission check result: $hasPermission")
+        
+        if (!hasPermission) {
+            Log.w(TAG, "Notification permission not granted, opening settings")
+            scope.launch(Dispatchers.Main) {
+                permissionCallback?.onPermissionRequired()
+                // Open notification settings directly
+                NotificationPermissionHelper.openNotificationSettings(context)
+                Toast.makeText(
+                    context, 
+                    "Notification permission is required to show download progress. Opening settings...", 
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+            return
+        }
+        
+        // Check network connectivity
         if (!isNetworkAvailable()) {
             Log.e(TAG, "No network connection available")
             scope.launch(Dispatchers.Main) {
@@ -160,6 +186,8 @@ class DownloadRepository(private val context: Context) {
             
             // Start download via foreground service for consistent notification
             DownloadService.startDownload(context, id)
+            
+            permissionCallback?.onPermissionGranted()
             
             scope.launch(Dispatchers.Main) {
                 Toast.makeText(context, "Download started: ${movie.name}", Toast.LENGTH_SHORT).show()
