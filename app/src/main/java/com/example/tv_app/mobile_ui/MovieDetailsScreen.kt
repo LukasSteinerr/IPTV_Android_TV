@@ -58,6 +58,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -68,6 +69,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import coil.ImageLoader
 import coil.compose.AsyncImage
+import coil.decode.SvgDecoder // Add import for SvgDecoder
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.example.tv_app.R
@@ -350,6 +352,7 @@ private fun Details(
                     MoviePosterCard(
                         movie = movieDetails,
                         tmdbImageProvider = tmdbImageProvider,
+                        onPlayClick = onPlayMovie, // Pass the play action
                         modifier = Modifier
                             .padding(top = 80.dp, bottom = 16.dp)
                             .width(160.dp) // Set width to match image ratio
@@ -479,15 +482,6 @@ private fun Details(
             )
         }
 
-        // Watch Movie Button (Fixed Bottom)
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .padding(horizontal = MobilePadding, vertical = 8.dp) // Padding for visual spacing
-        ) {
-            WatchMovieButton(onClick = onPlayMovie)
-        }
     }
 }
 
@@ -495,6 +489,7 @@ private fun Details(
 private fun MoviePosterCard(
     movie: Movie,
     tmdbImageProvider: TMDBImageProvider,
+    onPlayClick: () -> Unit, // Added onPlayClick parameter
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -502,35 +497,43 @@ private fun MoviePosterCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         modifier = modifier
     ) {
-        TMDBPosterImage(
-            tmdbId = movie.tmdbId,
-            fallbackUrl = movie.posterUrl ?: movie.backdropUrl ?: movie.coverUrl,
-            tmdbImageProvider = tmdbImageProvider,
-            contentDescription = movie.name,
-            modifier = Modifier.fillMaxSize()
-        )
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            TMDBPosterImage(
+                tmdbId = movie.tmdbId,
+                fallbackUrl = movie.posterUrl ?: movie.backdropUrl ?: movie.coverUrl,
+                tmdbImageProvider = tmdbImageProvider,
+                contentDescription = movie.name,
+                modifier = Modifier.fillMaxSize()
+            )
+            // Playhead icon overlay
+            val context = LocalContext.current
+            val svgImageLoader = remember {
+                ImageLoader.Builder(context)
+                    .components {
+                        add(SvgDecoder.Factory())
+                    }
+                    .build()
+            }
+            
+            AsyncImage(
+                model = "file:///android_asset/playhead.svg",
+                contentDescription = "Play Icon",
+                imageLoader = svgImageLoader, // Use custom loader
+                modifier = Modifier
+                    .size(80.dp) // Adjust size as needed
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f)) // Semi-transparent background
+                    .clickable(onClick = onPlayClick) // Make the entire 80.dp circle clickable
+                    .padding(16.dp), // Padding to visually inset the icon
+                colorFilter = ColorFilter.tint(Color.White)
+            )
+        }
     }
 }
 
-@Composable
-private fun WatchMovieButton(onClick: () -> Unit) {
-    Button(
-        onClick = { onClick() },
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF007AFF), // Strong blue color
-            contentColor = Color.White
-        ),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(
-            text = stringResource(id = R.string.watch_movie),
-            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-        )
-    }
-}
 
 @Composable
 private fun WatchTrailerButton(
