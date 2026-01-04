@@ -30,8 +30,10 @@ import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.ui.theme.TV_APPTheme
 import com.example.tv_app.presentation.screens.videoPlayer.VideoPlayerScreen
 import com.example.tv_app.presentation.screens.videoPlayer.VideoPlayerViewModel
+import com.example.tv_app.utils.PermissionHelper
 import io.objectbox.Box
 import android.util.Log
+import android.widget.Toast
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import dev.chrisbanes.haze.HazeState
@@ -42,6 +44,9 @@ class MainActivity : FragmentActivity() {
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Request necessary permissions
+        requestPermissionsIfNeeded()
 
         // Test Firebase connection
         testFirebaseConnection()
@@ -57,7 +62,37 @@ class MainActivity : FragmentActivity() {
             }
         }
     }
-
+    
+    private fun requestPermissionsIfNeeded() {
+        if (!PermissionHelper.hasStoragePermission(this)) {
+            PermissionHelper.requestStoragePermission(this)
+        }
+        if (!PermissionHelper.hasNotificationPermission(this)) {
+            PermissionHelper.requestNotificationPermission(this)
+        }
+    }
+    
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        when (requestCode) {
+            PermissionHelper.STORAGE_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Storage permission granted", Toast.LENGTH_SHORT).show()
+                } else {
+                    Toast.makeText(this, "Storage permission denied. Downloads may not work.", Toast.LENGTH_LONG).show()
+                }
+            }
+            PermissionHelper.NOTIFICATION_PERMISSION_REQUEST_CODE -> {
+                if (grantResults.isNotEmpty() && grantResults[0] == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                    Toast.makeText(this, "Notification permission granted", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
     // Define a simple function to test the connection
     fun testFirebaseConnection() {
         val db = Firebase.firestore
@@ -220,8 +255,10 @@ fun MobileAppNavigation() {
                             currentScreen = MobileScreen.VideoPlayer
                         },
                         onDownloadMovie = { movie ->
+                            Log.d("MainActivity", "Download button clicked for: ${movie.name}")
+                            Log.d("MainActivity", "Stream URL: ${movie.streamUrl}")
+                            Log.d("MainActivity", "Stream ID: ${movie.streamId}")
                             downloadRepository.downloadMovie(movie)
-                            // Optional: Show toast or feedback
                         },
                         modifier = Modifier.padding(paddingValues)
                     )
