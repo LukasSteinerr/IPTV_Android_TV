@@ -133,7 +133,7 @@ fun PlaylistLoadingScreen(
     modifier: Modifier = Modifier
 ) {
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
@@ -143,7 +143,8 @@ fun PlaylistLoadingScreen(
                         Color(0xFF0A0A0A)
                     )
                 )
-            ),
+            )
+            .then(modifier),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -178,7 +179,7 @@ fun AddPlaylistForm(
     modifier: Modifier = Modifier
 ) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
@@ -190,6 +191,7 @@ fun AddPlaylistForm(
                 )
             )
             .padding(horizontal = 24.dp, vertical = 24.dp)
+            .then(modifier)
     ) {
         // Header
         Row(
