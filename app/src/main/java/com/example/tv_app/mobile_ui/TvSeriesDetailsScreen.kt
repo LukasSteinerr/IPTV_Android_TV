@@ -317,9 +317,10 @@ private fun Details(
     // Set a solid black background color for the entire screen.
     // The palette-based gradient will be applied internally to the header content so it scrolls away.
     Box(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
+            .then(modifier)
     ) {
         LazyColumn(
             state = lazyListState,
