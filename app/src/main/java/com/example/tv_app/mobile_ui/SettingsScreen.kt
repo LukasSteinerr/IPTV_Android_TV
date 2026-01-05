@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.List
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.StarRate
+import androidx.compose.material.icons.filled.Support
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -31,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -93,21 +93,14 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
         SettingItem("Tell a Friend", Icons.Default.Share),
         SettingItem("Report a Bug", Icons.Default.BugReport),
         SettingItem("Rate", Icons.Default.StarRate),
+        SettingItem("Support", Icons.Default.Support),
         SettingItem("Info", Icons.Default.Info)
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0A0A0A),
-                        Color(0xFF121212),
-                        Color(0xFF0A0A0A)
-                    )
-                )
-            )
+            .background(Color.Black)
             .then(modifier)
     ) {
         Column(
