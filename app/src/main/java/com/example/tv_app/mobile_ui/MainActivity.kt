@@ -132,6 +132,7 @@ fun MobileAppNavigation() {
     var movieDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     var tvSeriesDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     var lastMainScreen by remember { mutableStateOf<MobileScreen>(MobileScreen.Home) }
+    var videoPlayerSourceScreen by remember { mutableStateOf<MobileScreen?>(null) } // Track where the video player was launched from
     val playlistService = remember { PlaylistService() }
     
     // Create a shared ViewModel for the video player
@@ -258,6 +259,7 @@ fun MobileAppNavigation() {
                         onPlayMovie = { movie ->
                             android.util.Log.d("MainActivity", "Playing movie: ${movie.name}")
                             videoPlayerViewModel.loadMovie(movie)
+                            videoPlayerSourceScreen = MobileScreen.MovieDetails
                             currentScreen = MobileScreen.VideoPlayer
                         },
                         onDownloadMovie = { movie ->
@@ -300,6 +302,7 @@ fun MobileAppNavigation() {
                         onEpisodeSelected = { episode ->
                             android.util.Log.d("MainActivity", "Playing episode: ${episode.name}")
                             videoPlayerViewModel.loadEpisode(episode)
+                            videoPlayerSourceScreen = MobileScreen.TvSeriesDetails
                             currentScreen = MobileScreen.VideoPlayer
                         },
                         modifier = Modifier.padding(paddingValues)
@@ -312,8 +315,8 @@ fun MobileAppNavigation() {
                         // Reset the video player state when navigating away
                         videoPlayerViewModel.reset()
                         // Check if we were playing a movie or episode to navigate back to the correct screen
-                        // For now, we'll check if we have a selected TV series to determine the back navigation
-                        currentScreen = if (selectedTvSeries != null) MobileScreen.TvSeriesDetails else MobileScreen.MovieDetails
+                        currentScreen = videoPlayerSourceScreen ?: lastMainScreen // Fallback to lastMainScreen if source is null
+                        videoPlayerSourceScreen = null // Clear source after navigating back
                     },
                     viewModel = videoPlayerViewModel,
                     modifier = Modifier.padding(paddingValues)
