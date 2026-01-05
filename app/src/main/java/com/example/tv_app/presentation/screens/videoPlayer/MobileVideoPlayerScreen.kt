@@ -2,6 +2,7 @@ package com.example.tv_app.presentation.screens.videoPlayer
 
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -11,8 +12,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.media3.common.MediaItem
@@ -80,11 +85,27 @@ fun MobileVideoPlayerScreenContent(
     val context = LocalContext.current
     val window = (context as? androidx.activity.ComponentActivity)?.window
 
-    // Keep screen on while video is playing
-    DisposableEffect(Unit) {
-        window?.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+    // Keep screen on and hide system UI for an immersive experience
+    DisposableEffect(window) {
+        if (window != null) {
+            val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+            insetsController.apply {
+                hide(WindowInsetsCompat.Type.statusBars())
+                hide(WindowInsetsCompat.Type.navigationBars())
+                systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+            window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
         onDispose {
-            window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            if (window != null) {
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                insetsController.apply {
+                    show(WindowInsetsCompat.Type.statusBars())
+                    show(WindowInsetsCompat.Type.navigationBars())
+                    systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+                }
+                window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+            }
         }
     }
 
@@ -102,7 +123,12 @@ fun MobileVideoPlayerScreenContent(
         onBackPressed()
     }
 
-    Box(modifier.fillMaxSize()) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black),
+        contentAlignment = Alignment.Center
+    ) {
         AndroidView(
             factory = {
                 PlayerView(it).apply {
