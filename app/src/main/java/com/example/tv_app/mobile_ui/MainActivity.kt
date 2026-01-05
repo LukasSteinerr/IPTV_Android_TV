@@ -132,6 +132,7 @@ fun MobileAppNavigation() {
     var movieDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     var tvSeriesDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     var lastMainScreen by remember { mutableStateOf<MobileScreen>(MobileScreen.Home) }
+    var homeScreenSelectedTab by remember { mutableStateOf(0) } // Track selected tab within HomeScreen (0=Movie, 1=Shows, 2=LiveTV)
     var videoPlayerSourceScreen by remember { mutableStateOf<MobileScreen?>(null) } // Track where the video player was launched from
     val playlistService = remember { PlaylistService() }
     
@@ -189,13 +190,17 @@ fun MobileAppNavigation() {
                     HomeScreen(
                         playlist = playlist,
                         playlistService = playlistService,
+                        selectedTab = homeScreenSelectedTab, // Pass current state
+                        onTabSelected = { homeScreenSelectedTab = it }, // Update state when tab changes
                         onMovieSelected = { movie ->
                             selectedMovie = movie
+                            selectedTvSeries = null // Clear TV series state
                             lastMainScreen = MobileScreen.Home
                             currentScreen = MobileScreen.MovieDetails
                         },
                         onShowSelected = { show ->
                             selectedTvSeries = show
+                            selectedMovie = null // Clear movie state
                             lastMainScreen = MobileScreen.Home
                             currentScreen = MobileScreen.TvSeriesDetails
                         },
@@ -226,11 +231,13 @@ fun MobileAppNavigation() {
                 MyListScreen(
                     onMovieSelected = { movie ->
                         selectedMovie = movie
+                        selectedTvSeries = null // Clear TV series state
                         lastMainScreen = MobileScreen.MyList
                         currentScreen = MobileScreen.MovieDetails
                     },
                     onTvSeriesSelected = { series ->
                         selectedTvSeries = series
+                        selectedMovie = null // Clear movie state
                         lastMainScreen = MobileScreen.MyList
                         currentScreen = MobileScreen.TvSeriesDetails
                     },
@@ -251,6 +258,7 @@ fun MobileAppNavigation() {
                         playlistService = playlistService,
                         onBackPressed = {
                             currentScreen = lastMainScreen
+                            selectedMovie = null // Clear selected movie on back
                         },
                         onMovieSelected = { newMovie ->
                             selectedMovie = newMovie
@@ -294,6 +302,7 @@ fun MobileAppNavigation() {
                         playlistService = playlistService,
                         onBackPressed = {
                             currentScreen = lastMainScreen
+                            selectedTvSeries = null // Clear selected TV series on back
                         },
                         onTvSeriesSelected = { newSeries ->
                             selectedTvSeries = newSeries

@@ -21,6 +21,8 @@ import dev.chrisbanes.haze.HazeState
 fun HomeScreen(
     playlist: Playlist,
     playlistService: PlaylistService,
+    selectedTab: Int, // Externalized state
+    onTabSelected: (Int) -> Unit, // Externalized state updater
     onMovieSelected: (com.example.tv_app.model.Movie) -> Unit,
     onShowSelected: (com.example.tv_app.model.TvSeries) -> Unit,
     onChannelSelected: (com.example.tv_app.model.Channel) -> Unit,
@@ -28,7 +30,6 @@ fun HomeScreen(
     hazeState: HazeState,
     contentPadding: PaddingValues
 ) {
-    var selectedTab by remember { mutableStateOf(0) }
     var showSearch by remember { mutableStateOf(false) }
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
     var selectedCategoryName by remember { mutableStateOf<String?>(null) }
@@ -72,7 +73,7 @@ fun HomeScreen(
             if (!showSearch && selectedCategoryId == null) {
                 FixedPrimaryAppBar(
                     selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it },
+                    onTabSelected = onTabSelected,
                     onSearchClick = { showSearch = true },
                     backgroundColor = appBarColor
                 )
@@ -107,7 +108,7 @@ fun HomeScreen(
                     contentPadding = contentPadding,
                     onSeeAllClick = onCategorySelected,
                     selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it },
+                    onTabSelected = onTabSelected,
                     lazyListState = lazyListState,
                     hazeState = hazeState
                 )
@@ -120,7 +121,7 @@ fun HomeScreen(
                     contentPadding = contentPadding,
                     onSeeAllClick = onCategorySelected,
                     selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it },
+                    onTabSelected = onTabSelected,
                     lazyListState = lazyListState,
                     hazeState = hazeState
                 )
@@ -131,7 +132,7 @@ fun HomeScreen(
                     onBackPressed = onBackPressed,
                     contentPadding = contentPadding,
                     selectedTab = selectedTab,
-                    onTabSelected = { selectedTab = it }
+                    onTabSelected = onTabSelected
                 )
             }
         }
