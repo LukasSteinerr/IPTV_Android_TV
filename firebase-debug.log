@@ -2761,3 +2761,23 @@
 [debug] [2026-01-05T19:47:00.456Z] > authorizing via signed-in user (simlucke@gmail.com)
 [debug] [2026-01-05T19:47:00.457Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com 400
 [debug] [2026-01-05T19:47:00.457Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com [omitted]
+[debug] [2026-01-05T20:03:59.053Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-05T20:03:59.054Z] > authorizing via signed-in user (simlucke@gmail.com)
+[debug] [2026-01-05T20:03:59.060Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-05T20:03:59.060Z] > authorizing via signed-in user (simlucke@gmail.com)
+[debug] [2026-01-05T20:03:59.067Z] Checked if tokens are valid: true, expires at: 1767646012087
+[debug] [2026-01-05T20:03:59.067Z] Checked if tokens are valid: true, expires at: 1767646012087
+[debug] [2026-01-05T20:03:59.068Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com [none]
+[debug] [2026-01-05T20:03:59.068Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com x-goog-quota-user=projects/
+[debug] [2026-01-05T20:03:59.078Z] Checked if tokens are valid: true, expires at: 1767646012087
+[debug] [2026-01-05T20:03:59.078Z] Checked if tokens are valid: true, expires at: 1767646012087
+[debug] [2026-01-05T20:03:59.079Z] >>> [apiv2][query] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com [none]
+[debug] [2026-01-05T20:03:59.079Z] >>> [apiv2][(partial)header] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com x-goog-quota-user=projects/
+[debug] [2026-01-05T20:03:59.864Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com 400
+[debug] [2026-01-05T20:03:59.864Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com [omitted]
+[debug] [2026-01-05T20:03:59.866Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-05T20:03:59.866Z] > authorizing via signed-in user (simlucke@gmail.com)
+[debug] [2026-01-05T20:03:59.867Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-01-05T20:03:59.867Z] > authorizing via signed-in user (simlucke@gmail.com)
+[debug] [2026-01-05T20:03:59.896Z] <<< [apiv2][status] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com 400
+[debug] [2026-01-05T20:03:59.897Z] <<< [apiv2][body] GET https://serviceusage.googleapis.com/v1/projects//services/firebaseappdistribution.googleapis.com [omitted]
