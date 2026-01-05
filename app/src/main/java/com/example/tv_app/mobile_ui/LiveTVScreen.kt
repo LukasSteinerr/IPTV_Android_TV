@@ -26,6 +26,7 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalDensity // Added for TimeSlider pixel/dp conversion
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -239,9 +240,12 @@ fun ChannelListItemWithEpg(
     realCurrentTime: Long,
     onClick: () -> Unit
 ) {
+    // Set a fixed height for the entire list item content area (image + epg data)
+    // We use a fixed height of 100.dp to stabilize the layout height.
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .height(110.dp) // Set a fixed height for stability, increased for better text fit
             .clickable(onClick = onClick)
             .padding(vertical = 12.dp, horizontal = 8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -254,52 +258,73 @@ fun ChannelListItemWithEpg(
                 .padding(end = 12.dp)
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(text = channel.name, color = Color.White, fontWeight = FontWeight.Bold)
+            Text(text = channel.name, color = Color.White, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             
-            // Now Program
-            val isActuallyNow = nowProgram?.let {
-                val now = Date(realCurrentTime)
-                it.startTime != null && it.stopTime != null && now.after(it.startTime) && now.before(it.stopTime)
-            } == true
-
-            nowProgram?.let { now ->
-                Text(
-                    text = if (isActuallyNow) "Now: ${now.title}" else now.title,
-                    color = if (isActuallyNow) Color.Yellow else Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = if (isActuallyNow) FontWeight.W600 else FontWeight.W500
-                )
-                Text(
-                    text = "${formatTime(now.startTime)} - ${formatTime(now.stopTime)}",
-                    color = Color.LightGray,
-                    fontSize = 12.sp
-                )
-            } ?: Text(
-                text = "No information now",
-                color = Color.LightGray,
-                fontSize = 14.sp
-            )
-
             Spacer(modifier = Modifier.height(4.dp))
 
-            // Next Program
-            nextProgram?.let { next ->
-                Text(
-                    text = next.title,
-                    color = Color.LightGray,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.W500
-                )
-                Text(
-                    text = "${formatTime(next.startTime)} - ${formatTime(next.stopTime)}",
-                    color = Color.Gray,
-                    fontSize = 12.sp
-                )
-            } ?: Text(
-                text = "No further information",
-                color = Color.Gray,
-                fontSize = 12.sp
-            )
+            // EPG Data Area: Use SpaceEvenly to distribute remaining vertical space consistently
+            Column(modifier = Modifier.fillMaxHeight().weight(1f), verticalArrangement = Arrangement.SpaceEvenly) {
+                // Now Program Block
+                val isActuallyNow = nowProgram?.let {
+                    val now = Date(realCurrentTime)
+                    it.startTime != null && it.stopTime != null && now.after(it.startTime) && now.before(it.stopTime)
+                } == true
+
+                nowProgram?.let { now ->
+                    Text(
+                        text = if (isActuallyNow) "Now: ${now.title}" else now.title,
+                        color = if (isActuallyNow) Color.Yellow else Color.White,
+                        fontSize = 14.sp,
+                        fontWeight = if (isActuallyNow) FontWeight.W600 else FontWeight.W500,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "${formatTime(now.startTime)} - ${formatTime(now.stopTime)}",
+                        color = Color.LightGray,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } ?: Column {
+                    Text(
+                        text = "No current program information",
+                        color = Color.LightGray,
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(text = "", fontSize = 12.sp) // Maintain space for the time line
+                }
+                
+                // Next Program Block
+                nextProgram?.let { next ->
+                    Text(
+                        text = "Next: ${next.title}",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.W500,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = "${formatTime(next.startTime)} - ${formatTime(next.stopTime)}",
+                        color = Color.Gray,
+                        fontSize = 12.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                } ?: Column {
+                    Text(
+                        text = "Next: No information",
+                        color = Color.Gray.copy(alpha = 0.8f),
+                        fontSize = 14.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(text = "", fontSize = 12.sp) // Maintain space for the time line
+                }
+            }
         }
         Icon(
             imageVector = Icons.Default.ChevronRight,
