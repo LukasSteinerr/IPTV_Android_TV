@@ -31,11 +31,20 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.runtime.derivedStateOf
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.TvSeries
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
+import com.example.tv_app.repository.TMDBService
+import com.example.tv_app.repository.WatchProgressRepository
+import com.example.tv_app.viewmodel.ContinueWatchingViewModel
+import com.example.tv_app.viewmodel.ContinueWatchingItem
+import com.example.tv_app.viewmodel.ViewModelFactory
 import com.example.tv_app.presentation.common.MovieCard
+import com.example.tv_app.presentation.common.ProgressMovieCard
 import com.example.tv_app.presentation.common.TvSeriesCard
 import kotlinx.coroutines.launch
 import androidx.activity.compose.BackHandler
@@ -59,22 +68,60 @@ fun CategoryGridScreen(
 
     val coroutineScope = rememberCoroutineScope()
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
+    
+    val isContinueWatching = categoryId == 0L
 
-    LaunchedEffect(categoryId, isMovie) {
-        coroutineScope.launch {
-            isLoading = true
-            contentList = try {
-                if (isMovie) {
-                    playlistService.getMoviesForCategory(categoryId)
-                        .sortedByDescending { it.added }
-                } else {
-                    playlistService.getTvSeriesForCategory(categoryId)
-                        .sortedByDescending { it.lastModified }
-                }
-            } catch (e: Exception) {
-                emptyList()
+    // Initialize CW ViewModel only if needed (for CW screen)
+    val cwViewModel: ContinueWatchingViewModel? = if (isContinueWatching) {
+        viewModel(
+            factory = remember {
+                ViewModelFactory(
+                    tmdbService = TMDBService(),
+                    playlistService = playlistService,
+                    watchProgressRepository = WatchProgressRepository()
+                )
             }
-            isLoading = false
+        )
+    } else null
+    
+    // Use collectAsStateWithLifecycle to collect the StateFlows safely
+    val cwMovieItems by (cwViewModel?.movieProgressItems?.collectAsStateWithLifecycle(emptyList())
+        ?: remember { mutableStateOf(emptyList()) })
+    
+    val cwSeriesItems by (cwViewModel?.seriesProgressItems?.collectAsStateWithLifecycle(emptyList())
+        ?: remember { mutableStateOf(emptyList()) })
+    
+    // Determine the final list to display
+    val finalContentList by remember(isContinueWatching, contentList, cwMovieItems, cwSeriesItems) {
+        derivedStateOf {
+            if (isContinueWatching) {
+                if (isMovie) cwMovieItems else cwSeriesItems
+            } else {
+                contentList.map { it as Any }
+            }
+        }
+    }
+
+    LaunchedEffect(categoryId, isMovie, cwMovieItems, cwSeriesItems) {
+        if (!isContinueWatching) {
+            coroutineScope.launch {
+                isLoading = true
+                contentList = try {
+                    if (isMovie) {
+                        playlistService.getMoviesForCategory(categoryId)
+                            .sortedByDescending { it.added }
+                    } else {
+                        playlistService.getTvSeriesForCategory(categoryId)
+                            .sortedByDescending { it.lastModified }
+                    }
+                } catch (e: Exception) {
+                    emptyList()
+                }
+                isLoading = false
+            }
+        } else {
+             // If CW mode, rely on flow updates.
+             isLoading = false
         }
     }
 
@@ -134,8 +181,18 @@ fun CategoryGridScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(contentList) { content ->
-                        if (isMovie) {
+                    items(finalContentList, key = {
+                        if (it is ContinueWatchingItem) it.mediaId else if (it is Movie) it.id else (it as TvSeries).id
+                    }) { content ->
+                        if (isContinueWatching) {
+                            val cwItem = content as ContinueWatchingItem
+                            ProgressMovieCard(
+                                movie = cwItem.movie,
+                                tmdbImageProvider = tmdbImageProvider,
+                                progressPercent = (cwItem.watchProgress.positionMillis.toFloat() / cwItem.watchProgress.durationMillis.toFloat()).coerceIn(0f, 1f),
+                                onClick = { onMovieSelected(cwItem.movie) }
+                            )
+                        } else if (isMovie) {
                             val movie = content as Movie
                             MovieCard(
                                 movie = movie,
