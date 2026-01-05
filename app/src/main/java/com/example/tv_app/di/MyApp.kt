@@ -2,6 +2,7 @@ package com.example.tv_app.di
 
 import android.app.Application
 import com.example.tv_app.model.ObjectBox
+import com.google.android.gms.cast.framework.CastContext
 import com.jakewharton.threetenabp.AndroidThreeTen
 
 class MyApp : Application() {
@@ -15,5 +16,7 @@ class MyApp : Application() {
         // ObjectBox.init() is done in App class
         ObjectBox.init(this)
 
+        // Ensure Cast Context is initialized as early as possible
+        CastContext.getSharedInstance(this)
     }
 }

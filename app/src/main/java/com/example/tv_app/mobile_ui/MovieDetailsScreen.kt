@@ -3,6 +3,8 @@ package com.example.tv_app.mobile_ui
 import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.BackHandler
+import androidx.mediarouter.media.MediaControlIntent
+import androidx.mediarouter.media.MediaRouteSelector
 import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -35,6 +37,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.outlined.FavoriteBorder
@@ -66,6 +69,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.graphics.drawable.toBitmap
 import coil.ImageLoader
 import coil.compose.AsyncImage
@@ -86,6 +90,7 @@ import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.repository.TMDBService
 import com.example.tv_app.repository.XtreamService
+import com.example.tv_app.cast.CastHelper // Import CastHelper
 import kotlinx.coroutines.launch
 
 // Define constant for fixed mobile padding
@@ -270,7 +275,15 @@ fun MovieDetailsScreen(
                 similarMovies = similarMovies,
                 genres = genres,
                 isLiked = isLiked,
-                onPlayMovie = { onPlayMovie(displayMovie) },
+                onPlayMovie = {
+                    // 1. Check for active Cast session and attempt to cast
+                    val castSucceeded = CastHelper.startCasting(context, displayMovie)
+
+                    // 2. If casting failed (no session or error), launch local player
+                    if (!castSucceeded) {
+                        onPlayMovie(displayMovie)
+                    }
+                },
                 onDownloadMovie = { onDownloadMovie(displayMovie) },
                 onToggleMyList = { targetMovie ->
                     // Immediate UI Update
@@ -461,28 +474,61 @@ private fun Details(
             }
         }
 
-        // Fixed elements overlay: Close button (Top Right) and Watch Movie (Bottom)
-
-        // Close button (Top Right)
-        Box(
+        // Fixed elements overlay: AppBar (Back/Close and Cast Button)
+        Row(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 24.dp, end = 16.dp)
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.5f))
-                .clickable(onClick = onBackPressed),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(top = 24.dp, end = MobilePadding, start = MobilePadding)
+                .align(Alignment.TopCenter),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = "Close",
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
-            )
+            // Close/Back Button (Top Left)
+            Box(
+                modifier = Modifier
+                    .size(40.dp) // Increased size for easier tapping
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(onClick = onBackPressed),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "Close",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            // Cast Button (Top Right)
+            CastButton(modifier = Modifier.padding(start = 8.dp))
         }
 
     }
+}
+
+@Composable
+private fun CastButton(modifier: Modifier = Modifier) {
+    // MediaRouteSelector is required for the MediaRouteButton to actively look for routes.
+    val selector = remember {
+        MediaRouteSelector.Builder()
+            .addControlCategory(MediaControlIntent.CATEGORY_LIVE_VIDEO)
+            .addControlCategory(MediaControlIntent.CATEGORY_REMOTE_PLAYBACK)
+            .build()
+    }
+
+    AndroidView(
+        factory = { context ->
+            val button = androidx.mediarouter.app.MediaRouteButton(context).apply {
+                // Set the selector explicitly to initiate discovery
+                routeSelector = selector
+            }
+            button
+        },
+        modifier = modifier
+            .size(40.dp) // Match the size of the Close button
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.5f))
+    )
 }
 
 @Composable

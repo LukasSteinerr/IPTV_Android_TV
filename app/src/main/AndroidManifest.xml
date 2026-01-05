@@ -12,10 +12,23 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Required for Cast -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+    <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
+    <!-- Required for device discovery (Android 12+) -->
+    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
+    <!-- Required for location-based discovery (pre-Android 12) -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <uses-feature
         android:name="android.hardware.touchscreen"
         android:required="false" />
+    <uses-feature
+        android:name="android.hardware.wifi"
+        android:required="true" />
     <uses-feature
         android:name="android.software.leanback"
         android:required="false" />
@@ -29,6 +42,14 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.TV_APP"
         android:usesCleartextTraffic="true">
+
+        <meta-data
+            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
+            android:value="com.example.tv_app.cast.CastOptionsProvider" />
+        <!-- Enable verbose logging for MediaRouter/Cast discovery -->
+        <meta-data
+            android:name="android.media.mediarouter.discovery"
+            android:value="enabled" />
         <activity
             android:name=".view.MainActivity"
             android:exported="true"

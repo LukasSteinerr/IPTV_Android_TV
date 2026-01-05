@@ -117,6 +117,13 @@ dependencies {
     implementation("androidx.media3:media3-ui:1.8.0")
     implementation("androidx.media3:media3-common:1.8.0")
     implementation("androidx.media3:media3-ui-compose:1.8.0")
+
+    // Google Cast dependencies
+    implementation("com.google.android.gms:play-services-cast-framework:21.4.0")
+    implementation("androidx.media3:media3-cast:1.8.0")
+    // Explicitly add mediarouter dependency for MediaRouteButton and CastButtonFactory
+    implementation("androidx.mediarouter:mediarouter:1.3.1")
+
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }
 
