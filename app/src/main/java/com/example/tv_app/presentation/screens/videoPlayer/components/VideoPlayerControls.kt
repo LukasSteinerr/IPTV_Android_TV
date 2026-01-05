@@ -4,9 +4,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesomeMotion
+import androidx.compose.material.icons.filled.AspectRatio
 import androidx.compose.material.icons.filled.ClosedCaption
 import androidx.compose.material.icons.filled.Settings
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -25,6 +26,8 @@ fun VideoPlayerControls(
     subtitleTracks: List<Track>,
     onSubtitleSelected: (Track) -> Unit,
     focusRequester: FocusRequester,
+    currentResizeMode: Int,
+    onResizeModeToggle: () -> Unit,
     onShowControls: () -> Unit = {},
 ) {
     val (showSubtitleMenu, setShowSubtitleMenu) = remember { mutableStateOf(false) }
@@ -69,15 +72,21 @@ fun VideoPlayerControls(
                     player = player,
                     onShowControls = onShowControls,
                 )
+                // Aspect Ratio Toggle
                 VideoPlayerControlsIcon(
-                    icon = Icons.Default.AutoAwesomeMotion,
-                    contentDescription = "Playlist",
-                    onClick = onShowControls
+                    onClick = onResizeModeToggle,
+                    icon = Icons.Default.AspectRatio,
+                    contentDescription = if (currentResizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIT) "Switch to Zoom" else "Switch to Fit",
                 )
                 VideoPlayerControlsIcon(
                     onClick = { setShowSubtitleMenu(true) },
                     icon = Icons.Default.ClosedCaption,
                     contentDescription = "Closed Captions"
+                )
+                VideoPlayerControlsIcon(
+                    icon = Icons.Default.AutoAwesomeMotion,
+                    contentDescription = "Playlist",
+                    onClick = onShowControls
                 )
                 VideoPlayerControlsIcon(
                     icon = Icons.Default.Settings,

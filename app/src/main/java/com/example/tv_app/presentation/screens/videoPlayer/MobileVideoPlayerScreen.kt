@@ -1,6 +1,8 @@
 package com.example.tv_app.presentation.screens.videoPlayer
 
 import android.net.Uri
+import android.view.View
+import android.widget.ImageButton
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -9,7 +11,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +29,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import androidx.media3.ui.R
 import com.example.tv_app.presentation.screens.videoPlayer.components.rememberPlayer
 
 object MobileVideoPlayerScreen {
@@ -84,6 +89,20 @@ fun MobileVideoPlayerScreenContent(
 ) {
     val context = LocalContext.current
     val window = (context as? androidx.activity.ComponentActivity)?.window
+    
+    var currentResizeMode by remember {
+        mutableStateOf(AspectRatioFrameLayout.RESIZE_MODE_FIT)
+    }
+
+    val toggleResizeMode: () -> Unit = remember {
+        {
+            currentResizeMode = if (currentResizeMode == AspectRatioFrameLayout.RESIZE_MODE_FIT) {
+                AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+            } else {
+                AspectRatioFrameLayout.RESIZE_MODE_FIT
+            }
+        }
+    }
 
     // Keep screen on and hide system UI for an immersive experience
     DisposableEffect(window) {
@@ -134,9 +153,36 @@ fun MobileVideoPlayerScreenContent(
                 PlayerView(it).apply {
                     player = exoPlayer
                     useController = true
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    resizeMode = currentResizeMode
                     setShowSubtitleButton(true)
+
+                    // Find the view group holding the basic controls (e.g., subtitles, quality)
+                    val basicControls: View? = findViewById(R.id.exo_basic_controls)
+                    val subtitlesButton = findViewById<ImageButton>(R.id.exo_subtitle)
+
+                    if (basicControls is android.widget.LinearLayout && subtitlesButton != null) {
+                        val aspectRatioButton = ImageButton(context).apply {
+                            id = View.generateViewId()
+                            contentDescription = "Toggle aspect ratio"
+                            setBackgroundResource(android.R.color.transparent)
+                            setImageResource(android.R.drawable.ic_menu_zoom) // Use a more appropriate system icon
+                            setOnClickListener { toggleResizeMode() }
+                        }
+                        
+                        // Insert the aspect ratio button before the subtitles button
+                        val index = basicControls.indexOfChild(subtitlesButton)
+                        if (index >= 0) {
+                            basicControls.addView(aspectRatioButton, index)
+                        } else {
+                            // If subtitles button is not found, just append
+                            basicControls.addView(aspectRatioButton)
+                        }
+                    }
+
                 }
+            },
+            update = {
+                it.resizeMode = currentResizeMode
             },
             modifier = Modifier.fillMaxSize()
         )
