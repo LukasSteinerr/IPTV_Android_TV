@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -144,6 +145,7 @@ fun MyListScreen(
                         colors = listOf(Color(0xFF1A1A1A), Color.Black)
                     )
                 )
+                .safeDrawingPadding()
                 .padding(16.dp)
         ) {
             Text(
