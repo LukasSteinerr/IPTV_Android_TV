@@ -184,13 +184,6 @@ fun CategoryGridScreen(
                                                 selectedItems.forEach { mediaId ->
                                                     vm.deleteProgress(mediaId)
                                                 }
-                                            } else if (allMediaIds.isNotEmpty()) {
-                                                // If nothing is selected, perform Clear All
-                                                if (isMovie) {
-                                                    vm.clearMovieProgress()
-                                                } else {
-                                                    vm.clearSeriesProgress()
-                                                }
                                             }
                                             selectedItems = emptySet()
                                             isSelectionMode = false
@@ -198,7 +191,7 @@ fun CategoryGridScreen(
                                     }
                                 },
                                 // Enable only if there are items to manage (either selected or total)
-                                enabled = allMediaIds.isNotEmpty()
+                                enabled = selectedItems.isNotEmpty()
                             ) {
                                 Icon(
                                     imageVector = Icons.Filled.Delete,
