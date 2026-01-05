@@ -28,6 +28,7 @@ import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
 import kotlinx.coroutines.launch
 import com.example.tv_app.presentation.common.TvSeriesCard
+import com.example.tv_app.presentation.components.FullScreenDarkLoading
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 
@@ -94,16 +95,7 @@ fun ShowsScreen(
             .background(Color.Black)
     ) {
         if (isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 4.dp,
-                    modifier = Modifier.size(64.dp)
-                )
-            }
+            FullScreenDarkLoading(modifier = Modifier.fillMaxSize())
         } else {
             LazyColumn(
                 state = lazyListState,

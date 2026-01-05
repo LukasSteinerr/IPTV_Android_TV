@@ -92,6 +92,7 @@ import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.repository.TMDBService
 import com.example.tv_app.repository.XtreamService
 import com.example.tv_app.cast.CastHelper // Import CastHelper
+import com.example.tv_app.presentation.components.FullScreenDarkLoading // Import shared loading screen
 import kotlinx.coroutines.launch
 
 // Define constant for fixed mobile padding
@@ -258,7 +259,7 @@ fun MovieDetailsScreen(
 
     when {
         isLoading -> {
-            LoadingScreen(modifier = Modifier.fillMaxSize())
+            FullScreenDarkLoading(modifier = Modifier.fillMaxSize())
         }
         else -> {
             Details(
@@ -307,18 +308,6 @@ fun MovieDetailsScreen(
                     .animateContentSize()
             )
         }
-    }
-}
-
-@Composable
-private fun LoadingScreen(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .background(Color.Black) // Ensure a dark background during loading
-            .fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        LoadingIndicator()
     }
 }
 

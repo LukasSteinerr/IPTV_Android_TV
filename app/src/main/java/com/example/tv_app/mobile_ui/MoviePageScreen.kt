@@ -30,6 +30,7 @@ import com.example.tv_app.repository.TMDBImageProvider
 import kotlinx.coroutines.launch
 import com.example.tv_app.presentation.common.MovieCard
 import com.example.tv_app.presentation.components.LoadingIndicator
+import com.example.tv_app.presentation.components.FullScreenDarkLoading
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 
@@ -96,7 +97,7 @@ fun MoviePageScreen(
             .background(Color.Black)
     ) {
         if (isLoading) {
-            LoadingScreen(modifier = Modifier.fillMaxSize())
+            FullScreenDarkLoading(modifier = Modifier.fillMaxSize())
         } else {
             LazyColumn(
                 state = lazyListState,
@@ -195,17 +196,5 @@ fun MovieCategoryRow(
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun LoadingScreen(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .background(Color.Black) // Ensure a dark background during loading
-            .fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        LoadingIndicator()
     }
 }

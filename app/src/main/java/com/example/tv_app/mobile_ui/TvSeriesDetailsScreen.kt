@@ -51,6 +51,7 @@ import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.presentation.common.TvSeriesCard
 import com.example.tv_app.presentation.components.TitleValueText
+import com.example.tv_app.presentation.components.FullScreenDarkLoading
 import kotlinx.coroutines.launch
 import android.content.Intent
 import android.net.Uri
@@ -245,16 +246,7 @@ fun TvSeriesDetailsScreen(
 
     when {
         isLoading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 4.dp,
-                    modifier = Modifier.size(64.dp)
-                )
-            }
+            FullScreenDarkLoading(modifier = Modifier.fillMaxSize())
         }
         else -> {
             Details(

@@ -23,6 +23,7 @@ import com.example.tv_app.model.PlaylistTypeConstants
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.viewmodel.PlaylistViewModel
 import com.example.tv_app.viewmodel.PlaylistViewModelFactory
+import com.example.tv_app.presentation.components.FullScreenDarkLoading
 import kotlinx.coroutines.launch
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -63,15 +64,15 @@ fun AddPlaylistScreen(
     // Show loading screen when adding playlist, form otherwise
     when (screenState.value) {
         is AddPlaylistState.Loading -> {
-            PlaylistLoadingScreen(
-                loadingMessage = loadingMessage,
+            FullScreenDarkLoading(
+                message = loadingMessage,
                 modifier = modifier
             )
         }
         is AddPlaylistState.Succeeding -> {
             // Keep showing loading until navigation happens
-            PlaylistLoadingScreen(
-                loadingMessage = "Playlist added successfully!",
+            FullScreenDarkLoading(
+                message = "Playlist added successfully!",
                 modifier = modifier
             )
         }
@@ -127,39 +128,6 @@ sealed class AddPlaylistState {
     object Succeeding : AddPlaylistState()
 }
 
-@Composable
-fun PlaylistLoadingScreen(
-    loadingMessage: String,
-    modifier: Modifier = Modifier
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0A0A0A),
-                        Color(0xFF121212),
-                        Color(0xFF0A0A0A)
-                    )
-                )
-            )
-            .then(modifier),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            com.example.tv_app.presentation.components.LoadingIndicator(
-                modifier = Modifier.size(40.dp)
-            )
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = loadingMessage,
-                color = Color.White.copy(alpha = 0.7f),
-                style = MaterialTheme.typography.bodyMedium
-            )
-        }
-    }
-}
 
 @Composable
 fun AddPlaylistForm(
