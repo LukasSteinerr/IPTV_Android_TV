@@ -1,6 +1,7 @@
 package com.example.tv_app.mobile_ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.navigationBars
@@ -10,7 +11,12 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.SelectAll
+import androidx.compose.material.icons.filled.Deselect
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -29,9 +35,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.border
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.runtime.derivedStateOf
@@ -66,6 +75,9 @@ fun CategoryGridScreen(
     BackHandler(onBack = onNavigateBack)
     var contentList by remember { mutableStateOf<List<Any>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
+    
+    var isSelectionMode by remember { mutableStateOf(false) } // State for selection mode
+    var selectedItems by remember { mutableStateOf<Set<String>>(emptySet()) } // Set of mediaIds to delete
 
     val coroutineScope = rememberCoroutineScope()
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
@@ -101,6 +113,19 @@ fun CategoryGridScreen(
                 contentList.map { it as Any }
             }
         }
+    }
+
+    val allMediaIds by remember(finalContentList) {
+        derivedStateOf {
+            finalContentList
+                .filterIsInstance<ContinueWatchingItem>()
+                .map { it.mediaId }
+                .toSet()
+        }
+    }
+    
+    val isAllSelected by remember(allMediaIds, selectedItems) {
+        derivedStateOf { allMediaIds.isNotEmpty() && selectedItems.size == allMediaIds.size }
     }
 
     LaunchedEffect(categoryId, isMovie, cwMovieItems, cwSeriesItems) {
@@ -146,25 +171,72 @@ fun CategoryGridScreen(
                 },
                 actions = {
                     if (isContinueWatching) {
-                        IconButton(
-                            onClick = {
-                                cwViewModel?.let {
-                                    coroutineScope.launch {
-                                        if (isMovie) {
-                                            it.clearMovieProgress()
-                                        } else {
-                                            it.clearSeriesProgress()
+                        if (isSelectionMode) {
+                            // --- Selection Mode Actions ---
+                            // 1. Delete Selected Button
+                            // 1. Delete/Clear All Button (Unified Logic)
+                            IconButton(
+                                onClick = {
+                                    cwViewModel?.let { vm ->
+                                        coroutineScope.launch {
+                                            if (selectedItems.isNotEmpty()) {
+                                                // Delete selected items
+                                                selectedItems.forEach { mediaId ->
+                                                    vm.deleteProgress(mediaId)
+                                                }
+                                            } else if (allMediaIds.isNotEmpty()) {
+                                                // If nothing is selected, perform Clear All
+                                                if (isMovie) {
+                                                    vm.clearMovieProgress()
+                                                } else {
+                                                    vm.clearSeriesProgress()
+                                                }
+                                            }
+                                            selectedItems = emptySet()
+                                            isSelectionMode = false
                                         }
                                     }
-                                }
+                                },
+                                // Enable only if there are items to manage (either selected or total)
+                                enabled = allMediaIds.isNotEmpty()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Delete,
+                                    contentDescription = if (selectedItems.isNotEmpty()) "Delete Selected Items" else "Clear All History",
+                                    tint = if (selectedItems.isNotEmpty()) MaterialTheme.colorScheme.error else Color.White
+                                )
                             }
-                        ) {
-                            // Use a delete icon or similar for clearing all history
-                            Icon(
-                                imageVector = Icons.Filled.Delete,
-                                contentDescription = "Clear All Watching History",
-                                tint = Color.White
-                            )
+                            // 2. Select All/Deselect All Button (Added logic for toggle)
+                            IconButton(
+                                onClick = {
+                                    selectedItems = if (isAllSelected) emptySet() else allMediaIds
+                                },
+                                enabled = allMediaIds.isNotEmpty() // Enable only if there are items
+                            ) {
+                                Icon(
+                                    imageVector = if (isAllSelected) Icons.Filled.Deselect else Icons.Filled.SelectAll,
+                                    contentDescription = if (isAllSelected) "Deselect All" else "Select All",
+                                    tint = Color.White
+                                )
+                            }
+                            
+                            // 3. Close Selection Mode Button
+                            IconButton(onClick = { isSelectionMode = false; selectedItems = emptySet() }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = "Cancel Selection",
+                                    tint = Color.White
+                                )
+                            }
+                        } else {
+                            // --- Default Mode Action: Enter Selection Mode ---
+                            IconButton(onClick = { isSelectionMode = true }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Checklist,
+                                    contentDescription = "Select items to delete",
+                                    tint = Color.White
+                                )
+                            }
                         }
                     }
                 },
@@ -211,12 +283,54 @@ fun CategoryGridScreen(
                     }) { content ->
                         if (isContinueWatching) {
                             val cwItem = content as ContinueWatchingItem
-                            ProgressMovieCard(
-                                movie = cwItem.movie,
-                                tmdbImageProvider = tmdbImageProvider,
-                                progressPercent = (cwItem.watchProgress.positionMillis.toFloat() / cwItem.watchProgress.durationMillis.toFloat()).coerceIn(0f, 1f),
-                                onClick = { onMovieSelected(cwItem.movie) }
-                            )
+                            val mediaId = cwItem.mediaId
+                            val isSelected = selectedItems.contains(mediaId)
+
+                            // Click handler depends on selection mode
+                            val itemOnClick: () -> Unit = {
+                                if (isSelectionMode) {
+                                    selectedItems = if (isSelected) { selectedItems - mediaId } else { selectedItems + mediaId }
+                                } else {
+                                    onMovieSelected(cwItem.movie)
+                                }
+                            }
+
+                            Box(modifier = Modifier
+                                .fillMaxWidth()
+                                .aspectRatio(1f / 1.5f)
+                                .clickable(onClick = itemOnClick)
+                            ) {
+                                // Background Card Content
+                                ProgressMovieCard(
+                                    movie = cwItem.movie,
+                                    tmdbImageProvider = tmdbImageProvider,
+                                    progressPercent = (cwItem.watchProgress.positionMillis.toFloat() / cwItem.watchProgress.durationMillis.toFloat()).coerceIn(0f, 1f),
+                                    onClick = itemOnClick // Will be overridden by Box click if needed, but we integrated into itemOnClick
+                                )
+                                
+                                // Selection Overlay
+                                if (isSelectionMode) {
+                                    Box(
+                                        modifier = Modifier
+                                            .align(Alignment.TopEnd)
+                                            .padding(4.dp)
+                                            .size(28.dp)
+                                            .clip(CircleShape)
+                                            .background(Color.Black.copy(alpha = 0.5f))
+                                            .border(1.dp, if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.5f), CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        if (isSelected) {
+                                            Icon(
+                                                imageVector = Icons.Filled.Check,
+                                                contentDescription = "Selected",
+                                                tint = MaterialTheme.colorScheme.primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         } else if (isMovie) {
                             val movie = content as Movie
                             MovieCard(

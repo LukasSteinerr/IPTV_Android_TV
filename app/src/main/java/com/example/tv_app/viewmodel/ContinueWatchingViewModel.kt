@@ -108,4 +108,11 @@ class ContinueWatchingViewModel(
     fun clearSeriesProgress() {
         watchProgressRepository.clearSeriesProgress()
     }
+
+    /**
+     * Deletes a single watch progress entry by media ID.
+     */
+    fun deleteProgress(mediaId: String) {
+        watchProgressRepository.deleteProgress(mediaId)
+    }
 }
