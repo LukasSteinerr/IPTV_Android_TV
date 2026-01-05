@@ -115,6 +115,7 @@ fun HomeScreen(
                     playlist = playlist,
                     playlistService = playlistService,
                     onShowSelected = onShowSelected,
+                    onPlayMovie = onMovieSelected, // Pass movie player launch function
                     onBackPressed = onBackPressed,
                     contentPadding = contentPadding,
                     onSeeAllClick = onCategorySelected,

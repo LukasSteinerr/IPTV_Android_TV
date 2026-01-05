@@ -73,6 +73,8 @@ fun MobileVideoPlayerScreen(
         is VideoPlayerUiState.Ready -> {
             MobileVideoPlayerScreenContent(
                 movie = s.movie,
+                startPositionMillis = s.startPositionMillis,
+                viewModel = viewModel,
                 onBackPressed = onBackPressed,
                 modifier = modifier
             )
@@ -84,6 +86,8 @@ fun MobileVideoPlayerScreen(
 @Composable
 fun MobileVideoPlayerScreenContent(
     movie: com.example.tv_app.model.Movie,
+    startPositionMillis: Long,
+    viewModel: VideoPlayerViewModel,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -131,13 +135,42 @@ fun MobileVideoPlayerScreenContent(
     val trackSelector = remember { DefaultTrackSelector(context) }
     val exoPlayer = rememberPlayer(context, trackSelector)
 
-    LaunchedEffect(exoPlayer, movie) {
+    LaunchedEffect(exoPlayer, movie, startPositionMillis) {
         exoPlayer.addMediaItem(movie.intoMediaItem())
         exoPlayer.prepare()
+        
+        // Resume playback if position > 0
+        if (startPositionMillis > 0L) {
+            exoPlayer.seekTo(startPositionMillis)
+        }
+
         exoPlayer.play()
     }
 
+    // Launched effect for continuous position reporting
+    LaunchedEffect(exoPlayer) {
+        while (true) {
+            // Report position and duration to the ViewModel
+            if (exoPlayer.isPlaying) {
+                viewModel.updateCurrentPosition(
+                    position = exoPlayer.currentPosition,
+                    duration = exoPlayer.duration
+                )
+            }
+            // Update approximately once per second
+            kotlinx.coroutines.delay(1000)
+        }
+    }
+
     BackHandler {
+        // Explicitly update position one last time before releasing the player and navigating away
+        viewModel.updateCurrentPosition(
+            position = exoPlayer.currentPosition,
+            duration = exoPlayer.duration
+        )
+        // Manually trigger save logic
+        viewModel.saveCurrentProgress()
+        
         exoPlayer.release()
         onBackPressed()
     }

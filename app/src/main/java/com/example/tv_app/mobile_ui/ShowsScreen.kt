@@ -24,10 +24,18 @@ import androidx.compose.material3.Text
 import com.example.tv_app.model.TvSeries
 import com.example.tv_app.model.Category
 import com.example.tv_app.model.Playlist
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
+import com.example.tv_app.repository.TMDBService
+import com.example.tv_app.repository.WatchProgressRepository
+import com.example.tv_app.viewmodel.ContinueWatchingViewModel
+import com.example.tv_app.viewmodel.ContinueWatchingItem
+import com.example.tv_app.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
 import com.example.tv_app.presentation.common.TvSeriesCard
+import com.example.tv_app.presentation.common.ProgressMovieCard
+import com.example.tv_app.model.Movie
 import com.example.tv_app.presentation.components.FullScreenDarkLoading
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
@@ -39,6 +47,7 @@ fun ShowsScreen(
     playlistService: PlaylistService,
     onBackPressed: () -> Unit,
     onShowSelected: (TvSeries) -> Unit = {},
+    onPlayMovie: (Movie) -> Unit, // Added function to launch player
     onNavigateToSearch: () -> Unit = {},
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues,
@@ -55,6 +64,22 @@ fun ShowsScreen(
     
     val coroutineScope = rememberCoroutineScope()
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
+
+    // Dependency instantiation for ViewModel
+    val tmdbService = remember { TMDBService() }
+    val watchProgressRepository = remember { WatchProgressRepository() }
+
+    // Continue Watching ViewModel
+    val continueWatchingViewModel: ContinueWatchingViewModel = viewModel(
+        factory = remember {
+            ViewModelFactory(
+                tmdbService = tmdbService,
+                playlistService = playlistService,
+                watchProgressRepository = watchProgressRepository
+            )
+        }
+    )
+    val continueWatchingSeriesItems by continueWatchingViewModel.seriesProgressItems.collectAsState()
 
     // Load data when screen is displayed
     LaunchedEffect(playlist.id) {
@@ -121,6 +146,19 @@ fun ShowsScreen(
                     }
                 }
 
+                // Continue Watching Series Section
+                if (continueWatchingSeriesItems.isNotEmpty()) {
+                    item {
+                        ContinueWatchingRow(
+                            items = continueWatchingSeriesItems,
+                            tmdbImageProvider = tmdbImageProvider,
+                            onMovieSelected = onPlayMovie, // Use onPlayMovie to launch episode playback
+                            onSeeAllClick = onSeeAllClick, // Placeholder navigation for now
+                            title = "Continue Watching Series"
+                        )
+                    }
+                }
+                
                 // Category Rows
                 categories.forEach { category ->
                     val series = tvSeriesByCategory[category.id] ?: emptyList()
@@ -137,6 +175,68 @@ fun ShowsScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+fun ContinueWatchingRow(
+    items: List<ContinueWatchingItem>,
+    tmdbImageProvider: TMDBImageProvider,
+    onMovieSelected: (Movie) -> Unit,
+    onSeeAllClick: (Long, String) -> Unit,
+    title: String
+) {
+    if (items.isEmpty()) return
+
+    Column(modifier = Modifier.padding(top = 10.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = title,
+                color = Color(0X8AFFFFFF),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Light,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            // See All Button implementation similar to MovieCategoryRow
+            Text(
+                text = "See all",
+                color = Color.Gray,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    // Pass dummy ID (0L) and title for navigation scope
+                    .clickable { onSeeAllClick(0L, title) }
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) {
+            items(items, key = { it.mediaId }) { item ->
+                val progressPercent = if (item.watchProgress.durationMillis > 0) {
+                    item.watchProgress.positionMillis.toFloat() / item.watchProgress.durationMillis.toFloat()
+                } else 0f
+
+                ProgressMovieCard(
+                    movie = item.movie, // Note: This is an episode mapped to Movie model
+                    tmdbImageProvider = tmdbImageProvider,
+                    progressPercent = progressPercent,
+                    onClick = { onMovieSelected(item.movie) },
+                    modifier = Modifier.width(120.dp)
+                )
             }
         }
     }

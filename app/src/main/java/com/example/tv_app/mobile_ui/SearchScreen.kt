@@ -29,8 +29,9 @@ import com.example.tv_app.presentation.common.TvSeriesCard
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.repository.TMDBService
+import com.example.tv_app.repository.WatchProgressRepository
 import com.example.tv_app.viewmodel.SearchViewModel
-import com.example.tv_app.viewmodel.SearchViewModelFactory
+import com.example.tv_app.viewmodel.ViewModelFactory
 
 @Composable
 fun SearchScreen(
@@ -42,7 +43,14 @@ fun SearchScreen(
     // Instantiate dependencies and ViewModel Factory for injection
     val tmdbService = remember { TMDBService() }
     val playlistService = remember { PlaylistService() }
-    val factory = remember { SearchViewModelFactory(tmdbService, playlistService) }
+    val watchProgressRepository = remember { WatchProgressRepository() }
+    val factory = remember {
+        ViewModelFactory(
+            tmdbService = tmdbService,
+            playlistService = playlistService,
+            watchProgressRepository = watchProgressRepository
+        )
+    }
 
     val viewModel: SearchViewModel = viewModel(factory = factory)
 

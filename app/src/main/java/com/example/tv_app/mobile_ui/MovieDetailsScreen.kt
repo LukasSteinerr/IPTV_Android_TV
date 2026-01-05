@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -93,6 +94,8 @@ import com.example.tv_app.repository.TMDBService
 import com.example.tv_app.repository.XtreamService
 import com.example.tv_app.cast.CastHelper // Import CastHelper
 import com.example.tv_app.presentation.components.FullScreenDarkLoading // Import shared loading screen
+import com.example.tv_app.repository.WatchProgressRepository
+import com.example.tv_app.presentation.utils.parseDurationToMillis
 import kotlinx.coroutines.launch
 
 // Define constant for fixed mobile padding
@@ -127,7 +130,11 @@ fun MovieDetailsScreen(
     val tmdbService = remember { TMDBService() }
     val xtreamService = remember { XtreamService(EpgParserService()) }
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
+    val watchProgressRepository = remember { WatchProgressRepository() }
     val lazyListState = rememberLazyListState()
+    
+    // State for watch progress display
+    var watchProgressPercent by remember { mutableStateOf(0f) }
 
     // Scroll to top when movie changes (similar movie selected)
     LaunchedEffect(key) {
@@ -138,6 +145,25 @@ fun MovieDetailsScreen(
 
     LaunchedEffect(movie.tmdbId, movie.streamId) {
         isLoading = true
+        
+        // Helper function to update progress state
+        fun updateProgress() {
+            val mediaId = movie.streamId ?: if (movie.id > 0) "movie-${movie.id}" else null
+            
+            if (mediaId != null) {
+                // Ensure movieDetails has been fetched, otherwise use fallback movie duration
+                val durationMillis = parseDurationToMillis(movieDetails?.duration ?: movie.duration)
+                val positionMillis = watchProgressRepository.getSavedPosition(mediaId)
+                
+                watchProgressPercent = if (durationMillis > 0 && positionMillis > 0) {
+                    (positionMillis.toFloat() / durationMillis.toFloat()).coerceIn(0f, 1f)
+                } else 0f
+            } else {
+                watchProgressPercent = 0f
+            }
+        }
+        
+        // Run network/DB updates
         coroutineScope.launch {
             if (movie.tmdbId.isNullOrBlank() || movie.tmdbId == "0") {
                 // No TMDB ID - Fetch VOD info from Xtream API using stream_id and persist it locally
@@ -170,6 +196,7 @@ fun MovieDetailsScreen(
                     movieDetails = movie
                     backdropUrl = movie.backdropUrl ?: movie.posterUrl
                 }
+                updateProgress()
                 isLoading = false
                 return@launch
             }
@@ -182,7 +209,7 @@ fun MovieDetailsScreen(
                             description = details.optString("overview", movie.description ?: ""),
                             rating = details.optDouble("vote_average", 0.0).toString(),
                             duration = details.optInt("runtime", 0).let { if (it > 0) "${it} min" else null },
-                            trailer = details.optString("youtube_trailer", movie.trailer)
+                            trailer = details.optString("youtube_trailer", movie.trailer ?: "")
                         )
                         genres = tmdbService.parseGenres(details)
                         val images = tmdbService.getMovieImages(tmdbId, details)
@@ -213,6 +240,7 @@ fun MovieDetailsScreen(
                 movieDetails = movie
                 backdropUrl = movie.backdropUrl ?: movie.posterUrl
             } finally {
+                updateProgress()
                 isLoading = false
             }
         }
@@ -267,6 +295,7 @@ fun MovieDetailsScreen(
                 cast = cast,
                 similarMovies = similarMovies,
                 genres = genres,
+                watchProgressPercent = watchProgressPercent, // Pass new state here
                 isLiked = isLiked,
                 onPlayMovie = {
                     // 1. Check for active Cast session and attempt to cast
@@ -317,6 +346,7 @@ private fun Details(
     cast: List<Cast>,
     similarMovies: List<Movie>,
     genres: List<String>,
+    watchProgressPercent: Float,
     isLiked: Boolean,
     onPlayMovie: () -> Unit,
     onDownloadMovie: () -> Unit,
@@ -359,6 +389,7 @@ private fun Details(
                     MoviePosterCard(
                         movie = movieDetails,
                         tmdbImageProvider = tmdbImageProvider,
+                        progressPercent = watchProgressPercent, // Pass progress
                         onPlayClick = onPlayMovie, // Pass the play action
                         modifier = Modifier
                             .padding(top = 80.dp, bottom = 16.dp)
@@ -529,6 +560,7 @@ private fun CastButton(modifier: Modifier = Modifier) {
 private fun MoviePosterCard(
     movie: Movie,
     tmdbImageProvider: TMDBImageProvider,
+    progressPercent: Float,
     onPlayClick: () -> Unit, // Added onPlayClick parameter
     modifier: Modifier = Modifier
 ) {
@@ -570,6 +602,24 @@ private fun MoviePosterCard(
                     .padding(16.dp), // Padding to visually inset the icon
                 colorFilter = ColorFilter.tint(Color.White)
             )
+            
+            // Progress Bar at the bottom (only display if progress is > 0 and < 0.9f)
+            if (progressPercent > 0f && progressPercent < 0.9f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(3.dp)
+                        .align(Alignment.BottomCenter)
+                        .background(Color.Black.copy(alpha = 0.5f)) // Dark background for the bar track
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .fillMaxWidth(progressPercent.coerceIn(0f, 1f))
+                            .background(MaterialTheme.colorScheme.primary)
+                    )
+                }
+            }
         }
     }
 }

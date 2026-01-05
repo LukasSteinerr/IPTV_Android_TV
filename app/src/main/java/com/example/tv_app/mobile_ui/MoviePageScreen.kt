@@ -23,12 +23,19 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import com.example.tv_app.model.Movie
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tv_app.model.Category
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.repository.PlaylistService
 import com.example.tv_app.repository.TMDBImageProvider
+import com.example.tv_app.repository.TMDBService
+import com.example.tv_app.repository.WatchProgressRepository
+import com.example.tv_app.viewmodel.ContinueWatchingViewModel
+import com.example.tv_app.viewmodel.ContinueWatchingItem
+import com.example.tv_app.viewmodel.ViewModelFactory
 import kotlinx.coroutines.launch
 import com.example.tv_app.presentation.common.MovieCard
+import com.example.tv_app.presentation.common.ProgressMovieCard
 import com.example.tv_app.presentation.components.LoadingIndicator
 import com.example.tv_app.presentation.components.FullScreenDarkLoading
 import dev.chrisbanes.haze.HazeState
@@ -57,6 +64,22 @@ fun MoviePageScreen(
     
     val coroutineScope = rememberCoroutineScope()
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
+    
+    // Dependency instantiation for ViewModel
+    val tmdbService = remember { TMDBService() }
+    val watchProgressRepository = remember { WatchProgressRepository() }
+
+    // Continue Watching ViewModel
+    val continueWatchingViewModel: ContinueWatchingViewModel = viewModel(
+        factory = remember {
+            ViewModelFactory(
+                tmdbService = tmdbService,
+                playlistService = playlistService,
+                watchProgressRepository = watchProgressRepository
+            )
+        }
+    )
+    val continueWatchingMovieItems by continueWatchingViewModel.movieProgressItems.collectAsState()
 
     // Load data when screen is displayed
     LaunchedEffect(playlist.id) {
@@ -122,6 +145,18 @@ fun MoviePageScreen(
                         )
                     }
                 }
+                
+                // Continue Watching Section
+                if (continueWatchingMovieItems.isNotEmpty()) {
+                    item {
+                        ContinueWatchingRow(
+                            items = continueWatchingMovieItems,
+                            tmdbImageProvider = tmdbImageProvider,
+                            onMovieSelected = onMovieSelected,
+                            onSeeAllClick = onSeeAllClick
+                        )
+                    }
+                }
 
                 // Category Rows
                 categories.forEach { category ->
@@ -139,6 +174,68 @@ fun MoviePageScreen(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+
+@Composable
+fun ContinueWatchingRow(
+    items: List<ContinueWatchingItem>,
+    tmdbImageProvider: TMDBImageProvider,
+    onMovieSelected: (Movie) -> Unit,
+    onSeeAllClick: (Long, String) -> Unit // Added missing parameter
+) {
+    if (items.isEmpty()) return
+
+    Column(modifier = Modifier.padding(top = 10.dp)) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Continue Watching",
+                color = Color(0X8AFFFFFF),
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Light,
+                modifier = Modifier.weight(1f),
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+            )
+            // See All Button implementation similar to MovieCategoryRow
+            Text(
+                text = "See all",
+                color = Color.Gray,
+                fontSize = 14.sp,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    // Pass dummy ID (0L) and title for navigation scope
+                    .clickable { onSeeAllClick(0L, "Continue Watching") }
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        LazyRow(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            contentPadding = PaddingValues(horizontal = 16.dp)
+        ) {
+            items(items, key = { it.mediaId }) { item ->
+                val progressPercent = if (item.watchProgress.durationMillis > 0) {
+                    item.watchProgress.positionMillis.toFloat() / item.watchProgress.durationMillis.toFloat()
+                } else 0f
+
+                ProgressMovieCard(
+                    movie = item.movie,
+                    tmdbImageProvider = tmdbImageProvider,
+                    progressPercent = progressPercent,
+                    onClick = { onMovieSelected(item.movie) },
+                    modifier = Modifier.width(120.dp)
+                )
             }
         }
     }

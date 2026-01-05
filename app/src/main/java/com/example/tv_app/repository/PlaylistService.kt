@@ -339,6 +339,28 @@ class PlaylistService {
         }
     }
     
+    suspend fun getMovieByStreamId(streamId: String): Movie? {
+        return withContext(Dispatchers.IO) {
+            // Check for ObjectBox ID first if it's derived from `movie-ID` pattern
+            val longId = streamId.toLongOrNull()
+            if (longId != null && streamId.startsWith("movie-")) {
+                 movieBox.query().equal(Movie_.id, longId).build().findFirst()
+            } else {
+                // Otherwise check by streamId (which might be tmdbId or general streamId)
+                movieBox.query().equal(Movie_.streamId, streamId, io.objectbox.query.QueryBuilder.StringOrder.CASE_SENSITIVE).build().findFirst()
+            }
+        }
+    }
+
+    suspend fun getTvEpisodeById(episodeId: String): TvEpisode? {
+        return withContext(Dispatchers.IO) {
+            // Assuming episodeId passed is the ObjectBox ID (Long) since TvEpisode uses "episode-ID" derived from Long ID
+            episodeId.toLongOrNull()?.let { id ->
+                tvEpisodeBox.get(id)
+            }
+        }
+    }
+
     /**
      * Fetches VOD info for a movie without a TMDB ID and updates the local movie object.
      * @param movie The movie to update.

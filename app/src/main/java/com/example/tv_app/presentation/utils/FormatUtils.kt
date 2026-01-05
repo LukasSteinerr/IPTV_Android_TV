@@ -20,3 +20,26 @@ fun formatSpeed(bytesPerSecond: Long): String {
     val df = DecimalFormat("#.##")
     return "${df.format(value)} ${units[unitIndex]}"
 }
+
+/**
+ * Parses a duration string (e.g., "120 min") into milliseconds.
+ * Returns 0 if parsing fails.
+ */
+fun parseDurationToMillis(duration: String?): Long {
+    if (duration == null) return 0L
+    
+    val parts = duration.split(" ")
+    if (parts.size >= 2) {
+        val value = parts[0].toLongOrNull()
+        val unit = parts[1].lowercase()
+        
+        return when {
+            value == null -> 0L
+            unit.startsWith("min") -> value * 60 * 1000L
+            unit.startsWith("hour") -> value * 60 * 60 * 1000L
+            // Add more parsing logic if needed (e.g., HH:MM:SS format)
+            else -> 0L
+        }
+    }
+    return 0L
+}
