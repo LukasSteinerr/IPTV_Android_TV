@@ -109,6 +109,7 @@ fun MobileVideoPlayerScreenContent(
                     player = exoPlayer
                     useController = true
                     resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    setShowSubtitleButton(true)
                 }
             },
             modifier = Modifier.fillMaxSize()
