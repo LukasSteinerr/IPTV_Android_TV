@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.repository.PlaylistService
@@ -28,7 +29,8 @@ fun HomeScreen(
     onChannelSelected: (com.example.tv_app.model.Channel) -> Unit,
     onBackPressed: () -> Unit,
     hazeState: HazeState,
-    contentPadding: PaddingValues
+    contentPadding: PaddingValues,
+    modifier: Modifier = Modifier
 ) {
     var showSearch by remember { mutableStateOf(false) }
     var selectedCategoryId by remember { mutableStateOf<Long?>(null) }
@@ -69,6 +71,7 @@ fun HomeScreen(
     }
     
     Scaffold(
+        modifier = modifier,
         topBar = {
             if (!showSearch && selectedCategoryId == null) {
                 FixedPrimaryAppBar(

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.outlined.*
 import androidx.tv.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
@@ -156,6 +157,82 @@ fun MobileAppNavigation() {
             }
         }
     ) { paddingValues ->
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val downloadRepository = remember { com.example.tv_app.repository.DownloadRepository(context) }
+        
+        // Screens that are part of the main persistent navigation (Home, Downloads, MyList, Settings)
+        // These screens are kept in the composition to preserve their state (e.g., scroll position).
+        androidx.compose.foundation.layout.Box(modifier = Modifier.fillMaxSize()) {
+            
+            // Home Screen (Conditional composition for selectedPlaylist is necessary)
+            selectedPlaylist?.let { playlist ->
+                HomeScreen(
+                    playlist = playlist,
+                    playlistService = playlistService,
+                    selectedTab = homeScreenSelectedTab,
+                    onTabSelected = { homeScreenSelectedTab = it },
+                    onMovieSelected = { movie ->
+                        selectedMovie = movie
+                        selectedTvSeries = null
+                        lastMainScreen = MobileScreen.Home
+                        currentScreen = MobileScreen.MovieDetails
+                    },
+                    onShowSelected = { show ->
+                        selectedTvSeries = show
+                        selectedMovie = null
+                        lastMainScreen = MobileScreen.Home
+                        currentScreen = MobileScreen.TvSeriesDetails
+                    },
+                    onChannelSelected = { /* TODO: Navigate to channel player */ },
+                    onBackPressed = { currentScreen = MobileScreen.MyPlaylists },
+                    hazeState = hazeState,
+                    contentPadding = paddingValues,
+                    modifier = Modifier.zIndex(if (currentScreen == MobileScreen.Home) 1f else 0f)
+                )
+            }
+
+            // Downloads Screen
+            DownloadsScreen(
+                downloadRepository = downloadRepository,
+                onPlayMovie = { downloadedMovie ->
+                    // TODO: Implement local playback
+                    android.util.Log.d("MainActivity", "Play local: ${downloadedMovie.localPath}")
+                },
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .zIndex(if (currentScreen == MobileScreen.Downloads) 1f else 0f)
+            )
+
+            // MyList Screen
+            MyListScreen(
+                onMovieSelected = { movie ->
+                    selectedMovie = movie
+                    selectedTvSeries = null
+                    lastMainScreen = MobileScreen.MyList
+                    currentScreen = MobileScreen.MovieDetails
+                },
+                onTvSeriesSelected = { series ->
+                    selectedTvSeries = series
+                    selectedMovie = null
+                    lastMainScreen = MobileScreen.MyList
+                    currentScreen = MobileScreen.TvSeriesDetails
+                },
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .zIndex(if (currentScreen == MobileScreen.MyList) 1f else 0f)
+            )
+
+            // Settings Screen
+            SettingsScreen(
+                onNavigateToMyPlaylists = { currentScreen = MobileScreen.MyPlaylists },
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .zIndex(if (currentScreen == MobileScreen.Settings) 1f else 0f)
+            )
+        }
+
+
+        // Non-persistent screens (MyPlaylists, AddPlaylist, Details, Player)
         when (currentScreen) {
             MobileScreen.MyPlaylists -> {
                 MyPlaylistsScreen(
@@ -166,10 +243,13 @@ fun MobileAppNavigation() {
                     },
                     onPlaylistSelected = { playlist ->
                         selectedPlaylist = playlist
+                        // Navigate to Home/Main tab, which is now persistent
                         currentScreen = MobileScreen.Home
                         android.util.Log.d("MainActivity", "Selected playlist: ${playlist.name}")
                     },
-                    modifier = Modifier.padding(paddingValues)
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .zIndex(2f) // Ensure it is above the persistent main screens
                 )
             }
             MobileScreen.AddPlaylist -> {
@@ -182,87 +262,24 @@ fun MobileAppNavigation() {
                     onNavigateUp = {
                         currentScreen = MobileScreen.MyPlaylists
                     },
-                    modifier = Modifier.padding(paddingValues)
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .zIndex(2f)
                 )
-            }
-            MobileScreen.Home -> {
-                selectedPlaylist?.let { playlist ->
-                    HomeScreen(
-                        playlist = playlist,
-                        playlistService = playlistService,
-                        selectedTab = homeScreenSelectedTab, // Pass current state
-                        onTabSelected = { homeScreenSelectedTab = it }, // Update state when tab changes
-                        onMovieSelected = { movie ->
-                            selectedMovie = movie
-                            selectedTvSeries = null // Clear TV series state
-                            lastMainScreen = MobileScreen.Home
-                            currentScreen = MobileScreen.MovieDetails
-                        },
-                        onShowSelected = { show ->
-                            selectedTvSeries = show
-                            selectedMovie = null // Clear movie state
-                            lastMainScreen = MobileScreen.Home
-                            currentScreen = MobileScreen.TvSeriesDetails
-                        },
-                        onChannelSelected = { channel ->
-                            // TODO: Navigate to channel player
-                        },
-                        onBackPressed = {
-                            currentScreen = MobileScreen.MyPlaylists
-                        },
-                        hazeState = hazeState,
-                        contentPadding = paddingValues
-                    )
-                }
-            }
-            MobileScreen.Downloads -> {
-                val context = androidx.compose.ui.platform.LocalContext.current
-                val downloadRepository = remember { com.example.tv_app.repository.DownloadRepository(context) }
-                DownloadsScreen(
-                    downloadRepository = downloadRepository,
-                    onPlayMovie = { downloadedMovie ->
-                        // TODO: Implement local playback
-                        // For now we can maybe map it back to a Movie object or use a separate player launcher
-                        android.util.Log.d("MainActivity", "Play local: ${downloadedMovie.localPath}")
-                    }
-                )
-            }
-            MobileScreen.MyList -> {
-                MyListScreen(
-                    onMovieSelected = { movie ->
-                        selectedMovie = movie
-                        selectedTvSeries = null // Clear TV series state
-                        lastMainScreen = MobileScreen.MyList
-                        currentScreen = MobileScreen.MovieDetails
-                    },
-                    onTvSeriesSelected = { series ->
-                        selectedTvSeries = series
-                        selectedMovie = null // Clear movie state
-                        lastMainScreen = MobileScreen.MyList
-                        currentScreen = MobileScreen.TvSeriesDetails
-                    },
-                    modifier = Modifier.padding(paddingValues)
-                )
-            }
-            MobileScreen.Settings -> {
-                SettingsScreen()
             }
             MobileScreen.MovieDetails -> {
-                val context = androidx.compose.ui.platform.LocalContext.current
-                val downloadRepository = remember { com.example.tv_app.repository.DownloadRepository(context) }
-                
                 selectedMovie?.let { movie ->
                     MovieDetailsScreen(
-                        key = movieDetailsKey, // Force recomposition when key changes
+                        key = movieDetailsKey,
                         movie = movie,
                         playlistService = playlistService,
                         onBackPressed = {
                             currentScreen = lastMainScreen
-                            selectedMovie = null // Clear selected movie on back
+                            selectedMovie = null
                         },
                         onMovieSelected = { newMovie ->
                             selectedMovie = newMovie
-                            movieDetailsKey++ // Increment key to force screen refresh
+                            movieDetailsKey++
                         },
                         onPlayMovie = { movie ->
                             android.util.Log.d("MainActivity", "Playing movie: ${movie.name}")
@@ -277,7 +294,6 @@ fun MobileAppNavigation() {
                             downloadRepository.downloadMovie(movie, object : DownloadRepository.NotificationPermissionCallback {
                                 override fun onPermissionRequired() {
                                     android.util.Log.d("MainActivity", "Notification permission required, opening settings")
-                                    // Ensure we open notification settings from UI thread
                                     try {
                                         NotificationPermissionHelper.openNotificationSettings(context)
                                     } catch (e: Exception) {
@@ -290,23 +306,25 @@ fun MobileAppNavigation() {
                                 }
                             })
                         },
-                        modifier = Modifier.padding(paddingValues)
+                        modifier = Modifier
+                            .padding(paddingValues)
+                            .zIndex(2f)
                     )
                 }
             }
             MobileScreen.TvSeriesDetails -> {
                 selectedTvSeries?.let { tvSeries ->
                     TvSeriesDetailsScreen(
-                        key = tvSeriesDetailsKey, // Force recomposition when key changes
+                        key = tvSeriesDetailsKey,
                         tvSeries = tvSeries,
                         playlistService = playlistService,
                         onBackPressed = {
                             currentScreen = lastMainScreen
-                            selectedTvSeries = null // Clear selected TV series on back
+                            selectedTvSeries = null
                         },
                         onTvSeriesSelected = { newSeries ->
                             selectedTvSeries = newSeries
-                            tvSeriesDetailsKey++ // Increment key to force screen refresh
+                            tvSeriesDetailsKey++
                         },
                         onEpisodeSelected = { episode ->
                             android.util.Log.d("MainActivity", "Playing episode: ${episode.name}")
@@ -314,22 +332,28 @@ fun MobileAppNavigation() {
                             videoPlayerSourceScreen = MobileScreen.TvSeriesDetails
                             currentScreen = MobileScreen.VideoPlayer
                         },
-                        modifier = Modifier.padding(paddingValues)
+                        modifier = Modifier
+                            .padding(paddingValues)
+                            .zIndex(2f)
                     )
                 }
             }
             MobileScreen.VideoPlayer -> {
                 VideoPlayerScreen(
                     onBackPressed = {
-                        // Reset the video player state when navigating away
                         videoPlayerViewModel.reset()
-                        // Check if we were playing a movie or episode to navigate back to the correct screen
-                        currentScreen = videoPlayerSourceScreen ?: lastMainScreen // Fallback to lastMainScreen if source is null
-                        videoPlayerSourceScreen = null // Clear source after navigating back
+                        currentScreen = videoPlayerSourceScreen ?: lastMainScreen
+                        videoPlayerSourceScreen = null
                     },
                     viewModel = videoPlayerViewModel,
-                    modifier = Modifier.padding(paddingValues)
+                    modifier = Modifier
+                        .padding(paddingValues)
+                        .zIndex(3f) // Highest Z-index for the player
                 )
+            }
+            // All main screens handled in the persistent Box above
+            MobileScreen.Home, MobileScreen.Downloads, MobileScreen.MyList, MobileScreen.Settings -> {
+                // Do nothing, screens are already in the composition layer below
             }
             else -> {
                 // Do nothing

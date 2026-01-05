@@ -85,9 +85,12 @@ fun SettingsItemRow(item: SettingItem) {
 }
 
 @Composable
-fun SettingsScreen(modifier: Modifier = Modifier) {
+fun SettingsScreen(
+    onNavigateToMyPlaylists: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
     val settingItems = listOf(
-        SettingItem("Handle Playlists", Icons.Default.List),
+        SettingItem("Handle Playlists", Icons.Default.List, onNavigateToMyPlaylists),
         SettingItem("EPG", Icons.Default.DateRange),
         SettingItem("General", Icons.Default.Settings),
         SettingItem("Tell a Friend", Icons.Default.Share),
@@ -134,6 +137,6 @@ fun SettingsScreen(modifier: Modifier = Modifier) {
 @Composable
 private fun PreviewSettingsScreen() {
     MaterialTheme {
-        SettingsScreen()
+        SettingsScreen(onNavigateToMyPlaylists = {})
     }
 }

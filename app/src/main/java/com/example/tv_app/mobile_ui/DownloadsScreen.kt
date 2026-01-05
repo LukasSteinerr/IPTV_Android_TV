@@ -52,7 +52,8 @@ import com.example.tv_app.repository.TMDBService
 @Composable
 fun DownloadsScreen(
     downloadRepository: DownloadRepository,
-    onPlayMovie: (DownloadedMovie) -> Unit = {}
+    onPlayMovie: (DownloadedMovie) -> Unit = {},
+    modifier: Modifier = Modifier
 ) {
     val downloads by downloadRepository.getAllDownloadsFlow().collectAsState(initial = emptyList())
 
@@ -60,6 +61,7 @@ fun DownloadsScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black) // Dark background
+            .then(modifier)
     ) {
         if (downloads.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
