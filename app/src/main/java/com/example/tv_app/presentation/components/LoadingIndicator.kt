@@ -7,6 +7,7 @@ import androidx.compose.material3.CircularWavyProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -16,7 +17,7 @@ fun LoadingIndicator(modifier: Modifier = Modifier) {
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        CircularWavyProgressIndicator()
+        CircularWavyProgressIndicator(color = Color(0xFFFFD700))
        
     }
 }

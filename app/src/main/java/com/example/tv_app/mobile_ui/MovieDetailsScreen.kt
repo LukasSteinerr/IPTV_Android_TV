@@ -84,6 +84,7 @@ import com.example.tv_app.model.MovieReviewsAndRatings
 import com.example.tv_app.model.ObjectBox
 import com.example.tv_app.presentation.common.MovieCard
 import com.example.tv_app.presentation.common.TMDBPosterImage
+import com.example.tv_app.presentation.components.LoadingIndicator
 import com.example.tv_app.presentation.utils.createVerticalBackgroundGradient
 import com.example.tv_app.repository.EpgParserService
 import com.example.tv_app.repository.PlaylistService
@@ -257,16 +258,7 @@ fun MovieDetailsScreen(
 
     when {
         isLoading -> {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(
-                    color = MaterialTheme.colorScheme.primary,
-                    strokeWidth = 4.dp,
-                    modifier = Modifier.size(64.dp)
-                )
-            }
+            LoadingScreen(modifier = Modifier.fillMaxSize())
         }
         else -> {
             Details(
@@ -315,6 +307,18 @@ fun MovieDetailsScreen(
                     .animateContentSize()
             )
         }
+    }
+}
+
+@Composable
+private fun LoadingScreen(modifier: Modifier = Modifier) {
+    Box(
+        modifier = modifier
+            .background(Color.Black) // Ensure a dark background during loading
+            .fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        LoadingIndicator()
     }
 }
 
