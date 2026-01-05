@@ -40,12 +40,16 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
+import androidx.core.view.WindowCompat
 
 class MainActivity : FragmentActivity() {
 
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Enable drawing behind the system bars
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         // Request necessary permissions
         requestPermissionsIfNeeded()

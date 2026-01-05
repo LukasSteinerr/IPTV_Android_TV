@@ -2,6 +2,7 @@
 
     <style name="Theme.TV_APP" parent="Theme.AppCompat.NoActionBar">
         <item name="android:windowBackground">@color/jetstream_background</item>
+        <item name="android:statusBarColor">@color/jetstream_background</item>
     </style>
     
     <!-- JetStreamCompose Colors -->

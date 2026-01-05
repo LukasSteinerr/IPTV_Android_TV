@@ -92,6 +92,7 @@ fun MyListScreen(
     onTvSeriesSelected: (TvSeries) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    
     // State
     val allItems = remember { mutableStateListOf<MediaItem>() }
     var selectedFilter by remember { mutableStateOf(Filter.ALL) }
@@ -128,9 +129,11 @@ fun MyListScreen(
 
     // UI
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black) // Base background
+            .background(Color.Black),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
     ) {
         // 1. Header & Filters
         Column(
