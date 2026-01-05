@@ -40,6 +40,12 @@ import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.math.floor
 
+private val TIME_FORMATTER = SimpleDateFormat("HH:mm", Locale.getDefault())
+
+private fun formatTime(date: Date?): String {
+    return date?.let { TIME_FORMATTER.format(it) } ?: ""
+}
+
 @Composable
 fun LiveTVScreen(
     playlist: Playlist,
@@ -134,7 +140,8 @@ fun LiveTVScreen(
                     ChannelListWithEpg(
                         channels = filteredChannels,
                         epgData = epgData,
-                        currentTime = selectedTime,
+                        selectedTime = selectedTime,
+                        realCurrentTime = System.currentTimeMillis(),
                         onChannelSelected = onChannelSelected,
                         onScrollOffsetChanged = { offset ->
                             scrollOffset = offset
@@ -196,7 +203,8 @@ fun DrawerNotchIndicator(
 fun ChannelListWithEpg(
     channels: List<Channel>,
     epgData: Map<String, List<TvProgram>>,
-    currentTime: Long,
+    selectedTime: Long,
+    realCurrentTime: Long,
     onChannelSelected: (Channel) -> Unit,
     onScrollOffsetChanged: (Float) -> Unit,
     modifier: Modifier = Modifier
@@ -210,11 +218,12 @@ fun ChannelListWithEpg(
     ) {
         items(channels) { channel ->
             val programs = epgData[channel.epgId] ?: emptyList()
-            val nowAndNext = findNowAndNextPrograms(programs, currentTime)
+            val nowAndNext = findNowAndNextPrograms(programs, selectedTime)
             ChannelListItemWithEpg(
                 channel = channel,
                 nowProgram = nowAndNext.first,
                 nextProgram = nowAndNext.second,
+                realCurrentTime = realCurrentTime,
                 onClick = { onChannelSelected(channel) }
             )
             Divider(color = Color.Gray.copy(alpha = 0.3f), thickness = 1.dp)
@@ -227,6 +236,7 @@ fun ChannelListItemWithEpg(
     channel: Channel,
     nowProgram: TvProgram?,
     nextProgram: TvProgram?,
+    realCurrentTime: Long,
     onClick: () -> Unit
 ) {
     Row(
@@ -245,13 +255,48 @@ fun ChannelListItemWithEpg(
         )
         Column(modifier = Modifier.weight(1f)) {
             Text(text = channel.name, color = Color.White, fontWeight = FontWeight.Bold)
-            Text(
-                text = "Now: ${nowProgram?.title ?: "No information"}",
+            
+            // Now Program
+            val isActuallyNow = nowProgram?.let {
+                val now = Date(realCurrentTime)
+                it.startTime != null && it.stopTime != null && now.after(it.startTime) && now.before(it.stopTime)
+            } == true
+
+            nowProgram?.let { now ->
+                Text(
+                    text = if (isActuallyNow) "Now: ${now.title}" else now.title,
+                    color = if (isActuallyNow) Color.Yellow else Color.White,
+                    fontSize = 14.sp,
+                    fontWeight = if (isActuallyNow) FontWeight.W600 else FontWeight.W500
+                )
+                Text(
+                    text = "${formatTime(now.startTime)} - ${formatTime(now.stopTime)}",
+                    color = Color.LightGray,
+                    fontSize = 12.sp
+                )
+            } ?: Text(
+                text = "No information now",
                 color = Color.LightGray,
                 fontSize = 14.sp
             )
-            Text(
-                text = "Next: ${nextProgram?.title ?: "No information"}",
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Next Program
+            nextProgram?.let { next ->
+                Text(
+                    text = next.title,
+                    color = Color.LightGray,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.W500
+                )
+                Text(
+                    text = "${formatTime(next.startTime)} - ${formatTime(next.stopTime)}",
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+            } ?: Text(
+                text = "No further information",
                 color = Color.Gray,
                 fontSize = 12.sp
             )
