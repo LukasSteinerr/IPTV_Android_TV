@@ -91,7 +91,21 @@ class ContinueWatchingViewModel(
             "episode" to mediaId.substringAfter("episode-")
         } else {
             // Fallback for streamId/tmdbId used directly
-            "movie" to mediaId 
+            "movie" to mediaId
         }
+    }
+
+    /**
+     * Clears all movie/VOD watch progress entries in the repository.
+     */
+    fun clearMovieProgress() {
+        watchProgressRepository.clearMovieProgress()
+    }
+    
+    /**
+     * Clears all TV series/episode watch progress entries in the repository.
+     */
+    fun clearSeriesProgress() {
+        watchProgressRepository.clearSeriesProgress()
     }
 }

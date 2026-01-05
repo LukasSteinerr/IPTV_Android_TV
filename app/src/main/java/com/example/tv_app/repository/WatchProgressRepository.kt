@@ -22,8 +22,8 @@ class WatchProgressRepository {
      * Saves the watch progress for a given media item.
      * If position is close to completion, it deletes the progress.
      */
-    fun saveProgress(mediaId: String, positionMillis: Long, durationMillis: Long) {
-        Log.d("WatchProgressRepo", "Attempting save: mediaId=$mediaId, pos=$positionMillis, dur=$durationMillis")
+    fun saveProgress(mediaId: String, mediaType: String, positionMillis: Long, durationMillis: Long) {
+        Log.d("WatchProgressRepo", "Attempting save: mediaId=$mediaId, type=$mediaType, pos=$positionMillis, dur=$durationMillis")
 
         if (durationMillis <= 0) {
             Log.w("WatchProgressRepo", "Saving cancelled: Duration is 0 or less.")
@@ -53,11 +53,12 @@ class WatchProgressRepository {
             .build()
             .findFirst()
 
-        val progress = existing ?: WatchProgress(mediaId = mediaId)
+        val progress = existing ?: WatchProgress(mediaId = mediaId, mediaType = mediaType)
         
         progress.apply {
             this.positionMillis = positionMillis
             this.durationMillis = durationMillis
+            this.mediaType = mediaType // Update type in case it's a migration/new entry
             this.lastWatched = System.currentTimeMillis()
         }
         
@@ -100,5 +101,23 @@ class WatchProgressRepository {
             .order(WatchProgress_.lastWatched, QueryBuilder.DESCENDING)
             .build()
             .flow()
+    }
+
+    /**
+     * Clears all watch progress entries for movies (mediaType == "movie").
+     */
+    fun clearMovieProgress() {
+        val query = progressBox.query().equal(WatchProgress_.mediaType, "movie", QueryBuilder.StringOrder.CASE_SENSITIVE).build()
+        val removedCount = progressBox.remove(query.find())
+        Log.d("WatchProgressRepo", "Cleared $removedCount movie watch progress entries.")
+    }
+
+    /**
+     * Clears all watch progress entries for TV series/episodes (mediaType == "episode").
+     */
+    fun clearSeriesProgress() {
+        val query = progressBox.query().equal(WatchProgress_.mediaType, "episode", QueryBuilder.StringOrder.CASE_SENSITIVE).build()
+        val removedCount = progressBox.remove(query.find())
+        Log.d("WatchProgressRepo", "Cleared $removedCount series watch progress entries.")
     }
 }

@@ -542,7 +542,7 @@
     },
     {
       "id": "11:2962208889151683899",
-      "lastPropertyId": "5:2972585978704454042",
+      "lastPropertyId": "6:1937786019681253716",
       "name": "WatchProgress",
       "properties": [
         {
@@ -572,13 +572,20 @@
           "id": "5:2972585978704454042",
           "name": "lastWatched",
           "type": 6
+        },
+        {
+          "id": "6:1937786019681253716",
+          "name": "mediaType",
+          "indexId": "13:8890353068607570181",
+          "type": 9,
+          "flags": 2048
         }
       ],
       "relations": []
     }
   ],
   "lastEntityId": "11:2962208889151683899",
-  "lastIndexId": "12:3415516861565029544",
+  "lastIndexId": "13:8890353068607570181",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

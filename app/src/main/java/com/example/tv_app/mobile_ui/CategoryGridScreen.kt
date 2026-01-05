@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -141,6 +142,30 @@ fun CategoryGridScreen(
                             Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
+                    }
+                },
+                actions = {
+                    if (isContinueWatching) {
+                        IconButton(
+                            onClick = {
+                                cwViewModel?.let {
+                                    coroutineScope.launch {
+                                        if (isMovie) {
+                                            it.clearMovieProgress()
+                                        } else {
+                                            it.clearSeriesProgress()
+                                        }
+                                    }
+                                }
+                            }
+                        ) {
+                            // Use a delete icon or similar for clearing all history
+                            Icon(
+                                imageVector = Icons.Filled.Delete,
+                                contentDescription = "Clear All Watching History",
+                                tint = Color.White
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(

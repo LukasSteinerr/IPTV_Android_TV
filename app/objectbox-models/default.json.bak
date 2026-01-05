@@ -539,10 +539,46 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "11:2962208889151683899",
+      "lastPropertyId": "5:2972585978704454042",
+      "name": "WatchProgress",
+      "properties": [
+        {
+          "id": "1:232322581532704085",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:979058201731781489",
+          "name": "mediaId",
+          "indexId": "12:3415516861565029544",
+          "type": 9,
+          "flags": 2048
+        },
+        {
+          "id": "3:8559952014083517822",
+          "name": "positionMillis",
+          "type": 6
+        },
+        {
+          "id": "4:7816219422848206058",
+          "name": "durationMillis",
+          "type": 6
+        },
+        {
+          "id": "5:2972585978704454042",
+          "name": "lastWatched",
+          "type": 6
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "10:2669605815683971588",
-  "lastIndexId": "11:9119486359237475455",
+  "lastEntityId": "11:2962208889151683899",
+  "lastIndexId": "12:3415516861565029544",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

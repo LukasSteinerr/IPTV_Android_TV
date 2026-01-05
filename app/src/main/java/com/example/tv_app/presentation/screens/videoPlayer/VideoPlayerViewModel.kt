@@ -20,6 +20,7 @@ class VideoPlayerViewModel : ViewModel() {
     
     // State for tracking playback progress
     private var mediaId: String? = null
+    private var currentMediaType: String? = null // "movie", "episode", or "channel"
     private var currentPositionMillis: Long = 0L
     private var currentDurationMillis: Long = 0L
 
@@ -40,8 +41,9 @@ class VideoPlayerViewModel : ViewModel() {
         Log.d("VideoPlayerVM", "Save attempt triggered. mediaId: $mediaId, pos: $currentPositionMillis, dur: $currentDurationMillis")
         
         mediaId?.let { id ->
+            val type = currentMediaType ?: "movie" // Default to movie if null, though should be set in load*
             if (currentDurationMillis > 0) {
-                watchProgressRepository.saveProgress(id, currentPositionMillis, currentDurationMillis)
+                watchProgressRepository.saveProgress(id, type, currentPositionMillis, currentDurationMillis)
             } else {
                 Log.w("VideoPlayerVM", "Save skipped: Duration is 0 or less.")
             }
@@ -51,6 +53,7 @@ class VideoPlayerViewModel : ViewModel() {
     fun loadMovie(movie: Movie) {
         viewModelScope.launch {
             mediaId = movie.streamId ?: if (movie.id > 0) "movie-${movie.id}" else null
+            currentMediaType = "movie"
             
             // Resume playback if progress exists
             val startPosition = mediaId?.let { watchProgressRepository.getSavedPosition(it) } ?: 0L
@@ -62,6 +65,7 @@ class VideoPlayerViewModel : ViewModel() {
     fun loadEpisode(episode: TvEpisode) {
         viewModelScope.launch {
             mediaId = "episode-${episode.id}" // Assuming TvEpisode has an id field or can derive a unique ID
+            currentMediaType = "episode"
             
             // Convert episode to a movie-like object for the player
             val episodeMovie = Movie(
@@ -84,6 +88,7 @@ class VideoPlayerViewModel : ViewModel() {
         viewModelScope.launch {
             // Live TV channels typically don't save progress, but we need a unique ID for the media
             mediaId = "channel-${streamUrl.hashCode()}"
+            currentMediaType = "channel"
             
             // Create a movie-like object for channels
             val channelMovie = Movie(
@@ -98,6 +103,7 @@ class VideoPlayerViewModel : ViewModel() {
     fun reset() {
         // When reset, clear the mediaId to prevent accidental saving of position
         mediaId = null
+        currentMediaType = null
         currentPositionMillis = 0L
         currentDurationMillis = 0L
         viewModelScope.launch {
