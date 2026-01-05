@@ -183,7 +183,12 @@ fun MobileAppNavigation() {
                         lastMainScreen = MobileScreen.Home
                         currentScreen = MobileScreen.TvSeriesDetails
                     },
-                    onChannelSelected = { /* TODO: Navigate to channel player */ },
+                    onChannelSelected = { channel ->
+                        android.util.Log.d("MainActivity", "Playing channel: ${channel.name}")
+                        videoPlayerViewModel.loadChannel(channel)
+                        videoPlayerSourceScreen = MobileScreen.Home
+                        currentScreen = MobileScreen.VideoPlayer
+                    },
                     onBackPressed = { currentScreen = MobileScreen.MyPlaylists },
                     hazeState = hazeState,
                     contentPadding = paddingValues,

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.TvEpisode
+import com.example.tv_app.model.Channel
 import com.example.tv_app.repository.WatchProgressRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -84,17 +85,22 @@ class VideoPlayerViewModel : ViewModel() {
         }
     }
 
-    fun loadChannel(streamUrl: String, channelName: String) {
+    fun loadChannel(channel: Channel) {
         viewModelScope.launch {
             // Live TV channels typically don't save progress, but we need a unique ID for the media
-            mediaId = "channel-${streamUrl.hashCode()}"
+            // Using a combination of playlist ID and channel stream URL hash to ensure uniqueness
+            val playlistId = channel.playlist.targetId
+            mediaId = "channel-${playlistId}-${channel.streamUrl.hashCode()}"
             currentMediaType = "channel"
-            
-            // Create a movie-like object for channels
+
+            // Create a movie-like object for channels to pass to the player
             val channelMovie = Movie(
-                name = channelName,
-                streamUrl = streamUrl,
-                description = "Live TV Channel"
+                id = channel.id,
+                streamId = mediaId,
+                name = channel.name,
+                streamUrl = channel.streamUrl,
+                description = "Live TV Channel ${channel.name}",
+                posterUrl = channel.logoUrl // Use logo as poster
             )
             _uiState.value = VideoPlayerUiState.Ready(channelMovie, 0L) // Always start channels from 0
         }
