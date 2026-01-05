@@ -1,5 +1,6 @@
 package com.example.tv_app.mobile_ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.WindowInsets
@@ -62,6 +63,9 @@ fun SearchScreen(
         // Interleave movies and TV shows for mixed display
         (searchResults.movies + searchResults.tvShows).shuffled()
     }
+
+    // Handle system back button press
+    BackHandler(onBack = onNavigateBack)
 
     Scaffold(
         topBar = {
