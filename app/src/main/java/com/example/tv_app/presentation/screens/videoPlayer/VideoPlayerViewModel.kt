@@ -157,7 +157,7 @@ class VideoPlayerViewModel : ViewModel() {
     // --- Analytics Logging Functions ---
 
     private fun logPlaybackStart(mediaId: String?, mediaType: String?, startPosition: Long) {
-        if (mediaId == null || mediaType == null || mediaType == "channel") return // Don't log start for Live TV (use channel selection instead if needed)
+        if (mediaId == null || mediaType == null) return
 
         logAnalyticsEvent(
             eventName = "playback_start",
