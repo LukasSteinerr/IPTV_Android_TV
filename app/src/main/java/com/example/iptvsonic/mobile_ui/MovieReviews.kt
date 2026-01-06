@@ -1,0 +1,118 @@
+package com.example.iptvsonic.mobile_ui
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.unit.dp
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.surfaceColorAtElevation
+import com.example.iptvsonic.model.MovieReviewsAndRatings
+import com.example.iptvsonic.presentation.theme.JetStreamCardShape
+import com.example.iptvsonic.presentation.utils.rememberChildPadding
+
+@Composable
+fun MovieReviews(
+    modifier: Modifier = Modifier,
+    reviewsAndRatings: List<MovieReviewsAndRatings>
+) {
+    val childPadding = rememberChildPadding()
+    Column(
+        modifier = modifier
+            .padding(horizontal = childPadding.start)
+            .padding(bottom = childPadding.bottom)
+    ) {
+        Text(text = "Reviews", style = MaterialTheme.typography.titleMedium)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
+            reviewsAndRatings.forEach { reviewAndRating ->
+                Review(
+                    reviewAndRating,
+                    modifier
+                        .weight(1f)
+                        .height(96.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun Review(
+    reviewAndRating: MovieReviewsAndRatings,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = {},
+        modifier = modifier,
+        shape = CardDefaults.shape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)
+        )
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .fillMaxWidth(0.3f)
+                        .background(
+                            MaterialTheme.colorScheme.surfaceColorAtElevation(4.dp)
+                        ),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        modifier = Modifier
+                            .fillMaxSize(0.8f)
+                            .align(Alignment.Center),
+                    )
+                }
+                Column(
+                    modifier = Modifier.padding(start = 16.dp)
+                ) {
+                    Text(
+                        text = reviewAndRating.reviewerName,
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "${reviewAndRating.reviewCount} reviews",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.alpha(0.75f)
+                    )
+                }
+            }
+            Text(
+                text = reviewAndRating.reviewRating,
+                style = MaterialTheme.typography.headlineLarge,
+                modifier = Modifier.padding(end = 16.dp)
+            )
+        }
+    }
+}

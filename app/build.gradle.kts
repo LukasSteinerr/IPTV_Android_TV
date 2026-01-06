@@ -9,11 +9,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.tv_app"
+    namespace = "com.example.iptvsonic"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.tv_app"
+        applicationId = "com.example.iptvsonic"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
