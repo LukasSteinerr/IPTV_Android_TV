@@ -20,11 +20,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Cast
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.mediarouter.media.MediaControlIntent
+import androidx.mediarouter.media.MediaRouteSelector
 import androidx.compose.foundation.border
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -491,23 +495,33 @@ private fun Details(
             }
         }
 
-        // Close button (Top Right)
-        Box(
+        // Fixed elements overlay: AppBar (Back/Close and Cast Button)
+        Row(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(top = 24.dp, end = 16.dp)
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.5f))
-                .clickable(onClick = onBackPressed),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .padding(top = 24.dp, end = MobilePadding, start = MobilePadding)
+                .align(Alignment.TopCenter),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = "Close",
-                tint = Color.White,
-                modifier = Modifier.size(20.dp)
-            )
+            // Close/Back Button (Top Left)
+            Box(
+                modifier = Modifier
+                    .size(40.dp) // Increased size for easier tapping
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.5f))
+                    .clickable(onClick = onBackPressed),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = "Close",
+                    tint = Color.White,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            // Cast Button (Top Right)
+            CastButton(modifier = Modifier.padding(start = 8.dp))
         }
 
 
@@ -524,6 +538,31 @@ private fun Details(
             )
         }
     }
+}
+
+@Composable
+private fun CastButton(modifier: Modifier = Modifier) {
+    // MediaRouteSelector is required for the MediaRouteButton to actively look for routes.
+    val selector = remember {
+        MediaRouteSelector.Builder()
+            .addControlCategory(MediaControlIntent.CATEGORY_LIVE_VIDEO)
+            .addControlCategory(MediaControlIntent.CATEGORY_REMOTE_PLAYBACK)
+            .build()
+    }
+
+    AndroidView(
+        factory = { context ->
+            val button = androidx.mediarouter.app.MediaRouteButton(context).apply {
+                // Set the selector explicitly to initiate discovery
+                routeSelector = selector
+            }
+            button
+        },
+        modifier = modifier
+            .size(40.dp) // Match the size of the Close button
+            .clip(CircleShape)
+            .background(Color.Black.copy(alpha = 0.5f))
+    )
 }
 
 @Composable
