@@ -2,6 +2,7 @@ package com.example.tv_app.di
 
 import android.app.Application
 import com.example.tv_app.model.ObjectBox
+import com.google.firebase.FirebaseApp
 import com.google.android.gms.cast.framework.CastContext
 import com.jakewharton.threetenabp.AndroidThreeTen
 
@@ -9,6 +10,9 @@ class MyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        // Explicitly initialize Firebase (optional, but ensures it's done early)
+        FirebaseApp.initializeApp(this)
         
         // Initialize ThreeTenABP for date/time handling in EPG
         AndroidThreeTen.init(this)

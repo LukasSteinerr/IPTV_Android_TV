@@ -43,11 +43,21 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import androidx.core.view.WindowCompat
 
+import com.google.firebase.crashlytics.FirebaseCrashlytics
+
 class MainActivity : FragmentActivity() {
 
     @OptIn(ExperimentalTvMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // --- Crashlytics Test Start ---
+        // Uncomment the line below to test a fatal crash
+        // FirebaseCrashlytics.getInstance().log("Testing Crashlytics setup with a forced crash.")
+        // throw RuntimeException("Test Crash - Kilo Code")
+        // --- Crashlytics Test End ---
+        
+        
 
         // Enable drawing behind the system bars
         WindowCompat.setDecorFitsSystemWindows(window, false)

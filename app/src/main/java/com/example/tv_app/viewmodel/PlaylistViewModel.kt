@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tv_app.model.Playlist
 import com.example.tv_app.repository.PlaylistService
+import com.example.tv_app.utils.logAnalyticsEvent
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Job
 
@@ -42,6 +43,7 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
                     loadingMessage.value = message
                 }
 
+                logAnalyticsEvent("playlist_added", mapOf("status" to "success", "type" to playlist.typeName))
                 loadingMessage.value = "Playlist added successfully!"
                 Log.d("PlaylistViewModel", "Successfully added playlist: ${playlist.name}")
                 
@@ -49,6 +51,7 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
                 loadPlaylists()
 
             } catch (e: Exception) {
+                logAnalyticsEvent("playlist_added", mapOf("status" to "failure", "reason" to e.message.orEmpty(), "type" to playlist.typeName))
                 Log.e("PlaylistViewModel", "Error adding playlist", e)
                 errorMessage.value = "Failed to add playlist: ${e.message}"
                 loadingMessage.value = "Error: ${e.message}"

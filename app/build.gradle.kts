@@ -5,6 +5,7 @@ plugins {
     id("kotlin-kapt") // Must be applied before ObjectBox plugin
     id("com.google.gms.google-services")
     id("org.jetbrains.kotlin.plugin.serialization") version "1.9.22"
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -65,8 +66,10 @@ dependencies {
     // TODO: Add the dependencies for Firebase products you want to use
     // When using the BoM, don't specify versions in Firebase dependencies
     implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
+    implementation("com.google.firebase:firebase-crashlytics")
 
 
     implementation(libs.androidx.core.ktx)
