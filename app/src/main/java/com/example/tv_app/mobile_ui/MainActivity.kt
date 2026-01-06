@@ -208,6 +208,14 @@ fun MobileAppNavigation() {
                     .zIndex(if (currentScreen == MobileScreen.Downloads) 1f else 0f)
             )
 
+            // Settings Screen
+            SettingsScreen(
+                onNavigateToMyPlaylists = { currentScreen = MobileScreen.MyPlaylists },
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .zIndex(if (currentScreen == MobileScreen.Settings) 1f else 0f)
+            )
+
             // MyList Screen
             MyListScreen(
                 onMovieSelected = { movie ->
@@ -225,14 +233,6 @@ fun MobileAppNavigation() {
                 modifier = Modifier
                     .padding(paddingValues)
                     .zIndex(if (currentScreen == MobileScreen.MyList) 1f else 0f)
-            )
-
-            // Settings Screen
-            SettingsScreen(
-                onNavigateToMyPlaylists = { currentScreen = MobileScreen.MyPlaylists },
-                modifier = Modifier
-                    .padding(paddingValues)
-                    .zIndex(if (currentScreen == MobileScreen.Settings) 1f else 0f)
             )
         }
 
