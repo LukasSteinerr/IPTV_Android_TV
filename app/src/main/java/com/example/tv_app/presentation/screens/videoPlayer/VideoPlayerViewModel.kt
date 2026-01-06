@@ -2,6 +2,7 @@ package com.example.tv_app.presentation.screens.videoPlayer
 
 import android.util.Log
 import androidx.compose.runtime.Immutable
+import com.example.tv_app.utils.logAnalyticsEvent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tv_app.model.Movie
@@ -35,11 +36,15 @@ class VideoPlayerViewModel : ViewModel() {
         super.onCleared()
         // Ensure that if the system clears the ViewModel, we save the progress.
         // Calling saveCurrentProgress() here relies on the latest values set by updateCurrentPosition().
-        saveCurrentProgress()
+        saveCurrentProgress(logStopEvent = false)
     }
     
     // Public method to manually trigger saving from the UI (e.g., on BackPress)
-    fun saveCurrentProgress() {
+    fun saveCurrentProgress(logStopEvent: Boolean = true) {
+        if (logStopEvent) {
+            logPlaybackStop(currentPositionMillis, currentDurationMillis)
+        }
+        
         Log.d("VideoPlayerVM", "Save attempt triggered. mediaId: $mediaId, pos: $currentPositionMillis, dur: $currentDurationMillis")
         
         mediaId?.let { id ->
@@ -60,6 +65,7 @@ class VideoPlayerViewModel : ViewModel() {
             // Resume playback if progress exists
             val startPosition = mediaId?.let { watchProgressRepository.getSavedPosition(it) } ?: 0L
             
+            logPlaybackStart(movie.streamId, currentMediaType, startPosition)
             _uiState.value = VideoPlayerUiState.Ready(movie, startPosition, isLive = false)
         }
     }
@@ -82,6 +88,7 @@ class VideoPlayerViewModel : ViewModel() {
             // Resume playback if progress exists
             val startPosition = mediaId?.let { watchProgressRepository.getSavedPosition(it) } ?: 0L
             
+            logPlaybackStart(episodeMovie.streamId, currentMediaType, startPosition)
             _uiState.value = VideoPlayerUiState.Ready(episodeMovie, startPosition, isLive = false)
         }
     }
@@ -108,6 +115,7 @@ class VideoPlayerViewModel : ViewModel() {
             // Resume playback if progress exists (using the DownloadedMovie ID)
             val startPosition = uniqueId.let { watchProgressRepository.getSavedPosition(it) } ?: 0L
 
+            logPlaybackStart(localMovie.streamId, currentMediaType, startPosition)
             Log.d("VideoPlayerVM", "Loading downloaded media. Path: ${localMovie.streamUrl}, StartPos: $startPosition")
             _uiState.value = VideoPlayerUiState.Ready(localMovie, startPosition, isLive = false)
         }
@@ -130,6 +138,7 @@ class VideoPlayerViewModel : ViewModel() {
                 description = "Live TV Channel ${channel.name}",
                 posterUrl = channel.logoUrl // Use logo as poster
             )
+            logPlaybackStart(channelMovie.streamId, currentMediaType, 0L)
             _uiState.value = VideoPlayerUiState.Ready(channelMovie, 0L, isLive = true) // Always start channels from 0
         }
     }
@@ -143,6 +152,72 @@ class VideoPlayerViewModel : ViewModel() {
         viewModelScope.launch {
             _uiState.value = VideoPlayerUiState.Loading
         }
+    }
+    
+    // --- Analytics Logging Functions ---
+
+    private fun logPlaybackStart(mediaId: String?, mediaType: String?, startPosition: Long) {
+        if (mediaId == null || mediaType == null || mediaType == "channel") return // Don't log start for Live TV (use channel selection instead if needed)
+
+        logAnalyticsEvent(
+            eventName = "playback_start",
+            params = mapOf(
+                "content_id" to mediaId,
+                "content_type" to mediaType,
+                "start_position_ms" to startPosition.toString()
+            )
+        )
+    }
+
+    // Placeholder to be called by the VideoPlayer composable/Exoplayer listener
+    fun logPlaybackFailure(errorCode: String, errorMessage: String?) {
+        val type = currentMediaType ?: "unknown"
+        val id = mediaId ?: "unknown"
+
+        logAnalyticsEvent(
+            eventName = "playback_failure",
+            params = mapOf(
+                "content_id" to id,
+                "content_type" to type,
+                "error_code" to errorCode.take(100),
+                "error_message" to errorMessage.orEmpty().take(100)
+            )
+        )
+        // Optionally, log non-fatal crash for better detail
+        // logNonFatalCrash(RuntimeException("Playback Error: $errorCode - $errorMessage"))
+    }
+
+    fun logPlaybackStop(position: Long, duration: Long) {
+        val id = mediaId
+        val type = currentMediaType
+
+        if (id == null || type == null) {
+            Log.d("VideoPlayerVM", "Playback stop skipped: Missing mediaId or type.")
+            return
+        }
+        
+        if (duration <= 0 && type != "channel") { // Only require duration > 0 for non-live content
+            Log.d("VideoPlayerVM", "Playback stop skipped: Invalid duration ($duration) for type $type.")
+            return
+        }
+
+        // Simplification: We log the final position/duration, and rely on start_position_ms from playback_start
+        // to calculate watch duration on the server side.
+        val durationSeconds = if (duration > 0) duration / 1000 else 0
+        val percentWatched = if (duration > 0) (position.toDouble() / duration.toDouble() * 100).toInt() else 0
+
+        Log.d("VideoPlayerVM", "Logging playback_stop: ID=$id, Pos=$position, Dur=$duration")
+        
+        logAnalyticsEvent(
+            eventName = "playback_stop",
+            params = mapOf(
+                "content_id" to id,
+                "content_type" to type,
+                "final_position_ms" to position.toString(),
+                "duration_seconds" to durationSeconds.toString(),
+                "watch_progress_percent" to percentWatched.toString()
+            )
+        )
     }
 }
 

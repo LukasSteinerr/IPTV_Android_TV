@@ -113,6 +113,7 @@ fun TvVideoPlayerScreenContent(
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val viewModel: VideoPlayerViewModel = viewModel()
     val context = LocalContext.current
     val window = (context as? androidx.activity.ComponentActivity)?.window
 
@@ -126,7 +127,23 @@ fun TvVideoPlayerScreenContent(
 
     val trackSelector = remember { DefaultTrackSelector(context) }
     val exoPlayer = rememberPlayer(context, trackSelector)
-
+    
+    // Add Player Listener for error tracking
+    DisposableEffect(exoPlayer) {
+        val listener = object : Player.Listener {
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                super.onPlayerError(error)
+                val errorCode = "EXO_${error.errorCodeName}"
+                val errorMessage = error.message
+                viewModel.logPlaybackFailure(errorCode, errorMessage)
+            }
+        }
+        exoPlayer.addListener(listener)
+        onDispose {
+            exoPlayer.removeListener(listener)
+        }
+    }
+ 
     val videoPlayerState = rememberVideoPlayerState(
         hideSeconds = 4,
     )
@@ -139,6 +156,14 @@ fun TvVideoPlayerScreenContent(
     val pulseState = rememberVideoPlayerPulseState()
 
     BackHandler {
+        // Explicitly update position one last time before releasing the player and navigating away
+        viewModel.updateCurrentPosition(
+            position = exoPlayer.currentPosition,
+            duration = exoPlayer.duration
+        )
+        // Manually trigger save logic (which now also logs playback_stop)
+        viewModel.saveCurrentProgress(logStopEvent = true)
+        
         exoPlayer.release()
         onBackPressed()
     }

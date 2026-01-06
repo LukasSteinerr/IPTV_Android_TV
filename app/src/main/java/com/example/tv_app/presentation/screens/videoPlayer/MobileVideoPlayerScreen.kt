@@ -143,6 +143,22 @@ fun MobileVideoPlayerScreenContent(
     val trackSelector = remember { DefaultTrackSelector(context) }
     val exoPlayer = rememberPlayer(context, trackSelector)
 
+    // Add Player Listener for error tracking
+    DisposableEffect(exoPlayer) {
+        val listener = object : androidx.media3.common.Player.Listener {
+            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+                super.onPlayerError(error)
+                val errorCode = "EXO_${error.errorCodeName}"
+                val errorMessage = error.message
+                viewModel.logPlaybackFailure(errorCode, errorMessage)
+            }
+        }
+        exoPlayer.addListener(listener)
+        onDispose {
+            exoPlayer.removeListener(listener)
+        }
+    }
+
     LaunchedEffect(exoPlayer, movie, startPositionMillis) {
         exoPlayer.addMediaItem(movie.intoMediaItem())
         exoPlayer.prepare()
@@ -177,7 +193,7 @@ fun MobileVideoPlayerScreenContent(
             duration = exoPlayer.duration
         )
         // Manually trigger save logic
-        viewModel.saveCurrentProgress()
+        viewModel.saveCurrentProgress(logStopEvent = true)
         
         exoPlayer.release()
         onBackPressed()
@@ -274,6 +290,14 @@ fun MobileVideoPlayerScreenContent(
             // Back button (Top Left)
             IconButton(
                 onClick = {
+                    // 1. Update position
+                    viewModel.updateCurrentPosition(
+                        position = exoPlayer.currentPosition,
+                        duration = exoPlayer.duration
+                    )
+                    // 2. Log stop and save progress
+                    viewModel.saveCurrentProgress(logStopEvent = true)
+                    
                     exoPlayer.release()
                     onBackPressed()
                 },
