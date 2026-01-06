@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.CloudDownload
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -510,32 +510,6 @@ private fun Details(
             )
         }
 
-        // Watch Now Button (Fixed Bottom)
-        if (firstEpisodeToPlay != null) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .padding(horizontal = MobilePadding, vertical = 8.dp)
-            ) {
-                Button(
-                    onClick = { onEpisodeSelected(firstEpisodeToPlay) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF007AFF),
-                        contentColor = Color.White
-                    ),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "WATCH S${firstEpisodeToPlay.seasonNumber} E${firstEpisodeToPlay.episodeNumber}",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                    )
-                }
-            }
-        }
 
         // Season Selector Dialog
         if (showSeasonSelector && availableSeasons.size > 1) {
@@ -622,7 +596,7 @@ private fun DownloadButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
         shape = CircleShape
     ) {
         Icon(
-            imageVector = Icons.Filled.CloudDownload,
+            imageVector = Icons.Filled.Download,
             contentDescription = "Download",
             modifier = Modifier.size(20.dp)
         )
@@ -849,7 +823,7 @@ private fun EpisodeListItem(
 
             IconButton(onClick = onDownload) {
                 Icon(
-                    imageVector = Icons.Filled.CloudDownload,
+                    imageVector = Icons.Filled.Download,
                     contentDescription = "Download",
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
