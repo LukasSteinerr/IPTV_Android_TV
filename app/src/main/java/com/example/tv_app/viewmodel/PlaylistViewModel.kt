@@ -51,8 +51,24 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
                 loadPlaylists()
 
             } catch (e: Exception) {
-                val reasonMessage = e.message.orEmpty().take(100) // Truncate reason to max 100 characters
-                logAnalyticsEvent("playlist_added", mapOf("status" to "failure", "reason" to reasonMessage, "type" to playlist.typeName))
+                val fullMessage = e.message.orEmpty()
+                
+                // 1. Extract error description (part before [url=)
+                val reasonDesc = fullMessage.substringBefore("[").trim().take(100)
+                
+                // 2. Extract URL up to base path, while keeping the username parameter if possible, but stripping the password
+                val urlWithParams = fullMessage.substringAfter("[url=").substringBefore(",")
+                val urlSanitized = urlWithParams
+                    .substringBeforeLast("password") // Strip everything from 'password' onward
+                    .removeSuffix("&") // Clean up trailing ampersand if password was the last param
+                    .removeSuffix("?") // Clean up trailing question mark
+                
+                logAnalyticsEvent("playlist_added", mapOf(
+                    "status" to "failure",
+                    "reason" to reasonDesc,
+                    "url_info" to urlSanitized.take(100), // Log URL information (including username if present) but excluding password
+                    "type" to playlist.typeName
+                ))
                 Log.e("PlaylistViewModel", "Error adding playlist", e)
                 errorMessage.value = "Failed to add playlist: ${e.message}"
                 loadingMessage.value = "Error: ${e.message}"
