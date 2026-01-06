@@ -45,6 +45,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.tv_app.model.DownloadedMovie
 import com.example.tv_app.repository.DownloadRepository
@@ -66,52 +67,56 @@ fun DownloadsScreen(
             .then(modifier)
     ) {
         if (downloads.isEmpty()) {
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Filled.Downloading,
-                        contentDescription = null,
-                        tint = Color.Gray,
-                        modifier = Modifier.size(64.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "No downloads yet",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Gray
-                    )
-                }
-            }
-        } else {
-            LazyColumn(
-                contentPadding = PaddingValues(
-                    top = 24.dp,
-                    start = 16.dp,
-                    end = 16.dp,
-                    bottom = 16.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+            Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .safeDrawingPadding()
+                    .padding(horizontal = 24.dp, vertical = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                item {
-                    Text(
-                        text = "Downloads",
-                        style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color.White,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
+                Icon(
+                    imageVector = Icons.Filled.Downloading,
+                    contentDescription = null,
+                    tint = Color.White.copy(alpha = 0.5f),
+                    modifier = Modifier.size(64.dp)
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                Text(
+                    text = "No downloads yet",
+                    color = Color.White,
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp, vertical = 24.dp)
+            ) {
+                Text(
+                    text = "Downloads",
+                    color = Color.White,
+                    style = MaterialTheme.typography.headlineLarge.copy(
+                        fontWeight = FontWeight.Light,
+                        letterSpacing = 0.5.sp
+                    ),
+                    modifier = Modifier.padding(bottom = 32.dp)
+                )
 
-                items(downloads, key = { it.id }) { download ->
-                    DownloadItem(
-                        download = download,
-                        onPause = { downloadRepository.pauseDownload(download.id) },
-                        onResume = { downloadRepository.resumeDownload(download.id) },
-                        onDelete = { downloadRepository.deleteDownload(download.id) },
-                        onPlay = { onPlayMovie(download) }
-                    )
+                LazyColumn(
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(downloads, key = { it.id }) { download ->
+                        DownloadItem(
+                            download = download,
+                            onPause = { downloadRepository.pauseDownload(download.id) },
+                            onResume = { downloadRepository.resumeDownload(download.id) },
+                            onDelete = { downloadRepository.deleteDownload(download.id) },
+                            onPlay = { onPlayMovie(download) }
+                        )
+                    }
                 }
             }
         }
@@ -158,7 +163,7 @@ fun DownloadItem(
                 // Main Title: Series Name
                 Text(
                     text = download.seriesName ?: download.movieName,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.bodyLarge,
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -168,7 +173,7 @@ fun DownloadItem(
                 Text(
                     text = "S${download.seasonNumber} E${download.episodeNumber} - ${download.movieName}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = Color.LightGray,
+                    color = Color.White.copy(alpha = 0.6f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -177,7 +182,7 @@ fun DownloadItem(
                 // Main Title: Movie Name
                 Text(
                     text = download.movieName,
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    style = MaterialTheme.typography.bodyLarge,
                     color = Color.White,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -190,6 +195,7 @@ fun DownloadItem(
             // Using placeholder for Duration as it's not in DownloadedMovie model
             DotSeparatedRow(
                 modifier = Modifier.fillMaxWidth(),
+                textColor = Color.White.copy(alpha = 0.5f),
                 texts = listOf(
                     if (download.mediaType == DownloadedMovie.TYPE_TVEPISODE) "TV Episode" else "Movie",
                     "1h 30min" // Placeholder for Duration
@@ -216,7 +222,7 @@ fun DownloadItem(
                     Text(
                         text = "${download.progress}%",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray,
+                        color = Color.White.copy(alpha = 0.5f),
                         modifier = Modifier.align(Alignment.End)
                     )
                 }
@@ -224,14 +230,14 @@ fun DownloadItem(
                     Text(
                         text = "Downloaded",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Green
+                        color = Color.White.copy(alpha = 0.7f)
                     )
                 }
                 DownloadedMovie.STATUS_FAILED -> {
                     Text(
                         text = "Download Failed",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Red
+                        color = Color.White.copy(alpha = 0.7f)
                     )
                 }
                 else -> {
@@ -239,7 +245,7 @@ fun DownloadItem(
                     Text(
                         text = "Pending",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
+                        color = Color.White.copy(alpha = 0.5f)
                     )
                 }
             }
@@ -254,7 +260,7 @@ fun DownloadItem(
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Delete",
-                        tint = Color.Gray,
+                        tint = Color.White.copy(alpha = 0.5f),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -264,7 +270,7 @@ fun DownloadItem(
                     Icon(
                         imageVector = Icons.Filled.Pause,
                         contentDescription = "Pause",
-                        tint = Color.White,
+                        tint = Color.White.copy(alpha = 0.7f),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -273,7 +279,7 @@ fun DownloadItem(
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Cancel Download",
-                        tint = Color.Gray,
+                        tint = Color.White.copy(alpha = 0.5f),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -283,7 +289,7 @@ fun DownloadItem(
                     Icon(
                         imageVector = Icons.Filled.PlayArrow,
                         contentDescription = if (download.status == DownloadedMovie.STATUS_PAUSED) "Resume" else "Retry",
-                        tint = Color.White,
+                        tint = Color.White.copy(alpha = 0.7f),
                         modifier = Modifier.size(24.dp)
                     )
                 }
@@ -292,7 +298,7 @@ fun DownloadItem(
                     Icon(
                         imageVector = Icons.Filled.Delete,
                         contentDescription = "Delete",
-                        tint = Color.Gray,
+                        tint = Color.White.copy(alpha = 0.5f),
                         modifier = Modifier.size(24.dp)
                     )
                 }

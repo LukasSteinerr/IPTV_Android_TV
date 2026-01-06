@@ -48,6 +48,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.ObjectBox
 import com.example.tv_app.model.TvSeries
@@ -133,28 +134,22 @@ fun MyListScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .background(Color.Black)
+            .padding(horizontal = 24.dp, vertical = 24.dp)
     ) {
         // 1. Header & Filters
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color(0xFF1A1A1A), Color.Black)
-                    )
-                )
-                .safeDrawingPadding()
-                .padding(16.dp)
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text(
                 text = "My List",
-                style = MaterialTheme.typography.headlineLarge.copy(fontWeight = FontWeight.Bold),
-                color = Color.White
+                color = Color.White,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Light,
+                    letterSpacing = 0.5.sp
+                ),
+                modifier = Modifier.padding(bottom = 32.dp)
             )
-            Spacer(modifier = Modifier.height(16.dp))
             
             // Filter Chips
             Row(
@@ -163,11 +158,16 @@ fun MyListScreen(
                 FilterChip(
                     selected = selectedFilter == Filter.ALL,
                     onClick = { selectedFilter = Filter.ALL },
-                    label = { Text("All") },
+                    label = {
+                        Text(
+                            "All",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color.White,
                         selectedLabelColor = Color.Black,
-                        containerColor = Color(0xFF333333),
+                        containerColor = Color.White.copy(alpha = 0.1f),
                         labelColor = Color.White
                     ),
                     border = null
@@ -175,11 +175,16 @@ fun MyListScreen(
                 FilterChip(
                     selected = selectedFilter == Filter.MOVIES,
                     onClick = { selectedFilter = Filter.MOVIES },
-                    label = { Text("Movies") },
+                    label = {
+                        Text(
+                            "Movies",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color.White,
                         selectedLabelColor = Color.Black,
-                        containerColor = Color(0xFF333333),
+                        containerColor = Color.White.copy(alpha = 0.1f),
                         labelColor = Color.White
                     ),
                     border = null
@@ -187,11 +192,16 @@ fun MyListScreen(
                 FilterChip(
                     selected = selectedFilter == Filter.SERIES,
                     onClick = { selectedFilter = Filter.SERIES },
-                    label = { Text("TV Shows") },
+                    label = {
+                        Text(
+                            "TV Shows",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color.White,
                         selectedLabelColor = Color.Black,
-                        containerColor = Color(0xFF333333),
+                        containerColor = Color.White.copy(alpha = 0.1f),
                         labelColor = Color.White
                     ),
                     border = null
@@ -209,7 +219,7 @@ fun MyListScreen(
                     Icon(
                         imageVector = Icons.Default.Favorite,
                         contentDescription = null,
-                        tint = Color.DarkGray,
+                        tint = Color.White.copy(alpha = 0.5f),
                         modifier = Modifier
                             .width(64.dp)
                             .height(64.dp)
@@ -217,13 +227,13 @@ fun MyListScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = "Your list is empty",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.Gray
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
                         text = "Add movies and shows to track what you want to watch.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.DarkGray,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.6f),
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -231,7 +241,7 @@ fun MyListScreen(
         } else {
             LazyVerticalGrid(
                 columns = GridCells.Adaptive(minSize = 110.dp),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(0.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxSize()
@@ -282,14 +292,12 @@ private fun MediaItemCard(
 
         Text(
             text = item.title,
-            style = MaterialTheme.typography.bodySmall.copy(
-                fontWeight = FontWeight.SemiBold
-            ),
+            style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 6.dp),
-            maxLines = 1,
+                .padding(top = 8.dp),
+            maxLines = 2,
             overflow = TextOverflow.Ellipsis,
             color = Color.White
         )
