@@ -9,6 +9,8 @@ import android.util.Log
 import android.widget.Toast
 import com.example.tv_app.model.DownloadedMovie
 import com.example.tv_app.model.Movie
+import com.example.tv_app.model.TvEpisode
+import com.example.tv_app.model.TvSeries
 import com.example.tv_app.model.ObjectBox
 import com.example.tv_app.service.DownloadService
 import com.example.tv_app.utils.NotificationPermissionHelper
@@ -195,6 +197,105 @@ class DownloadRepository(private val context: Context) {
             
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start download: ${e.message}", e)
+            scope.launch(Dispatchers.Main) {
+                Toast.makeText(context, "Failed to start download: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    fun downloadTvEpisode(tvSeries: TvSeries, episode: TvEpisode, permissionCallback: NotificationPermissionCallback? = null) {
+        Log.d(TAG, "=== DOWNLOAD TV EPISODE CALLED ===")
+        Log.d(TAG, "Series name: ${tvSeries.name}")
+        Log.d(TAG, "Episode name: ${episode.name.ifEmpty { episode.title }}")
+        
+        // Check notification permission first
+        val hasPermission = NotificationPermissionHelper.hasNotificationPermission(context)
+        if (!hasPermission) {
+            scope.launch(Dispatchers.Main) {
+                permissionCallback?.onPermissionRequired()
+                NotificationPermissionHelper.openNotificationSettings(context)
+                Toast.makeText(
+                    context,
+                    "Notification permission is required to show download progress. Opening settings...",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+            return
+        }
+        
+        // Check network connectivity
+        if (!isNetworkAvailable()) {
+            scope.launch(Dispatchers.Main) {
+                Toast.makeText(context, "No internet connection. Please check your network.", Toast.LENGTH_LONG).show()
+            }
+            return
+        }
+        
+        // Validate stream URL
+        if (episode.streamUrl.isNullOrBlank()) {
+            Log.e(TAG, "Invalid stream URL for episode: ${episode.name}")
+            scope.launch(Dispatchers.Main) {
+                Toast.makeText(context, "Invalid stream URL. Cannot download.", Toast.LENGTH_SHORT).show()
+            }
+            return
+        }
+        
+        val fileName = "${tvSeries.name}_S${episode.seasonNumber}_E${episode.episodeNumber}.mkv"
+            .replace("[^a-zA-Z0-9.-]".toRegex(), "_")
+        
+        // Use a unique ID for the episode download entry, combining series and episode info
+        val uniqueId = "${tvSeries.seriesId}_S${episode.seasonNumber}_E${episode.episodeNumber}"
+
+        // Check if already exists/downloading
+        val existing = downloadBox.query()
+            .equal(com.example.tv_app.model.DownloadedMovie_.movieId, uniqueId, QueryBuilder.StringOrder.CASE_SENSITIVE)
+            .build()
+            .findFirst()
+        if (existing != null) {
+            if (existing.status != DownloadedMovie.STATUS_COMPLETED && existing.status != DownloadedMovie.STATUS_DOWNLOADING) {
+                 resumeDownload(existing.id)
+            } else {
+                scope.launch(Dispatchers.Main) {
+                    Toast.makeText(context, "Download already in progress or completed", Toast.LENGTH_SHORT).show()
+                }
+            }
+            return
+        }
+
+        try {
+            // Create download entry in database
+            val download = DownloadedMovie(
+                movieId = uniqueId, // Used generically as unique identifier
+                movieName = episode.name.ifEmpty { episode.title }, // Episode Name
+                streamUrl = episode.streamUrl!!,
+                posterUrl = tvSeries.coverUrl, // Use series poster for thumbnail
+                backdropUrl = tvSeries.coverUrl,
+                localPath = File(context.getExternalFilesDir(Environment.DIRECTORY_MOVIES), fileName).absolutePath,
+                status = DownloadedMovie.STATUS_DOWNLOADING,
+                progress = 0,
+                downloadedBytes = 0,
+                totalBytes = 0,
+                mediaType = DownloadedMovie.TYPE_TVEPISODE,
+                seriesName = tvSeries.name,
+                episodeNumber = episode.episodeNumber,
+                seasonNumber = episode.seasonNumber
+            )
+            val id = downloadBox.put(download)
+            download.id = id
+            
+            Log.d(TAG, "Download entry created with ID: $id")
+            
+            // Start download via foreground service for consistent notification
+            DownloadService.startDownload(context, id)
+            
+            permissionCallback?.onPermissionGranted()
+            
+            scope.launch(Dispatchers.Main) {
+                Toast.makeText(context, "Download started: S${episode.seasonNumber} E${episode.episodeNumber}", Toast.LENGTH_SHORT).show()
+            }
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start episode download: ${e.message}", e)
             scope.launch(Dispatchers.Main) {
                 Toast.makeText(context, "Failed to start download: ${e.message}", Toast.LENGTH_LONG).show()
             }

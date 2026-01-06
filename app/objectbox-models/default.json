@@ -478,7 +478,7 @@
     },
     {
       "id": "10:2669605815683971588",
-      "lastPropertyId": "13:582647805097726860",
+      "lastPropertyId": "17:6620570371248337666",
       "name": "DownloadedMovie",
       "properties": [
         {
@@ -536,6 +536,26 @@
           "id": "13:582647805097726860",
           "name": "totalBytes",
           "type": 6
+        },
+        {
+          "id": "14:7466567505059768148",
+          "name": "mediaType",
+          "type": 5
+        },
+        {
+          "id": "15:881419720407029367",
+          "name": "seriesName",
+          "type": 9
+        },
+        {
+          "id": "16:2166552237645831983",
+          "name": "episodeNumber",
+          "type": 5
+        },
+        {
+          "id": "17:6620570371248337666",
+          "name": "seasonNumber",
+          "type": 5
         }
       ],
       "relations": []

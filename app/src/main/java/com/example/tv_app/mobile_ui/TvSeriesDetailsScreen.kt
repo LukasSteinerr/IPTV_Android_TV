@@ -53,6 +53,7 @@ import com.example.tv_app.model.Cast
 import com.example.tv_app.repository.TMDBService
 import com.example.tv_app.repository.TMDBImageProvider
 import com.example.tv_app.repository.PlaylistService
+import com.example.tv_app.repository.DownloadRepository
 import com.example.tv_app.presentation.common.TvSeriesCard
 import com.example.tv_app.presentation.components.TitleValueText
 import com.example.tv_app.presentation.components.FullScreenDarkLoading
@@ -87,6 +88,7 @@ fun TvSeriesDetailsScreen(
     onMyListToggled: () -> Unit = {}, // New callback
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current // Moved context declaration here
     // Get the playlist associated with this TV series
     val playlist = remember { tvSeries.playlist.target }
     // Force recomposition when key changes
@@ -106,7 +108,15 @@ fun TvSeriesDetailsScreen(
 
     val coroutineScope = rememberCoroutineScope()
     val tmdbService = remember { TMDBService() }
+    val downloadRepository = remember { DownloadRepository(context) }
     val lazyListState = rememberLazyListState()
+
+    val onDownloadEpisode: (TvEpisode) -> Unit = remember {
+        { episode ->
+            // Use the original tvSeries object which holds the playlist reference
+            downloadRepository.downloadTvEpisode(tvSeries, episode)
+        }
+    }
 
     // Scroll to top when tv series changes (similar series selected)
     LaunchedEffect(key) {
@@ -210,7 +220,6 @@ fun TvSeriesDetailsScreen(
         currentSeasonEpisodes.firstOrNull()
     }
 
-    val context = LocalContext.current
     var moviePalette by remember { mutableStateOf(MoviePalette()) }
     val tmdbImageProvider = remember { TMDBImageProvider.getInstance() }
     val posterForPalette = posterUrl ?: tvSeries.coverUrl
@@ -271,6 +280,7 @@ fun TvSeriesDetailsScreen(
                 onTvSeriesSelected = onTvSeriesSelected,
                 onMyListToggled = onMyListToggled,
                 onEpisodeSelected = onEpisodeSelected,
+                onDownloadEpisode = onDownloadEpisode,
                 firstEpisodeToPlay = firstEpisodeToPlay,
                 lazyListState = lazyListState,
                 moviePalette = moviePalette,
@@ -301,6 +311,7 @@ private fun Details(
     onBackPressed: () -> Unit,
     onTvSeriesSelected: (TvSeries) -> Unit,
     onEpisodeSelected: (TvEpisode) -> Unit,
+    onDownloadEpisode: (TvEpisode) -> Unit,
     onMyListToggled: () -> Unit,
     firstEpisodeToPlay: TvEpisode?,
     lazyListState: LazyListState,
@@ -384,10 +395,6 @@ private fun Details(
                             )
                             Spacer(modifier = Modifier.width(16.dp))
                         }
-                        DownloadButton(
-                            onClick = { /* TODO */ }
-                        )
-                        Spacer(modifier = Modifier.width(16.dp))
                         HeartButton(
                             isLiked = isLiked,
                             onClick = {
@@ -466,7 +473,7 @@ private fun Details(
                     EpisodeListItem(
                         episode = episode,
                         onEpisodeSelected = onEpisodeSelected,
-                        onDownload = { /* TODO */ },
+                        onDownload = { onDownloadEpisode(episode) },
                         modifier = Modifier.padding(horizontal = MobilePadding, vertical = 8.dp)
                     )
                 }
@@ -622,25 +629,6 @@ private fun WatchTrailerButton(
     }
 }
 
-@Composable
-private fun DownloadButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    OutlinedButton(
-        onClick = onClick,
-        modifier = modifier.size(40.dp),
-        contentPadding = PaddingValues(0.dp),
-        colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = Color.White
-        ),
-        border = BorderStroke(1.dp, Color.White),
-        shape = CircleShape
-    ) {
-        Icon(
-            imageVector = Icons.Filled.Download,
-            contentDescription = "Download",
-            modifier = Modifier.size(20.dp)
-        )
-    }
-}
 
 @Composable
 private fun HeartButton(

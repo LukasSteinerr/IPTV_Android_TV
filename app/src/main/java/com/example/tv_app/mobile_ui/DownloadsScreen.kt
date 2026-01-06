@@ -48,6 +48,7 @@ import coil.compose.AsyncImage
 import com.example.tv_app.model.DownloadedMovie
 import com.example.tv_app.repository.DownloadRepository
 import com.example.tv_app.repository.TMDBService
+import com.example.tv_app.mobile_ui.DotSeparatedRow
 
 @Composable
 fun DownloadsScreen(
@@ -149,22 +150,44 @@ fun DownloadItem(
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = download.movieName,
-                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (download.mediaType == DownloadedMovie.TYPE_TVEPISODE) {
+                // Main Title: Series Name
+                Text(
+                    text = download.seriesName ?: download.movieName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                // Subtitle: Episode Details
+                Text(
+                    text = "S${download.seasonNumber} E${download.episodeNumber} - ${download.movieName}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.LightGray,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(8.dp)) // Reduced spacing before metadata/progress
+            } else {
+                // Main Title: Movie Name
+                Text(
+                    text = download.movieName,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(modifier = Modifier.height(10.dp)) // Consistent spacing before metadata/progress
+            }
 
-            Spacer(modifier = Modifier.height(2.dp))
 
-            // Metadata Row (Movie • 1h 30min)
+            // Metadata Row (Type • Duration)
             // Using placeholder for Duration as it's not in DownloadedMovie model
             DotSeparatedRow(
                 modifier = Modifier.fillMaxWidth(),
                 texts = listOf(
-                    "Movie",
+                    if (download.mediaType == DownloadedMovie.TYPE_TVEPISODE) "TV Episode" else "Movie",
                     "1h 30min" // Placeholder for Duration
                 )
             )
