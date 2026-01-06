@@ -201,8 +201,15 @@ fun MobileAppNavigation() {
             DownloadsScreen(
                 downloadRepository = downloadRepository,
                 onPlayMovie = { downloadedMovie ->
-                    // TODO: Implement local playback
-                    android.util.Log.d("MainActivity", "Play local: ${downloadedMovie.localPath}")
+                    if (downloadedMovie.localPath != null) {
+                        android.util.Log.d("MainActivity", "Playing local file: ${downloadedMovie.localPath}")
+                        videoPlayerViewModel.loadDownloadedMedia(downloadedMovie)
+                        videoPlayerSourceScreen = MobileScreen.Downloads
+                        currentScreen = MobileScreen.VideoPlayer
+                    } else {
+                        android.util.Log.w("MainActivity", "Cannot play downloaded content: localPath is null or missing.")
+                        Toast.makeText(context, "File path not found. Download may be incomplete.", Toast.LENGTH_LONG).show()
+                    }
                 },
                 modifier = Modifier
                     .padding(paddingValues)

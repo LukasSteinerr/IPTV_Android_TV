@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.TvEpisode
 import com.example.tv_app.model.Channel
+import com.example.tv_app.model.DownloadedMovie
 import com.example.tv_app.repository.WatchProgressRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,6 +83,33 @@ class VideoPlayerViewModel : ViewModel() {
             val startPosition = mediaId?.let { watchProgressRepository.getSavedPosition(it) } ?: 0L
             
             _uiState.value = VideoPlayerUiState.Ready(episodeMovie, startPosition)
+        }
+    }
+
+    fun loadDownloadedMedia(download: com.example.tv_app.model.DownloadedMovie) {
+        viewModelScope.launch {
+            // Note: Since this is a local file, we use the unique download ID (movieId in DownloadedMovie) to load/save position.
+
+            val uniqueId = download.movieId
+            mediaId = uniqueId
+            currentMediaType = if (download.mediaType == com.example.tv_app.model.DownloadedMovie.TYPE_TVEPISODE) "episode" else "movie"
+
+            // Construct a Movie object pointing to the local file URI
+            val localMovie = Movie(
+                id = download.id,
+                streamId = uniqueId,
+                name = download.movieName,
+                streamUrl = "file://${download.localPath}", // Crucial change: use file URI
+                description = download.seriesName ?: download.movieName,
+                posterUrl = download.posterUrl,
+                duration = null
+            )
+
+            // Resume playback if progress exists (using the DownloadedMovie ID)
+            val startPosition = uniqueId.let { watchProgressRepository.getSavedPosition(it) } ?: 0L
+
+            Log.d("VideoPlayerVM", "Loading downloaded media. Path: ${localMovie.streamUrl}, StartPos: $startPosition")
+            _uiState.value = VideoPlayerUiState.Ready(localMovie, startPosition)
         }
     }
 

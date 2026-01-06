@@ -1,6 +1,7 @@
 package com.example.tv_app.mobile_ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -125,10 +126,13 @@ fun DownloadItem(
     onDelete: () -> Unit,
     onPlay: () -> Unit
 ) {
+    val isCompleted = download.status == DownloadedMovie.STATUS_COMPLETED
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 12.dp),
+            .padding(vertical = 12.dp)
+            .then(if (isCompleted) Modifier.clickable(onClick = onPlay) else Modifier),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Poster Image (changed to 2:3 aspect ratio and smaller size)
@@ -217,15 +221,10 @@ fun DownloadItem(
                     )
                 }
                 DownloadedMovie.STATUS_COMPLETED -> {
-                    // Placeholder for completed status: show duration again or a check mark.
-                    // Based on the image, the completed item also shows a progress bar or a white line.
-                    // For simplicity and alignment with the target image (which shows a complete white line for downloaded items)
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(4.dp)
-                            .clip(RoundedCornerShape(2.dp))
-                            .background(Color.White)
+                    Text(
+                        text = "Downloaded",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.Green
                     )
                 }
                 DownloadedMovie.STATUS_FAILED -> {
@@ -250,16 +249,7 @@ fun DownloadItem(
         // Action area - includes Play/Pause/Resume/Retry and Delete functionality
         Row(verticalAlignment = Alignment.CenterVertically) {
             if (download.status == DownloadedMovie.STATUS_COMPLETED) {
-                // Play and Delete
-                IconButton(onClick = onPlay, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = "Play",
-                        tint = Color.White,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(4.dp))
+                // Playback is handled by row click. Only show Delete button.
                 IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                     Icon(
                         imageVector = Icons.Filled.Delete,
