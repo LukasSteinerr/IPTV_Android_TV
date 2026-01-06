@@ -28,9 +28,14 @@ import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.filled.Support
 import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -91,15 +96,18 @@ fun SettingsScreen(
     onNavigateToMyPlaylists: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    var showComingSoonDialog by remember { mutableStateOf(false) }
+    val showComingSoon: () -> Unit = { showComingSoonDialog = true }
+
     val settingItems = listOf(
         SettingItem("Handle Playlists", Icons.Default.List, onNavigateToMyPlaylists),
-        SettingItem("EPG", Icons.Default.DateRange),
-        SettingItem("General", Icons.Default.Settings),
-        SettingItem("Tell a Friend", Icons.Default.Share),
-        SettingItem("Report a Bug", Icons.Default.BugReport),
-        SettingItem("Rate", Icons.Default.StarRate),
-        SettingItem("Support", Icons.Default.Support),
-        SettingItem("Info", Icons.Default.Info)
+        SettingItem("EPG", Icons.Default.DateRange, showComingSoon),
+        SettingItem("General", Icons.Default.Settings, showComingSoon),
+        SettingItem("Tell a Friend", Icons.Default.Share, showComingSoon),
+        SettingItem("Report a Bug", Icons.Default.BugReport, showComingSoon),
+        SettingItem("Rate", Icons.Default.StarRate, showComingSoon),
+        SettingItem("Support", Icons.Default.Support, showComingSoon),
+        SettingItem("Info", Icons.Default.Info, showComingSoon)
     )
 
     Box(
@@ -137,6 +145,28 @@ fun SettingsScreen(
             }
         }
     }
+
+    if (showComingSoonDialog) {
+        ComingSoonDialog(onDismiss = { showComingSoonDialog = false })
+    }
+}
+
+@Composable
+fun ComingSoonDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text("Coming Soon", fontWeight = FontWeight.Bold)
+        },
+        text = {
+            Text("This feature is under development and will be available in a future update.")
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("OK")
+            }
+        }
+    )
 }
 
 @Preview
