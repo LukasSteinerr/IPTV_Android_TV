@@ -51,7 +51,8 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
                 loadPlaylists()
 
             } catch (e: Exception) {
-                logAnalyticsEvent("playlist_added", mapOf("status" to "failure", "reason" to e.message.orEmpty(), "type" to playlist.typeName))
+                val reasonMessage = e.message.orEmpty().take(100) // Truncate reason to max 100 characters
+                logAnalyticsEvent("playlist_added", mapOf("status" to "failure", "reason" to reasonMessage, "type" to playlist.typeName))
                 Log.e("PlaylistViewModel", "Error adding playlist", e)
                 errorMessage.value = "Failed to add playlist: ${e.message}"
                 loadingMessage.value = "Error: ${e.message}"
