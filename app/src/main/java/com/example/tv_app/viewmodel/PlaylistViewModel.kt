@@ -53,10 +53,18 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
             } catch (e: Exception) {
                 val fullMessage = e.message.orEmpty()
                 
-                // 1. Extract error description (part before [url=)
+                // Determine specific error code based on message content
+                val errorCode = when {
+                    fullMessage.contains("Connect timeout has expired") -> "FAILED_TIMEOUT"
+                    fullMessage.contains("No address associated with hostname") -> "FAILED_URL_RESOLUTION"
+                    fullMessage.contains("401 Unauthorized") -> "FAILED_INVALID_CREDENTIALS" // Assuming this error comes from XtreamService
+                    else -> "FAILED_UNKNOWN"
+                }
+
+                // 1. Extract error description (part before [url=) and truncate it
                 val reasonDesc = fullMessage.substringBefore("[").trim().take(100)
                 
-                // 2. Extract URL up to base path, while keeping the username parameter if possible, but stripping the password
+                // 2. Extract sanitized URL info (strips credentials)
                 val urlWithParams = fullMessage.substringAfter("[url=").substringBefore(",")
                 val urlSanitized = urlWithParams
                     .substringBeforeLast("password") // Strip everything from 'password' onward
@@ -65,8 +73,9 @@ class PlaylistViewModel(private val playlistService: PlaylistService) : ViewMode
                 
                 logAnalyticsEvent("playlist_added", mapOf(
                     "status" to "failure",
-                    "reason" to reasonDesc,
-                    "url_info" to urlSanitized.take(100), // Log URL information (including username if present) but excluding password
+                    "error_code" to errorCode,
+                    "reason" to reasonDesc, // Use shortened description
+                    "url_info" to urlSanitized.take(100),
                     "type" to playlist.typeName
                 ))
                 Log.e("PlaylistViewModel", "Error adding playlist", e)
