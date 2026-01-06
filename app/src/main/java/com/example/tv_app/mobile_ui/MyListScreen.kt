@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.displayCutout
@@ -90,7 +91,7 @@ private sealed class MediaItem(
 
 @Composable
 fun MyListScreen(
-    refreshKey: Int, // New parameter to trigger refresh
+    refreshKey: Int,
     onMovieSelected: (Movie) -> Unit = {},
     onTvSeriesSelected: (TvSeries) -> Unit = {},
     modifier: Modifier = Modifier
@@ -102,7 +103,7 @@ fun MyListScreen(
     var isLoading by remember { mutableStateOf(true) }
 
     // Fetch Data
-    LaunchedEffect(refreshKey) { // Depend on refreshKey
+    LaunchedEffect(refreshKey) {
         // Fetch Movies
         val movieBox = ObjectBox.boxStore.boxFor(Movie::class.java)
         val likedMovies = movieBox.query().equal(Movie_.myList, 1).build().find()
@@ -115,8 +116,6 @@ fun MyListScreen(
 
         allItems.clear()
         allItems.addAll(likedMovies + likedSeries)
-        // Sort by most recently added? ObjectBox doesn't track "liked time" by default easily without a new field.
-        // For now, just shuffle or keep retrieval order.
         isLoading = false
     }
 
@@ -131,16 +130,18 @@ fun MyListScreen(
     }
 
     // UI
-    Column(
+    Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black)
-            .padding(horizontal = 24.dp, vertical = 24.dp)
+            .then(modifier)
     ) {
-        // 1. Header & Filters
         Column(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 24.dp, vertical = 24.dp)
         ) {
+            // Header
             Text(
                 text = "My List",
                 color = Color.White,
@@ -153,109 +154,90 @@ fun MyListScreen(
             
             // Filter Chips
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(bottom = 24.dp)
             ) {
                 FilterChip(
                     selected = selectedFilter == Filter.ALL,
                     onClick = { selectedFilter = Filter.ALL },
-                    label = {
-                        Text(
-                            "All",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    },
+                    label = { Text("All", style = MaterialTheme.typography.bodySmall) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color.White,
                         selectedLabelColor = Color.Black,
                         containerColor = Color.White.copy(alpha = 0.1f),
-                        labelColor = Color.White
+                        labelColor = Color.White.copy(alpha = 0.7f)
                     ),
                     border = null
                 )
                 FilterChip(
                     selected = selectedFilter == Filter.MOVIES,
                     onClick = { selectedFilter = Filter.MOVIES },
-                    label = {
-                        Text(
-                            "Movies",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    },
+                    label = { Text("Movies", style = MaterialTheme.typography.bodySmall) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color.White,
                         selectedLabelColor = Color.Black,
                         containerColor = Color.White.copy(alpha = 0.1f),
-                        labelColor = Color.White
+                        labelColor = Color.White.copy(alpha = 0.7f)
                     ),
                     border = null
                 )
                 FilterChip(
                     selected = selectedFilter == Filter.SERIES,
                     onClick = { selectedFilter = Filter.SERIES },
-                    label = {
-                        Text(
-                            "TV Shows",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                    },
+                    label = { Text("TV Shows", style = MaterialTheme.typography.bodySmall) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color.White,
                         selectedLabelColor = Color.Black,
                         containerColor = Color.White.copy(alpha = 0.1f),
-                        labelColor = Color.White
+                        labelColor = Color.White.copy(alpha = 0.7f)
                     ),
                     border = null
                 )
             }
-        }
 
-        // 2. Content Grid
-        if (filteredItems.isEmpty() && !isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(
-                        imageVector = Icons.Default.Favorite,
-                        contentDescription = null,
-                        tint = Color.White.copy(alpha = 0.5f),
-                        modifier = Modifier
-                            .width(64.dp)
-                            .height(64.dp)
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Text(
-                        text = "Your list is empty",
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyLarge
-                    )
-                    Text(
-                        text = "Add movies and shows to track what you want to watch.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.6f),
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+            // Content Grid
+            if (filteredItems.isEmpty() && !isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(
+                            imageVector = Icons.Default.Favorite,
+                            contentDescription = null,
+                            tint = Color.White.copy(alpha = 0.3f),
+                            modifier = Modifier.size(64.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            text = "Your list is empty",
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Light,
+                                letterSpacing = 0.3.sp
+                            ),
+                            color = Color.White.copy(alpha = 0.5f)
+                        )
+                    }
                 }
-            }
-        } else {
-            LazyVerticalGrid(
-                columns = GridCells.Adaptive(minSize = 110.dp),
-                contentPadding = PaddingValues(0.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                items(filteredItems) { item ->
-                    MediaItemCard(
-                        item = item,
-                        onClick = {
-                            when (item) {
-                                is MediaItem.MovieItem -> onMovieSelected(item.movie)
-                                is MediaItem.SeriesItem -> onTvSeriesSelected(item.series)
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 110.dp),
+                    contentPadding = PaddingValues(0.dp),
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(filteredItems) { item ->
+                        MediaItemCard(
+                            item = item,
+                            onClick = {
+                                when (item) {
+                                    is MediaItem.MovieItem -> onMovieSelected(item.movie)
+                                    is MediaItem.SeriesItem -> onTvSeriesSelected(item.series)
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
@@ -274,12 +256,12 @@ private fun MediaItemCard(
             .clickable(onClick = onClick)
     ) {
         Card(
-            shape = JetStreamCardShape,
+            shape = RoundedCornerShape(6.dp),
             colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             elevation = CardDefaults.cardElevation(0.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(2f / 3f) // Standard poster aspect ratio
+                .aspectRatio(2f / 3f)
         ) {
             TMDBPosterImage(
                 tmdbId = item.tmdbId,
@@ -292,12 +274,15 @@ private fun MediaItemCard(
 
         Text(
             text = item.title,
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodySmall.copy(
+                fontWeight = FontWeight.Normal,
+                letterSpacing = 0.1.sp
+            ),
             textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 8.dp),
-            maxLines = 2,
+            maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             color = Color.White
         )
