@@ -257,9 +257,13 @@ fun MobileAppNavigation() {
                     },
                     onPlaylistSelected = { playlist ->
                         selectedPlaylist = playlist
-                        // Navigate to Home/Main tab, which is now persistent
-                        currentScreen = MobileScreen.Home
-                        android.util.Log.d("MainActivity", "Selected playlist: ${playlist.name}")
+                        // Navigate based on playlist type
+                        if (playlist.isM3u) {
+                            currentScreen = MobileScreen.M3uPlaylist
+                        } else {
+                            currentScreen = MobileScreen.Home
+                        }
+                        android.util.Log.d("MainActivity", "Selected playlist: ${playlist.name} (Type: ${if(playlist.isM3u) "M3U" else "Xtream"})")
                     },
                     modifier = Modifier
                         .padding(paddingValues)
@@ -371,6 +375,27 @@ fun MobileAppNavigation() {
                         .zIndex(3f) // Highest Z-index for the player
                 )
             }
+            MobileScreen.M3uPlaylist -> {
+                selectedPlaylist?.let { playlist ->
+                    M3uPlaylistScreen(
+                        playlist = playlist,
+                        playlistService = playlistService,
+                        onBackPressed = {
+                            currentScreen = MobileScreen.MyPlaylists
+                            selectedPlaylist = null
+                        },
+                        onChannelSelected = { channel ->
+                            android.util.Log.d("MainActivity", "Playing M3U channel: ${channel.name}")
+                            videoPlayerViewModel.loadChannel(channel)
+                            videoPlayerSourceScreen = MobileScreen.M3uPlaylist
+                            currentScreen = MobileScreen.VideoPlayer
+                        },
+                        modifier = Modifier
+                            .padding(paddingValues)
+                            .zIndex(2f)
+                    )
+                }
+            }
             // All main screens handled in the persistent Box above
             MobileScreen.Home, MobileScreen.Downloads, MobileScreen.MyList, MobileScreen.Settings -> {
                 // Do nothing, screens are already in the composition layer below
@@ -393,6 +418,7 @@ sealed class MobileScreen {
     object Downloads : MobileScreen()
     object MyList : MobileScreen()
     object Settings : MobileScreen()
+    object M3uPlaylist : MobileScreen()
 }
 
 @Composable
