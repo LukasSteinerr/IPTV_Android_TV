@@ -20,9 +20,6 @@ fun rememberPlayer(context: Context, trackSelector: DefaultTrackSelector): ExoPl
             .setTrackSelector(trackSelector)
             .setSeekForwardIncrementMs(10_000) // 10 seconds forward
             .setSeekBackIncrementMs(10_000) // 10 seconds back
-            .setMediaSourceFactory(
-                ProgressiveMediaSource.Factory(DefaultDataSource.Factory(context))
-            )
             .setVideoScalingMode(C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING)
             .build()
             .apply {
