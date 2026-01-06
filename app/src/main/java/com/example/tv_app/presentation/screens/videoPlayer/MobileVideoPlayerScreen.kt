@@ -7,17 +7,23 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -74,6 +80,7 @@ fun MobileVideoPlayerScreen(
             MobileVideoPlayerScreenContent(
                 movie = s.movie,
                 startPositionMillis = s.startPositionMillis,
+                isLive = s.isLive,
                 viewModel = viewModel,
                 onBackPressed = onBackPressed,
                 modifier = modifier
@@ -87,6 +94,7 @@ fun MobileVideoPlayerScreen(
 fun MobileVideoPlayerScreenContent(
     movie: com.example.tv_app.model.Movie,
     startPositionMillis: Long,
+    isLive: Boolean,
     viewModel: VideoPlayerViewModel,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier
@@ -188,26 +196,63 @@ fun MobileVideoPlayerScreenContent(
                     useController = true
                     resizeMode = currentResizeMode
                     setShowSubtitleButton(true)
+                    
+                    // Customize controller for Live streams
+                    if (isLive) {
+                        // Hide standard seek bar and time labels
+                        findViewById<View>(androidx.media3.ui.R.id.exo_progress)?.visibility = View.GONE
+                        findViewById<View>(androidx.media3.ui.R.id.exo_position)?.visibility = View.GONE
+                        findViewById<View>(androidx.media3.ui.R.id.exo_duration)?.visibility = View.GONE
+                        // Also hide some other potentially annoying buttons for live
+                        findViewById<View>(androidx.media3.ui.R.id.exo_rew)?.visibility = View.GONE
+                        findViewById<View>(androidx.media3.ui.R.id.exo_ffwd)?.visibility = View.GONE
+                    }
 
                     // Find the view group holding the basic controls (e.g., subtitles, quality)
-                    val basicControls: View? = findViewById(R.id.exo_basic_controls)
-                    val subtitlesButton = findViewById<ImageButton>(R.id.exo_subtitle)
+                    val basicControls: View? = findViewById(androidx.media3.ui.R.id.exo_basic_controls)
+                    val subtitlesButton = findViewById<ImageButton>(androidx.media3.ui.R.id.exo_subtitle)
 
                     if (basicControls is android.widget.LinearLayout && subtitlesButton != null) {
+                        // Create Aspect Ratio toggle button
                         val aspectRatioButton = ImageButton(context).apply {
                             id = View.generateViewId()
                             contentDescription = "Toggle aspect ratio"
                             setBackgroundResource(android.R.color.transparent)
-                            setImageResource(android.R.drawable.ic_menu_zoom) // Use a more appropriate system icon
+                            setImageResource(android.R.drawable.ic_menu_zoom)
                             setOnClickListener { toggleResizeMode() }
                         }
+
+                        // Create LIVE badge
+                        val liveBadge = if (isLive) {
+                            android.widget.TextView(context).apply {
+                                text = "LIVE"
+                                setTextColor(android.graphics.Color.WHITE)
+                                setTypeface(null, android.graphics.Typeface.BOLD)
+                                textSize = 12f
+                                setPadding(12, 4, 12, 4)
+                                val shape = android.graphics.drawable.GradientDrawable().apply {
+                                    shape = android.graphics.drawable.GradientDrawable.RECTANGLE
+                                    cornerRadius = 8f
+                                    setColor(android.graphics.Color.RED)
+                                }
+                                background = shape
+                                val params = android.widget.LinearLayout.LayoutParams(
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT,
+                                    android.widget.LinearLayout.LayoutParams.WRAP_CONTENT
+                                ).apply {
+                                    marginEnd = 16
+                                }
+                                layoutParams = params
+                            }
+                        } else null
                         
-                        // Insert the aspect ratio button before the subtitles button
+                        // Insert buttons before the subtitles button
                         val index = basicControls.indexOfChild(subtitlesButton)
                         if (index >= 0) {
-                            basicControls.addView(aspectRatioButton, index)
+                            if (liveBadge != null) basicControls.addView(liveBadge, index)
+                            basicControls.addView(aspectRatioButton, if (liveBadge != null) index + 1 else index)
                         } else {
-                            // If subtitles button is not found, just append
+                            if (liveBadge != null) basicControls.addView(liveBadge)
                             basicControls.addView(aspectRatioButton)
                         }
                     }
@@ -219,6 +264,30 @@ fun MobileVideoPlayerScreenContent(
             },
             modifier = Modifier.fillMaxSize()
         )
+
+        // Overlay for Back button
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            // Back button (Top Left)
+            IconButton(
+                onClick = {
+                    exoPlayer.release()
+                    onBackPressed()
+                },
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .background(Color.Black.copy(alpha = 0.5f), androidx.compose.foundation.shape.CircleShape)
+            ) {
+                androidx.compose.material3.Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.ArrowBack,
+                    contentDescription = "Back",
+                    tint = Color.White
+                )
+            }
+        }
     }
 }
 

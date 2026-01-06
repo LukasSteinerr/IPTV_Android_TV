@@ -60,7 +60,7 @@ class VideoPlayerViewModel : ViewModel() {
             // Resume playback if progress exists
             val startPosition = mediaId?.let { watchProgressRepository.getSavedPosition(it) } ?: 0L
             
-            _uiState.value = VideoPlayerUiState.Ready(movie, startPosition)
+            _uiState.value = VideoPlayerUiState.Ready(movie, startPosition, isLive = false)
         }
     }
 
@@ -82,7 +82,7 @@ class VideoPlayerViewModel : ViewModel() {
             // Resume playback if progress exists
             val startPosition = mediaId?.let { watchProgressRepository.getSavedPosition(it) } ?: 0L
             
-            _uiState.value = VideoPlayerUiState.Ready(episodeMovie, startPosition)
+            _uiState.value = VideoPlayerUiState.Ready(episodeMovie, startPosition, isLive = false)
         }
     }
 
@@ -109,7 +109,7 @@ class VideoPlayerViewModel : ViewModel() {
             val startPosition = uniqueId.let { watchProgressRepository.getSavedPosition(it) } ?: 0L
 
             Log.d("VideoPlayerVM", "Loading downloaded media. Path: ${localMovie.streamUrl}, StartPos: $startPosition")
-            _uiState.value = VideoPlayerUiState.Ready(localMovie, startPosition)
+            _uiState.value = VideoPlayerUiState.Ready(localMovie, startPosition, isLive = false)
         }
     }
 
@@ -130,7 +130,7 @@ class VideoPlayerViewModel : ViewModel() {
                 description = "Live TV Channel ${channel.name}",
                 posterUrl = channel.logoUrl // Use logo as poster
             )
-            _uiState.value = VideoPlayerUiState.Ready(channelMovie, 0L) // Always start channels from 0
+            _uiState.value = VideoPlayerUiState.Ready(channelMovie, 0L, isLive = true) // Always start channels from 0
         }
     }
 
@@ -149,6 +149,6 @@ class VideoPlayerViewModel : ViewModel() {
 @Immutable
 sealed class VideoPlayerUiState {
     data object Loading : VideoPlayerUiState()
-    data class Ready(val movie: Movie, val startPositionMillis: Long) : VideoPlayerUiState()
+    data class Ready(val movie: Movie, val startPositionMillis: Long, val isLive: Boolean = false) : VideoPlayerUiState()
     data object Error : VideoPlayerUiState()
 }

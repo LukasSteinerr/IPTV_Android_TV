@@ -97,6 +97,7 @@ fun TvVideoPlayerScreen(
         is VideoPlayerUiState.Ready -> {
             TvVideoPlayerScreenContent(
                 movie = s.movie,
+                isLive = s.isLive,
                 onBackPressed = onBackPressed,
                 modifier = modifier
             )
@@ -108,6 +109,7 @@ fun TvVideoPlayerScreen(
 @Composable
 fun TvVideoPlayerScreenContent(
     movie: com.example.tv_app.model.Movie,
+    isLive: Boolean,
     onBackPressed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -169,6 +171,7 @@ fun TvVideoPlayerScreenContent(
                 VideoPlayerControls(
                     player = exoPlayer,
                     movie = movie,
+                    isLive = isLive,
                     subtitleTracks = getSubtitleTracks(exoPlayer),
                     onSubtitleSelected = { track ->
                         if (track.language == "off") {
