@@ -80,6 +80,7 @@ fun TvSeriesDetailsScreen(
     onBackPressed: () -> Unit,
     onTvSeriesSelected: (TvSeries) -> Unit = {},
     onEpisodeSelected: (TvEpisode) -> Unit = {},
+    onMyListToggled: () -> Unit = {}, // New callback
     modifier: Modifier = Modifier
 ) {
     // Get the playlist associated with this TV series
@@ -264,6 +265,7 @@ fun TvSeriesDetailsScreen(
                 showSeasonSelector = showSeasonSelector,
                 onBackPressed = onBackPressed,
                 onTvSeriesSelected = onTvSeriesSelected,
+                onMyListToggled = onMyListToggled,
                 onEpisodeSelected = onEpisodeSelected,
                 firstEpisodeToPlay = firstEpisodeToPlay,
                 lazyListState = lazyListState,
@@ -295,6 +297,7 @@ private fun Details(
     onBackPressed: () -> Unit,
     onTvSeriesSelected: (TvSeries) -> Unit,
     onEpisodeSelected: (TvEpisode) -> Unit,
+    onMyListToggled: () -> Unit,
     firstEpisodeToPlay: TvEpisode?,
     lazyListState: LazyListState,
     moviePalette: MoviePalette,
@@ -394,6 +397,8 @@ private fun Details(
                                         box.put(dbSeries)
                                     }
                                     tvSeriesDetails.myList = newStatus
+                                    // Notify MainActivity that MyList status changed
+                                    onMyListToggled()
                                 }
                             }
                         )

@@ -132,6 +132,7 @@ fun MobileAppNavigation() {
     var selectedTvSeries by remember { mutableStateOf<TvSeries?>(null) }
     var movieDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
     var tvSeriesDetailsKey by remember { mutableStateOf(0) } // Key to force recomposition
+    var myListRefreshKey by remember { mutableStateOf(0) } // Key to force MyList screen refresh
     var lastMainScreen by remember { mutableStateOf<MobileScreen>(MobileScreen.Home) }
     var homeScreenSelectedTab by remember { mutableStateOf(0) } // Track selected tab within HomeScreen (0=Movie, 1=Shows, 2=LiveTV)
     var videoPlayerSourceScreen by remember { mutableStateOf<MobileScreen?>(null) } // Track where the video player was launched from
@@ -218,6 +219,7 @@ fun MobileAppNavigation() {
 
             // MyList Screen
             MyListScreen(
+                refreshKey = myListRefreshKey, // Pass the new refresh key
                 onMovieSelected = { movie ->
                     selectedMovie = movie
                     selectedTvSeries = null
@@ -311,6 +313,9 @@ fun MobileAppNavigation() {
                                 }
                             })
                         },
+                        onMyListToggled = {
+                            myListRefreshKey++
+                        },
                         modifier = Modifier
                             .padding(paddingValues)
                             .zIndex(2f)
@@ -336,6 +341,9 @@ fun MobileAppNavigation() {
                             videoPlayerViewModel.loadEpisode(episode)
                             videoPlayerSourceScreen = MobileScreen.TvSeriesDetails
                             currentScreen = MobileScreen.VideoPlayer
+                        },
+                        onMyListToggled = {
+                            myListRefreshKey++
                         },
                         modifier = Modifier
                             .padding(paddingValues)

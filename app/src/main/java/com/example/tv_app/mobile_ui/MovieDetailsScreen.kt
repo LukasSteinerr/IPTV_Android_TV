@@ -110,6 +110,7 @@ fun MovieDetailsScreen(
     onMovieSelected: (Movie) -> Unit = {},
     onPlayMovie: (Movie) -> Unit = {},
     onDownloadMovie: (Movie) -> Unit = {},
+    onMyListToggled: () -> Unit = {}, // New callback
     modifier: Modifier = Modifier
 ) {
     // Force recomposition when key changes
@@ -325,6 +326,8 @@ fun MovieDetailsScreen(
                         if (movieDetails != null) {
                            movieDetails = movieDetails!!.copy(myList = newStatus)
                         }
+                        // Notify MainActivity that MyList status changed
+                        onMyListToggled()
                     }
                 },
                 onBackPressed = onBackPressed,

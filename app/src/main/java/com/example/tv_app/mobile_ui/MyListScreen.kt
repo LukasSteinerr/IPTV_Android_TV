@@ -89,6 +89,7 @@ private sealed class MediaItem(
 
 @Composable
 fun MyListScreen(
+    refreshKey: Int, // New parameter to trigger refresh
     onMovieSelected: (Movie) -> Unit = {},
     onTvSeriesSelected: (TvSeries) -> Unit = {},
     modifier: Modifier = Modifier
@@ -100,7 +101,7 @@ fun MyListScreen(
     var isLoading by remember { mutableStateOf(true) }
 
     // Fetch Data
-    LaunchedEffect(Unit) {
+    LaunchedEffect(refreshKey) { // Depend on refreshKey
         // Fetch Movies
         val movieBox = ObjectBox.boxStore.boxFor(Movie::class.java)
         val likedMovies = movieBox.query().equal(Movie_.myList, 1).build().find()
