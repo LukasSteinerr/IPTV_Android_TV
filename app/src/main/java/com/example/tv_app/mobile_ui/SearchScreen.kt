@@ -21,7 +21,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tv_app.model.Movie
 import com.example.tv_app.model.TvSeries
@@ -91,7 +93,7 @@ fun SearchScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color = Color.Red
+                        color = Color.White.copy(alpha = 0.7f)
                     )
                 }
             } else if (combinedResults.isNotEmpty()) {
@@ -108,7 +110,8 @@ fun SearchScreen(
                 ) {
                     Text(
                         text = "No results found for \"$searchQuery\"",
-                        color = Color.White.copy(alpha = 0.7f),
+                        color = Color.White,
+                        style = MaterialTheme.typography.bodyLarge
                     )
                 }
             } else {
@@ -118,7 +121,8 @@ fun SearchScreen(
                 ) {
                     Text(
                         text = "Start typing to search movies and TV shows.",
-                        color = Color.White.copy(alpha = 0.5f),
+                        color = Color.White.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.bodyMedium
                     )
                 }
             }
@@ -132,13 +136,22 @@ fun SearchTopBar(
     onNavigateBack: () -> Unit
 ) {
     TopAppBar(
-        title = { Text("Search", color = Color.White) },
+        title = {
+            Text(
+                "Search",
+                color = Color.White,
+                style = MaterialTheme.typography.headlineLarge.copy(
+                    fontWeight = FontWeight.Light,
+                    letterSpacing = 0.5.sp
+                )
+            )
+        },
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                     contentDescription = "Back",
-                    tint = Color.White
+                    tint = Color.White.copy(alpha = 0.7f)
                 )
             }
         },
@@ -158,30 +171,30 @@ fun SearchField(
         value = query,
         onValueChange = onQueryChange,
         placeholder = { Text("Search for titles...", color = Color.White.copy(alpha = 0.5f)) },
-        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Gray) },
+        leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.White.copy(alpha = 0.5f)) },
         trailingIcon = {
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onQueryChange("") }) {
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = "Clear Search",
-                        tint = Color.Gray
+                        tint = Color.White.copy(alpha = 0.5f)
                     )
                 }
             }
         },
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 24.dp, vertical = 8.dp),
         singleLine = true,
         colors = OutlinedTextFieldDefaults.colors(
             focusedTextColor = Color.White,
             unfocusedTextColor = Color.White,
-            focusedBorderColor = Color.White,
-            unfocusedBorderColor = Color.Gray,
+            focusedBorderColor = Color.White.copy(alpha = 0.3f),
+            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
             cursorColor = Color.White,
-            focusedLeadingIconColor = Color.White,
-            unfocusedLeadingIconColor = Color.Gray,
+            focusedLeadingIconColor = Color.White.copy(alpha = 0.7f),
+            unfocusedLeadingIconColor = Color.White.copy(alpha = 0.5f),
             focusedPlaceholderColor = Color.White.copy(alpha = 0.7f),
             unfocusedPlaceholderColor = Color.White.copy(alpha = 0.5f)
         )
@@ -198,10 +211,10 @@ fun SearchResultsGrid(
     LazyVerticalGrid(
         columns = GridCells.Fixed(3), // Responsive grid display
         contentPadding = PaddingValues(
-            top = 16.dp,
+            top = 0.dp,
             bottom = 16.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp,
-            start = 16.dp,
-            end = 16.dp
+            start = 24.dp,
+            end = 24.dp
         ),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
