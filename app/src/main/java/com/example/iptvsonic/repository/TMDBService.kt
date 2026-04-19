@@ -20,10 +20,12 @@ class TMDBService {
         private const val POSTER_SIZE = "w500"
         private const val FEATURED_POSTER_SIZE = "w780"
         private const val BACKDROP_SIZE = "w1280"
+        private const val STILL_SIZE = "w500"
 
         fun getPosterUrl(path: String): String = "$IMAGE_BASE_URL/$POSTER_SIZE$path"
         fun getFeaturedPosterUrl(path: String): String = "$IMAGE_BASE_URL/$FEATURED_POSTER_SIZE$path"
         fun getBackdropUrl(path: String): String = "$IMAGE_BASE_URL/$BACKDROP_SIZE$path"
+        fun getStillUrl(path: String): String = "$IMAGE_BASE_URL/$STILL_SIZE$path"
     }
 
     private suspend fun <T> safeApiCall(apiCall: suspend () -> T): T? {
@@ -139,8 +141,8 @@ class TMDBService {
     } ?: emptyList()
 
     suspend fun searchMovies(query: String): List<Movie> = safeApiCall {
-        val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
-        val url = "$API_BASE_URL/search/movie?api_key=$API_KEY&query=$encodedQuery"
+        val encoded_query = java.net.URLEncoder.encode(query, "UTF-8")
+        val url = "$API_BASE_URL/search/movie?api_key=$API_KEY&query=$encoded_query"
         val response = fetchData(url)
         response?.let {
             val data = JSONObject(it)
@@ -164,8 +166,8 @@ class TMDBService {
     } ?: emptyList()
     
     suspend fun searchTvSeries(query: String): List<TvSeries> = safeApiCall {
-        val encodedQuery = java.net.URLEncoder.encode(query, "UTF-8")
-        val url = "$API_BASE_URL/search/tv?api_key=$API_KEY&query=$encodedQuery"
+        val encoded_query = java.net.URLEncoder.encode(query, "UTF-8")
+        val url = "$API_BASE_URL/search/tv?api_key=$API_KEY&query=$encoded_query"
         val response = fetchData(url)
         response?.let {
             val data = JSONObject(it)
@@ -268,6 +270,16 @@ class TMDBService {
             }
         } ?: emptyList()
     } ?: emptyList()
+
+    suspend fun getTvEpisodeStillPath(tmdbId: String, seasonNumber: Int, episodeNumber: Int): String? = safeApiCall {
+        val url = "$API_BASE_URL/tv/$tmdbId/season/$seasonNumber/episode/$episodeNumber?api_key=$API_KEY"
+        val response = fetchData(url)
+        response?.let {
+            val data = JSONObject(it)
+            val stillPath = data.optString("still_path", null)
+            stillPath?.let { getStillUrl(it) }
+        }
+    }
 
     // Helper function to parse genres from TMDB response
     fun parseGenres(details: JSONObject): List<String> {
